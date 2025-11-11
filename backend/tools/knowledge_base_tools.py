@@ -30,9 +30,13 @@ class SearchNewsEventsTool(BaseTool):
     args_schema: Type[BaseModel] = SearchNewsEventsInput
 
     def _run(self, query: str, limit: int = 5) -> str:
+        """Sync version - not used with async agents."""
+        raise NotImplementedError("Use async version (_arun) instead")
+
+    async def _arun(self, query: str, limit: int = 5) -> str:
         """Search news events."""
         repo = NewsEventSeedRepository()
-        seeds = repo.search_by_name(query, limit=limit)
+        seeds = await repo.search_by_name(query, limit=limit)
 
         if not seeds:
             return f"No news events found matching '{query}'"
@@ -60,6 +64,10 @@ class GetRecentSeedsTool(BaseTool):
     args_schema: Type[BaseModel] = GetRecentSeedsInput
 
     def _run(self, seed_type: str, limit: int = 10) -> str:
+        """Sync version - not used with async agents."""
+        raise NotImplementedError("Use async version (_arun) instead")
+
+    async def _arun(self, seed_type: str, limit: int = 10) -> str:
         """Get recent seeds."""
         if seed_type == "news":
             repo = NewsEventSeedRepository()
@@ -70,7 +78,7 @@ class GetRecentSeedsTool(BaseTool):
         else:
             return f"Invalid seed type: {seed_type}"
 
-        seeds = repo.get_recent(limit=limit)
+        seeds = await repo.get_recent(limit=limit)
 
         if not seeds:
             return f"No {seed_type} seeds found"
@@ -98,9 +106,13 @@ class GetLatestInsightsTool(BaseTool):
     args_schema: Type[BaseModel] = GetLatestInsightsInput
 
     def _run(self) -> str:
+        """Sync version - not used with async agents."""
+        raise NotImplementedError("Use async version (_arun) instead")
+
+    async def _arun(self) -> str:
         """Get latest insights."""
         repo = InsightsRepository()
-        report = repo.get_latest()
+        report = await repo.get_latest()
 
         if not report:
             return "No insights reports found"

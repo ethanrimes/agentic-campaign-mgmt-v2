@@ -154,25 +154,28 @@ Available Content Seeds:
 ** News Events ({len(context['news_seeds'])} available) **
 """
         for i, seed in enumerate(context['news_seeds'][:10], 1):
-            input_text += f"{i}. {seed.get('name', 'Unnamed')} (ID: {seed.get('id')})\n"
-            input_text += f"   {seed.get('description', '')[:150]}...\n\n"
+            input_text += f"{i}. {getattr(seed, 'name', 'Unnamed')} (ID: {seed.id})\n"
+            description = getattr(seed, 'description', '')
+            input_text += f"   {description[:150] if description else 'No description'}...\n\n"
 
         input_text += f"\n** Trends ({len(context['trend_seeds'])} available) **\n"
         for i, seed in enumerate(context['trend_seeds'][:10], 1):
-            input_text += f"{i}. {seed.get('name', 'Unnamed')} (ID: {seed.get('id')})\n"
-            input_text += f"   {seed.get('description', '')[:150]}...\n\n"
+            input_text += f"{i}. {getattr(seed, 'name', 'Unnamed')} (ID: {seed.id})\n"
+            description = getattr(seed, 'description', '')
+            input_text += f"   {description[:150] if description else 'No description'}...\n\n"
 
         input_text += f"\n** Creative Ideas ({len(context['ungrounded_seeds'])} available) **\n"
         for i, seed in enumerate(context['ungrounded_seeds'][:10], 1):
-            input_text += f"{i}. {seed.get('idea', 'Unnamed')} (ID: {seed.get('id')})\n"
-            input_text += f"   Format: {seed.get('format', 'unknown')}\n\n"
+            input_text += f"{i}. {getattr(seed, 'idea', 'Unnamed')} (ID: {seed.id})\n"
+            input_text += f"   Format: {getattr(seed, 'format', 'unknown')}\n\n"
 
         # Add insights
         if context.get('insights'):
             insights = context['insights']
             input_text += f"\n** Latest Insights **\n"
-            input_text += f"Summary: {insights.get('summary', 'No summary')}\n"
-            input_text += f"Findings: {insights.get('findings', '')[:300]}...\n\n"
+            input_text += f"Summary: {getattr(insights, 'summary', 'No summary')}\n"
+            findings = getattr(insights, 'findings', '')
+            input_text += f"Findings: {findings[:300] if findings else 'No findings'}...\n\n"
 
         input_text += """
 Based on this context, create a strategic weekly content plan.
