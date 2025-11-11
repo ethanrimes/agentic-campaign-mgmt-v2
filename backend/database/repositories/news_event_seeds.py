@@ -2,9 +2,14 @@
 
 """Repository for news event seeds."""
 
+from datetime import datetime
 from typing import List, Optional
+from uuid import UUID
 from backend.models import NewsEventSeed, IngestedEvent
+from backend.utils import get_logger
 from .base import BaseRepository
+
+logger = get_logger(__name__)
 
 
 class NewsEventSeedRepository(BaseRepository[NewsEventSeed]):
@@ -61,3 +66,80 @@ class IngestedEventRepository(BaseRepository[IngestedEvent]):
             return [self.model_class(**item) for item in result.data]
         except Exception as e:
             return []
+
+    def get_unprocessed(self, limit: Optional[int] = None) -> List[IngestedEvent]:
+        """
+        Get all unprocessed ingested events.
+
+        Args:
+            limit: Optional maximum number of events to return
+
+        Returns:
+            List of unprocessed ingested events, ordered by creation time (oldest first)
+        """
+        try:
+            query = (
+                self.client.table(self.table_name)
+                .select("*")
+                .eq("processed", False)
+                .order("created_at", desc=False)  # Process oldest first
+            )
+
+            if limit:
+                query = query.limit(limit)
+
+            result = query.execute()
+            return [self.model_class(**item) for item in result.data]
+        except Exception as e:
+            logger.error(
+                "Failed to get unprocessed events",
+                error=str(e),
+                table=self.table_name
+            )
+            return []
+
+    def mark_as_processed(
+        self,
+        event_id: UUID,
+        canonical_event_id: UUID
+    ) -> Optional[IngestedEvent]:
+        """
+        Mark an ingested event as processed.
+
+        Args:
+            event_id: ID of the ingested event to mark as processed
+            canonical_event_id: ID of the canonical news event seed it was deduplicated into
+
+        Returns:
+            Updated ingested event if successful, None otherwise
+        """
+        try:
+            updates = {
+                "processed": True,
+                "processed_at": datetime.utcnow().isoformat(),
+                "canonical_event_id": str(canonical_event_id)
+            }
+
+            result = (
+                self.client.table(self.table_name)
+                .update(updates)
+                .eq("id", str(event_id))
+                .execute()
+            )
+
+            if not result.data:
+                logger.warning(
+                    "No event found to mark as processed",
+                    event_id=str(event_id)
+                )
+                return None
+
+            return self.model_class(**result.data[0])
+        except Exception as e:
+            logger.error(
+                "Failed to mark event as processed",
+                event_id=str(event_id),
+                canonical_event_id=str(canonical_event_id),
+                error=str(e)
+            )
+            return None
