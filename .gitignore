@@ -1,9 +1,13 @@
-# social-media-manager-v2/.gitignore
+# agentic-campaign-mgmt-v2/.gitignore
 
 # Environment variables
 .env
 .env.local
 .env.*.local
+
+# docs
+docs
+IMPLEMENTATION_COMPLETE.md
 
 # Python
 __pycache__/

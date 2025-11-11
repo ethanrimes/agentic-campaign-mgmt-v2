@@ -18,14 +18,16 @@ def insights():
 @click.option("--days", default=14, help="Number of days to analyze")
 def analyze(days: int):
     """Run insights analysis on recent content"""
+    import asyncio
+    from backend.agents.insights import run_insights_analysis
+
     logger.info("Running insights analysis", days=days)
     click.echo(f"📊 Analyzing content from past {days} days...")
 
-    # TODO: Implement insights agent
-    # from backend.agents.insights.insights_agent import run_insights_analysis
-    # result = run_insights_analysis(days)
+    result = asyncio.run(run_insights_analysis(days))
 
-    click.echo("✅ Insights analysis complete")
+    click.echo(f"✅ Insights analysis complete (Report ID: {result['id']})")
+    click.echo(f"\nSummary: {result['summary']}")
 
 
 @insights.command()

@@ -1,48 +1,48 @@
-# social-media-manager-v2/requirements.txt
+# agentic-campaign-mgmt-v2/requirements.txt
 
 # Core Framework
-langchain>=0.1.0
-langchain-openai>=0.0.5
-langchain-google-genai>=0.0.6
-langchain-anthropic>=0.1.0
+langchain
+langchain-openai
+langchain-google-genai
+langchain-anthropic
 
 # AI/ML APIs
-openai>=1.12.0
-google-generativeai>=0.3.0
-anthropic>=0.18.0
+openai
+google-generativeai
+anthropic
 
 # HTTP & Async
-aiohttp>=3.9.0
-httpx>=0.26.0
-requests>=2.31.0
+aiohttp
+httpx
+requests
 
 # Database
-supabase>=2.3.0
-psycopg2-binary>=2.9.9
-sqlalchemy>=2.0.25
+supabase
+psycopg2-binary
+sqlalchemy
 
 # Data Validation & Serialization
-pydantic>=2.5.0
-pydantic-settings>=2.1.0
+pydantic
+pydantic-settings
 
 # CLI
-click>=8.1.7
-rich>=13.7.0
-typer>=0.9.0
+click
+rich
+typer
 
 # Environment & Configuration
-python-dotenv>=1.0.0
-cryptography>=42.0.0
+python-dotenv
+cryptography
 
 # Utilities
-python-dateutil>=2.8.2
-pytz>=2024.1
-uuid>=1.30
+python-dateutil
+pytz
+uuid
 
 # Testing
-pytest>=7.4.0
-pytest-asyncio>=0.21.0
-pytest-cov>=4.1.0
+pytest
+pytest-asyncio
+pytest-cov
 
 # Logging & Monitoring
-structlog>=24.1.0
+structlog

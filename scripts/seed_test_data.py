@@ -6,7 +6,9 @@ Seed test data for development.
 Usage:
     python scripts/seed_test_data.py
 """
-
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent))
 from datetime import datetime
 from backend.models import NewsEventSeed, TrendSeed, UngroundedSeed
 from backend.database.repositories import (
