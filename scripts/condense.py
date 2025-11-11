@@ -4,10 +4,10 @@
 Condense codebase into a single text file, respecting .gitignore patterns.
 
 Usage:
-    # Entire codebase
+    # Entire codebase (outputs to ~/Downloads by default)
     python scripts/condense.py
 
-    # Specific directories/files
+    # Specific directories/files (use paths, not backticks!)
     python scripts/condense.py backend/agents/ backend/models/
 
     # Only agent code
@@ -19,8 +19,16 @@ Usage:
     # Include .env for debugging
     python scripts/condense.py --include-env
 
+    # Custom output directory
+    python scripts/condense.py --output-dir /path/to/output
+
     # Dry run to see what would be included
     python scripts/condense.py --dry-run
+
+Note:
+    - Default output directory is ~/Downloads
+    - Don't use backticks around paths (just: backend/agents/ not `backend/agents/`)
+    - Script handles permission errors gracefully
 """
 
 import os
@@ -535,7 +543,7 @@ Examples:
     parser.add_argument('--line-numbers', action='store_true',
                        help='Add line numbers to source code')
     parser.add_argument('--output-dir', type=str,
-                       help='Output directory (default: current directory)')
+                       help='Output directory (default: /Users/ethan/Downloads)')
     parser.add_argument('--dry-run', action='store_true',
                        help='Show what would be included without writing file')
 
@@ -544,6 +552,11 @@ Examples:
     # Setup paths
     root_path = Path.cwd()
     gitignore_path = root_path / '.gitignore'
+
+    # Ensure we have read permissions for the root path
+    if not os.access(root_path, os.R_OK):
+        print(f"❌ Error: No read permission for {root_path}")
+        sys.exit(1)
 
     # Create gitignore parser
     gitignore_parser = GitignoreParser(gitignore_path)
@@ -572,7 +585,20 @@ Examples:
     if args.output_dir:
         output_dir = Path(args.output_dir)
     else:
-        output_dir = root_path
+        # Default to Downloads folder
+        output_dir = Path.home() / 'Downloads'
+
+    # Create output directory if it doesn't exist
+    try:
+        output_dir.mkdir(parents=True, exist_ok=True)
+    except Exception as e:
+        print(f"❌ Error: Cannot create output directory {output_dir}: {e}")
+        sys.exit(1)
+
+    # Check write permissions
+    if not os.access(output_dir, os.W_OK):
+        print(f"❌ Error: No write permission for {output_dir}")
+        sys.exit(1)
 
     output_file = output_dir / f'{project_name}_codebase_{timestamp}.txt'
 
@@ -649,16 +675,26 @@ Examples:
                 path = root_path / path
 
             if path.exists():
+                # Check read permissions
+                if not os.access(path, os.R_OK):
+                    print(f"  ⚠️  Skipping {path.relative_to(root_path)}: No read permission")
+                    continue
+
                 print(f"  ✓ Processing: {path.relative_to(root_path)}")
-                contents = process_path(
-                    path,
-                    root_path,
-                    gitignore_parser,
-                    processed_files,
-                    args.max_size,
-                    args.line_numbers
-                )
-                output_lines.extend(contents)
+                try:
+                    contents = process_path(
+                        path,
+                        root_path,
+                        gitignore_parser,
+                        processed_files,
+                        args.max_size,
+                        args.line_numbers
+                    )
+                    output_lines.extend(contents)
+                except PermissionError as e:
+                    print(f"  ⚠️  Permission denied: {path.relative_to(root_path)}")
+                except Exception as e:
+                    print(f"  ⚠️  Error processing {path.relative_to(root_path)}: {e}")
             else:
                 print(f"  ✗ Path not found: {path}")
     else:
@@ -673,20 +709,35 @@ Examples:
             dir_path = root_path / dir_name
             if dir_path.exists() and dir_path.is_dir():
                 print(f"  ✓ Processing {dir_name}/...")
-                for item in sorted(dir_path.rglob('*')):
-                    if item.is_file() and not gitignore_parser.should_ignore(item, args.max_size) and item not in processed_files:
-                        output_lines.append(get_file_content(item, root_path, args.line_numbers))
-                        processed_files.add(item)
-                        file_stats[item.suffix] += 1
+                try:
+                    for item in sorted(dir_path.rglob('*')):
+                        if item.is_file() and not gitignore_parser.should_ignore(item, args.max_size) and item not in processed_files:
+                            try:
+                                if os.access(item, os.R_OK):
+                                    output_lines.append(get_file_content(item, root_path, args.line_numbers))
+                                    processed_files.add(item)
+                                    file_stats[item.suffix] += 1
+                            except (PermissionError, OSError):
+                                continue
+                except (PermissionError, OSError):
+                    print(f"  ⚠️  Skipping {dir_name}/: Permission denied")
+                    continue
 
         # Process remaining files in root and other directories
         print("  ✓ Processing remaining files...")
-        for item in sorted(root_path.rglob('*')):
-            if item.is_file() and item not in processed_files:
-                if not gitignore_parser.should_ignore(item, args.max_size):
-                    output_lines.append(get_file_content(item, root_path, args.line_numbers))
-                    processed_files.add(item)
-                    file_stats[item.suffix] += 1
+        try:
+            for item in sorted(root_path.rglob('*')):
+                if item.is_file() and item not in processed_files:
+                    if not gitignore_parser.should_ignore(item, args.max_size):
+                        try:
+                            if os.access(item, os.R_OK):
+                                output_lines.append(get_file_content(item, root_path, args.line_numbers))
+                                processed_files.add(item)
+                                file_stats[item.suffix] += 1
+                        except (PermissionError, OSError):
+                            continue
+        except (PermissionError, OSError):
+            print(f"  ⚠️  Some files skipped due to permission issues")
 
     # Add footer
     output_lines.append("")
