@@ -37,16 +37,18 @@ export default function TrendSeedCard({ seed }: TrendSeedCardProps) {
   }, [seed.id, loading])
 
   const preview = (
-    <div className="space-y-2">
-      <p className="text-sm line-clamp-2">{seed.description}</p>
+    <div className="space-y-3">
+      <p className="text-sm line-clamp-2 text-gray-700">{seed.description}</p>
       <div className="flex flex-wrap gap-2">
         {seed.hashtags.slice(0, 5).map((tag, i) => (
-          <span key={i} className="text-xs bg-purple-50 text-purple-700 px-2 py-1 rounded-full">
+          <span key={i} className="text-xs bg-gradient-to-r from-purple-50 to-pink-50 text-purple-700 px-3 py-1.5 rounded-full font-medium border border-purple-100">
             #{tag}
           </span>
         ))}
         {seed.hashtags.length > 5 && (
-          <span className="text-xs text-gray-500">+{seed.hashtags.length - 5} more</span>
+          <span className="text-xs bg-gray-100 text-gray-700 px-3 py-1.5 rounded-full font-medium">
+            +{seed.hashtags.length - 5} more
+          </span>
         )}
       </div>
     </div>
@@ -60,21 +62,26 @@ export default function TrendSeedCard({ seed }: TrendSeedCardProps) {
     >
       <div className="space-y-6" onClick={() => setLoading(true)}>
         {/* Description */}
-        <div>
-          <h4 className="text-sm font-semibold text-gray-900 mb-2">Analysis</h4>
-          <p className="text-gray-700 whitespace-pre-line">{seed.description}</p>
+        <div className="p-4 bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl border border-purple-100">
+          <h4 className="text-sm font-bold text-gray-900 mb-2 flex items-center gap-2">
+            <div className="w-1 h-4 bg-gradient-to-b from-purple-500 to-pink-500 rounded-full"></div>
+            Trend Analysis
+          </h4>
+          <p className="text-gray-700 leading-relaxed whitespace-pre-line">{seed.description}</p>
         </div>
 
         {/* Hashtags */}
         {seed.hashtags.length > 0 && (
           <div>
-            <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
-              <Hash className="w-4 h-4" />
-              Hashtags ({seed.hashtags.length})
+            <h4 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
+              <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
+                <Hash className="w-4 h-4 text-white" />
+              </div>
+              Trending Hashtags ({seed.hashtags.length})
             </h4>
             <div className="flex flex-wrap gap-2">
               {seed.hashtags.map((tag, i) => (
-                <span key={i} className="text-sm bg-purple-50 text-purple-700 px-3 py-1 rounded-full">
+                <span key={i} className="group text-sm bg-gradient-to-r from-purple-50 to-pink-50 text-purple-700 px-4 py-2 rounded-full border border-purple-100 hover:shadow-lg hover:scale-105 transition-all cursor-default font-medium">
                   #{tag}
                 </span>
               ))}
@@ -85,19 +92,22 @@ export default function TrendSeedCard({ seed }: TrendSeedCardProps) {
         {/* Referenced Posts */}
         {seed.posts && seed.posts.length > 0 && (
           <div>
-            <h4 className="text-sm font-semibold text-gray-900 mb-3">
-              Referenced Posts ({seed.posts.length})
+            <h4 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
+              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-lg flex items-center justify-center text-white text-xs font-bold">
+                {seed.posts.length}
+              </div>
+              Referenced Posts
             </h4>
-            <div className="space-y-2">
+            <div className="space-y-3">
               {seed.posts.map((post: any, i: number) => (
-                <div key={i} className="p-3 bg-gray-50 rounded-md border border-gray-200">
-                  <p className="text-sm text-gray-700 line-clamp-2">{post.text || 'No caption'}</p>
+                <div key={i} className="group p-4 bg-white rounded-xl border border-gray-200 shadow-soft hover:shadow-glow hover:border-purple-200 transition-all">
+                  <p className="text-sm text-gray-700 leading-relaxed line-clamp-2 mb-2">{post.text || 'No caption'}</p>
                   {post.link && (
                     <a
                       href={post.link}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-xs text-primary-600 hover:text-primary-700 mt-1 inline-block"
+                      className="text-xs text-purple-600 hover:text-purple-700 font-medium inline-flex items-center gap-1 group-hover:underline"
                     >
                       View post →
                     </a>
