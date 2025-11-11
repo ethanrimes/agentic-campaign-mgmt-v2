@@ -16,45 +16,53 @@ def news_events():
 
 @news_events.command()
 @click.option("--topic", required=True, help="Topic to search for")
-def ingest_perplexity(topic: str):
+@click.option("--count", default=5, help="Number of events to retrieve")
+def ingest_perplexity(topic: str, count: int):
     """Ingest news events via Perplexity Sonar"""
+    import asyncio
+    from backend.agents.news_event import run_perplexity_ingestion
+
     logger.info("Ingesting news events via Perplexity", topic=topic)
     click.echo(f"🔍 Searching for news about: {topic}")
 
-    # TODO: Implement Perplexity Sonar ingestion
-    # from backend.agents.news_event.perplexity_sonar import run_perplexity_ingestion
-    # result = run_perplexity_ingestion(topic)
+    result = asyncio.run(run_perplexity_ingestion(topic, count))
 
-    click.echo("✅ News events ingested successfully")
+    click.echo(f"✅ Ingested {len(result)} news events successfully")
     click.echo("Run 'deduplicate' command to consolidate events")
 
 
 @news_events.command()
 @click.option("--query", required=True, help="Research query")
-def ingest_deep_research(query: str):
+@click.option("--count", default=5, help="Number of events to extract")
+def ingest_deep_research(query: str, count: int):
     """Ingest news events via ChatGPT Deep Research"""
+    import asyncio
+    from backend.agents.news_event import run_deep_research
+
     logger.info("Running deep research", query=query)
     click.echo(f"🔬 Deep research on: {query}")
 
-    # TODO: Implement deep research ingestion
-    # from backend.agents.news_event.deep_research import run_deep_research
-    # result = run_deep_research(query)
+    result = asyncio.run(run_deep_research(query, count))
 
-    click.echo("✅ Deep research completed")
+    click.echo(f"✅ Deep research completed - ingested {len(result)} events")
     click.echo("Run 'deduplicate' command to consolidate events")
 
 
 @news_events.command()
 def deduplicate():
     """Run deduplication on ingested events"""
+    import asyncio
+    from backend.agents.news_event import run_deduplication
+
     logger.info("Running event deduplication")
     click.echo("🔄 Deduplicating ingested events...")
 
-    # TODO: Implement deduplication
-    # from backend.agents.news_event.deduplicator import run_deduplication
-    # result = run_deduplication()
+    stats = asyncio.run(run_deduplication())
 
-    click.echo("✅ Deduplication complete")
+    click.echo(f"✅ Deduplication complete")
+    click.echo(f"   Processed: {stats['processed']}")
+    click.echo(f"   Merged: {stats['merged']}")
+    click.echo(f"   New: {stats['new']}")
 
 
 @news_events.command()

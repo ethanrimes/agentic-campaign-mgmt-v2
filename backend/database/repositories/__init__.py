@@ -5,7 +5,7 @@ from .news_event_seeds import NewsEventSeedRepository
 from .trend_seeds import TrendSeedRepository
 from .ungrounded_seeds import UngroundedSeedRepository
 from .insights import InsightReportRepository
-from .content_tasks import ContentCreationTaskRepository
+from .content_creation_tasks import ContentCreationTaskRepository
 from .completed_posts import CompletedPostRepository
 from .media import MediaRepository
 

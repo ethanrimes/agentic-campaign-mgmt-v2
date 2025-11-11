@@ -11,6 +11,17 @@ This framework uses multiple specialized AI agents to:
 4. **Create** engaging posts with AI-generated images and videos
 5. **Publish** content automatically to Facebook and Instagram
 
+## ⚡ Quick Start
+
+**NEW TO THIS PROJECT?** Follow these guides in order:
+
+1. 📋 **[QUICKSTART_CHECKLIST.md](docs/QUICKSTART_CHECKLIST.md)** - Complete setup checklist
+2. 🗄️ **[DATABASE_SETUP_GUIDE.md](docs/DATABASE_SETUP_GUIDE.md)** - Step-by-step database configuration
+3. 🧪 **[REMAINING_IMPLEMENTATION.md](docs/REMAINING_IMPLEMENTATION.md)** - Testing and validation guide
+4. 📊 **[IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.md)** - Current status and architecture
+
+**Estimated time to get operational**: 3-4 hours
+
 ## 🏗️ Architecture
 
 ### Core Components
@@ -105,7 +116,7 @@ This framework uses multiple specialized AI agents to:
 
 1. **Clone the repository**
 ```bash
-cd social-media-manager-v2
+cd agentic-campaign-mgmt-v2
 ```
 
 2. **Set up Python environment**
@@ -419,7 +430,7 @@ Add new tabs by creating pages in `frontend/app/`
 ## 📚 Project Structure
 
 ```
-social-media-manager-v2/
+agentic-campaign-mgmt-v2/
 ├── backend/               # Python backend
 │   ├── agents/           # All AI agents
 │   ├── config/           # Configuration & prompts

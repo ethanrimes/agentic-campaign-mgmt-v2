@@ -16,31 +16,37 @@ def content():
 
 
 @content.command()
-@click.option("--max-workers", default=3, help="Maximum concurrent workers")
-def create_all(max_workers: int):
+def create_all():
     """Create content for all pending tasks"""
-    logger.info("Running content creation for all tasks", max_workers=max_workers)
-    click.echo(f"🎨 Creating content (max {max_workers} workers)...")
+    import asyncio
+    from backend.agents.content_creation import run_content_creation_all
 
-    # TODO: Implement content creation runner
-    # from backend.agents.content_creation.runner import run_content_creation_all
-    # result = run_content_creation_all(max_workers)
+    logger.info("Running content creation for all tasks")
+    click.echo(f"🎨 Creating content for all pending tasks...")
 
-    click.echo("✅ Content creation complete")
+    result = asyncio.run(run_content_creation_all())
+
+    click.echo(f"✅ Content creation complete")
+    click.echo(f"   Tasks processed: {result['tasks_processed']}")
+    click.echo(f"   Posts created: {result['posts_created']}")
 
 
 @content.command()
 @click.option("--task-id", required=True, help="Task ID")
 def create(task_id: str):
     """Create content for a specific task"""
+    import asyncio
+    from backend.agents.content_creation import run_content_creation_single
+
     logger.info("Creating content for task", task_id=task_id)
     click.echo(f"🎨 Creating content for task: {task_id}")
 
-    # TODO: Implement content creation for single task
-    # from backend.agents.content_creation.runner import run_content_creation_task
-    # result = run_content_creation_task(UUID(task_id))
+    result = asyncio.run(run_content_creation_single(task_id))
 
-    click.echo("✅ Content created")
+    if result['success']:
+        click.echo(f"✅ Content created - {result['posts_created']} posts")
+    else:
+        click.echo(f"❌ Failed: {result.get('error')}")
 
 
 @content.command()

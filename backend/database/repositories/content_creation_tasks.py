@@ -1,4 +1,4 @@
-# backend/database/repositories/content_tasks.py
+# backend/database/repositories/content_creation_tasks.py
 
 """Repository for content creation tasks."""
 

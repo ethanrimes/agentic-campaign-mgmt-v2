@@ -15,19 +15,19 @@ def trends():
 
 
 @trends.command()
-@click.option("--keyword", required=True, help="Keyword to search")
-@click.option("--platform", type=click.Choice(["instagram", "facebook", "both"]), default="both")
-def discover(keyword: str, platform: str):
+@click.option("--query", required=True, help="Search query or theme")
+@click.option("--count", default=1, help="Number of trends to discover")
+def discover(query: str, count: int):
     """Discover trends from social media"""
-    logger.info("Discovering trends", keyword=keyword, platform=platform)
-    click.echo(f"🔎 Discovering trends for: {keyword}")
-    click.echo(f"📱 Platform: {platform}")
+    import asyncio
+    from backend.agents.trend_seed import run_trend_discovery
 
-    # TODO: Implement trend discovery
-    # from backend.agents.trend_seed.trend_searcher import run_trend_discovery
-    # result = run_trend_discovery(keyword, platform)
+    logger.info("Discovering trends", query=query, count=count)
+    click.echo(f"🔎 Discovering trends for: {query}")
 
-    click.echo("✅ Trend discovery complete")
+    result = asyncio.run(run_trend_discovery(query, count))
+
+    click.echo(f"✅ Trend discovery complete - discovered {len(result)} trends")
 
 
 @trends.command()

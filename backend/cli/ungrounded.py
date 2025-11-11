@@ -18,14 +18,15 @@ def ungrounded():
 @click.option("--count", default=5, help="Number of ideas to generate")
 def generate(count: int):
     """Generate creative content ideas"""
+    import asyncio
+    from backend.agents.ungrounded_seed import run_ungrounded_generation
+
     logger.info("Generating ungrounded seeds", count=count)
     click.echo(f"💡 Generating {count} creative content ideas...")
 
-    # TODO: Implement ungrounded seed generation
-    # from backend.agents.ungrounded_seed.ungrounded_agent import generate_ideas
-    # result = generate_ideas(count)
+    result = asyncio.run(run_ungrounded_generation(count))
 
-    click.echo("✅ Creative ideas generated")
+    click.echo(f"✅ Generated {len(result)} creative ideas")
 
 
 @ungrounded.command()
