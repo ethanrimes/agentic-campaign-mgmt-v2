@@ -34,9 +34,9 @@ def discover(query: str, count: int):
 @click.option("--limit", default=10, help="Number of trends to display")
 def list(limit: int):
     """List recent trend seeds"""
-    from backend.database.repositories import TrendSeedRepository
+    from backend.database.repositories import TrendSeedsRepository
 
-    repo = TrendSeedRepository()
+    repo = TrendSeedsRepository()
     seeds = repo.get_recent(limit=limit)
 
     click.echo(f"\n📈 Recent Trend Seeds ({len(seeds)}):\n")

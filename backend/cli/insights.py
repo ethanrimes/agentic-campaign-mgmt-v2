@@ -34,9 +34,9 @@ def analyze(days: int):
 @click.option("--limit", default=5, help="Number of reports to display")
 def list(limit: int):
     """List recent insight reports"""
-    from backend.database.repositories import InsightReportRepository
+    from backend.database.repositories import InsightsRepository
 
-    repo = InsightReportRepository()
+    repo = InsightsRepository()
     reports = repo.get_recent(limit=limit)
 
     click.echo(f"\n📈 Recent Insight Reports ({len(reports)}):\n")
@@ -49,9 +49,9 @@ def list(limit: int):
 @insights.command()
 def latest():
     """Show the latest insight report"""
-    from backend.database.repositories import InsightReportRepository
+    from backend.database.repositories import InsightsRepository
 
-    repo = InsightReportRepository()
+    repo = InsightsRepository()
     report = repo.get_latest()
 
     if not report:

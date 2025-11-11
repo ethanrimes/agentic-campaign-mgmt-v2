@@ -33,9 +33,8 @@ class BaseRepository(Generic[T]):
         """
         self.table_name = table_name
         self.model_class = model_class
-        self.client = get_supabase_client()
 
-    def create(self, entity: T) -> T:
+    async def create(self, entity: T) -> T:
         """
         Insert a new entity.
 
@@ -49,8 +48,9 @@ class BaseRepository(Generic[T]):
             DatabaseError: If insertion fails
         """
         try:
+            client = await get_supabase_client()
             data = entity.model_dump(mode="json", exclude_unset=True)
-            result = self.client.table(self.table_name).insert(data).execute()
+            result = await client.table(self.table_name).insert(data).execute()
 
             if not result.data:
                 raise DatabaseError(f"Failed to create {self.model_class.__name__}")
@@ -64,7 +64,7 @@ class BaseRepository(Generic[T]):
             )
             raise DatabaseError(f"Failed to create entity: {e}")
 
-    def get_by_id(self, entity_id: UUID) -> Optional[T]:
+    async def get_by_id(self, entity_id: UUID) -> Optional[T]:
         """
         Get entity by ID.
 
@@ -75,8 +75,9 @@ class BaseRepository(Generic[T]):
             Entity if found, None otherwise
         """
         try:
+            client = await get_supabase_client()
             result = (
-                self.client.table(self.table_name)
+                await client.table(self.table_name)
                 .select("*")
                 .eq("id", str(entity_id))
                 .execute()
@@ -95,7 +96,7 @@ class BaseRepository(Generic[T]):
             )
             raise DatabaseError(f"Failed to get entity: {e}")
 
-    def get_all(self, limit: Optional[int] = None, offset: int = 0) -> List[T]:
+    async def get_all(self, limit: Optional[int] = None, offset: int = 0) -> List[T]:
         """
         Get all entities with optional pagination.
 
@@ -107,7 +108,8 @@ class BaseRepository(Generic[T]):
             List of entities
         """
         try:
-            query = self.client.table(self.table_name).select("*")
+            client = await get_supabase_client()
+            query = client.table(self.table_name).select("*")
 
             if limit:
                 query = query.limit(limit)
@@ -115,13 +117,13 @@ class BaseRepository(Generic[T]):
             if offset:
                 query = query.offset(offset)
 
-            result = query.execute()
+            result = await query.execute()
             return [self.model_class(**item) for item in result.data]
         except Exception as e:
             logger.error("Failed to get all entities", table=self.table_name, error=str(e))
             raise DatabaseError(f"Failed to get entities: {e}")
 
-    def update(self, entity_id: UUID, updates: Dict[str, Any]) -> Optional[T]:
+    async def update(self, entity_id: UUID, updates: Dict[str, Any]) -> Optional[T]:
         """
         Update entity by ID.
 
@@ -133,8 +135,9 @@ class BaseRepository(Generic[T]):
             Updated entity if successful, None if not found
         """
         try:
+            client = await get_supabase_client()
             result = (
-                self.client.table(self.table_name)
+                await client.table(self.table_name)
                 .update(updates)
                 .eq("id", str(entity_id))
                 .execute()
@@ -153,7 +156,7 @@ class BaseRepository(Generic[T]):
             )
             raise DatabaseError(f"Failed to update entity: {e}")
 
-    def delete(self, entity_id: UUID) -> bool:
+    async def delete(self, entity_id: UUID) -> bool:
         """
         Delete entity by ID.
 
@@ -164,8 +167,9 @@ class BaseRepository(Generic[T]):
             True if deleted, False if not found
         """
         try:
+            client = await get_supabase_client()
             result = (
-                self.client.table(self.table_name)
+                await client.table(self.table_name)
                 .delete()
                 .eq("id", str(entity_id))
                 .execute()
@@ -181,7 +185,7 @@ class BaseRepository(Generic[T]):
             )
             raise DatabaseError(f"Failed to delete entity: {e}")
 
-    def count(self) -> int:
+    async def count(self) -> int:
         """
         Get total count of entities in table.
 
@@ -189,8 +193,9 @@ class BaseRepository(Generic[T]):
             Number of entities
         """
         try:
+            client = await get_supabase_client()
             result = (
-                self.client.table(self.table_name)
+                await client.table(self.table_name)
                 .select("id", count="exact")
                 .execute()
             )

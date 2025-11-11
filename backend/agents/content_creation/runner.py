@@ -4,7 +4,7 @@
 
 from typing import Dict, Any, List, Optional
 from backend.agents.content_creation.content_agent import ContentCreationAgent
-from backend.database.repositories.content_creation_tasks import ContentTasksRepository
+from backend.database.repositories.content_creation_tasks import ContentCreationTaskRepository
 from backend.utils import get_logger
 
 logger = get_logger(__name__)
@@ -19,7 +19,7 @@ class ContentCreationRunner:
 
     def __init__(self):
         self.agent = ContentCreationAgent()
-        self.tasks_repo = ContentTasksRepository()
+        self.tasks_repo = ContentCreationTaskRepository()
 
     async def run_all(self) -> Dict[str, Any]:
         """

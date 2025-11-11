@@ -5,7 +5,7 @@
 from typing import Dict, Any
 from backend.agents.planner.planner_agent import PlannerAgent
 from backend.agents.planner.validator import validate_plan
-from backend.database.repositories.content_creation_tasks import ContentTasksRepository
+from backend.database.repositories.content_creation_tasks import ContentCreationTaskRepository
 from backend.utils import get_logger
 
 logger = get_logger(__name__)
@@ -22,7 +22,7 @@ class PlannerRunner:
     def __init__(self, max_retries: int = 3):
         self.max_retries = max_retries
         self.agent = PlannerAgent()
-        self.tasks_repo = ContentTasksRepository()
+        self.tasks_repo = ContentCreationTaskRepository()
 
     async def run(self) -> Dict[str, Any]:
         """
