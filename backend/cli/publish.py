@@ -6,7 +6,7 @@ import click
 import asyncio
 from typing import Dict, Any
 from backend.utils import get_logger
-from backend.database.repositories.completed_posts import CompletedPostsRepository
+from backend.database.repositories.completed_posts import CompletedPostRepository
 from backend.services.meta.facebook_publisher import FacebookPublisher
 from backend.services.meta.instagram_publisher import InstagramPublisher
 
@@ -19,7 +19,7 @@ def publish():
     pass
 
 
-async def publish_facebook_post(post: Dict[str, Any], publisher: FacebookPublisher, repo: CompletedPostsRepository) -> bool:
+async def publish_facebook_post(post: Dict[str, Any], publisher: FacebookPublisher, repo: CompletedPostRepository) -> bool:
     """Publish a single Facebook post."""
     try:
         post_type = post.get("post_type", "")
@@ -56,7 +56,7 @@ async def publish_facebook_post(post: Dict[str, Any], publisher: FacebookPublish
         return False
 
 
-async def publish_instagram_post(post: Dict[str, Any], publisher: InstagramPublisher, repo: CompletedPostsRepository) -> bool:
+async def publish_instagram_post(post: Dict[str, Any], publisher: InstagramPublisher, repo: CompletedPostRepository) -> bool:
     """Publish a single Instagram post."""
     try:
         post_type = post.get("post_type", "")
@@ -102,7 +102,7 @@ def facebook(limit: int):
         logger.info("Publishing Facebook posts")
         click.echo("📘 Publishing to Facebook...")
 
-        repo = CompletedPostsRepository()
+        repo = CompletedPostRepository()
         publisher = FacebookPublisher()
 
         # Get pending posts
@@ -134,7 +134,7 @@ def instagram(limit: int):
         logger.info("Publishing Instagram posts")
         click.echo("📷 Publishing to Instagram...")
 
-        repo = CompletedPostsRepository()
+        repo = CompletedPostRepository()
         publisher = InstagramPublisher()
 
         # Get pending posts
@@ -166,7 +166,7 @@ def all(limit: int):
         logger.info("Publishing all posts")
         click.echo("📱 Publishing to all platforms...")
 
-        repo = CompletedPostsRepository()
+        repo = CompletedPostRepository()
         fb_publisher = FacebookPublisher()
         ig_publisher = InstagramPublisher()
 

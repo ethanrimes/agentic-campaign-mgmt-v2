@@ -3,13 +3,11 @@
 """Perplexity Sonar news ingestion agent."""
 
 import aiohttp
-from datetime import datetime
 from typing import List, Dict, Any
 from pathlib import Path
 
 from backend.config.settings import settings
-from backend.config.prompts import load_agent_prompt
-from backend.database.repositories.news_event_seeds import NewsEventSeedsRepository
+from backend.database.repositories import IngestedEventRepository
 from backend.models.seeds import IngestedEvent, Source
 from backend.utils import get_logger
 
@@ -30,7 +28,7 @@ class PerplexitySonarAgent:
 
         self.api_base = "https://api.perplexity.ai/chat/completions"
         self.model = "sonar-pro"
-        self.repo = NewsEventSeedsRepository()
+        self.repo = IngestedEventRepository()
 
         # Load system prompt
         prompt_path = Path(__file__).parent / "prompts" / "perplexity_sonar.txt"
@@ -182,31 +180,29 @@ class PerplexitySonarAgent:
             # Convert sources to Source objects
             sources = []
             for src in event_data.get("sources", []):
-                sources.append({
-                    "url": src["url"],
-                    "key_findings": src["key_findings"],
-                    "found_by": "Perplexity Sonar",
-                    "created_at": datetime.utcnow().isoformat()
-                })
+                sources.append(Source(
+                    url=src["url"],
+                    key_findings=src["key_findings"],
+                    found_by="Perplexity Sonar"
+                ))
 
-            # Create ingested event
-            ingested_event_data = {
-                "start_time": event_data["start_time"],
-                "end_time": event_data.get("end_time"),
-                "location": event_data["location"],
-                "description": event_data["description"],
-                "sources": sources
-            }
+            # Create IngestedEvent model instance
+            ingested_event = IngestedEvent(
+                name=event_data["name"],
+                start_time=event_data["start_time"],
+                end_time=event_data.get("end_time"),
+                location=event_data["location"],
+                description=event_data["description"],
+                sources=sources,
+                ingested_by="Perplexity Sonar"
+            )
 
             # Save to database
-            event_id = await self.repo.create_ingested_event(ingested_event_data)
+            created_event = self.repo.create(ingested_event)
 
-            logger.info("Ingested event saved", event_id=event_id, name=event_data["name"])
+            logger.info("Ingested event saved", event_id=str(created_event.id), name=event_data["name"])
 
-            return {
-                "id": event_id,
-                **ingested_event_data
-            }
+            return created_event.model_dump(mode="json")
 
         except Exception as e:
             logger.error("Error saving ingested event", error=str(e), event_name=event_data.get("name"))

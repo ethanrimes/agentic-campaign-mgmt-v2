@@ -7,6 +7,9 @@ from .exceptions import (
     APIError,
     ValidationError,
     AgentError,
+    GuardrailViolationError,
+    MediaGenerationError,
+    PublishingError,
 )
 
 __all__ = [
@@ -17,4 +20,7 @@ __all__ = [
     "APIError",
     "ValidationError",
     "AgentError",
+    "GuardrailViolationError",
+    "MediaGenerationError",
+    "PublishingError",
 ]

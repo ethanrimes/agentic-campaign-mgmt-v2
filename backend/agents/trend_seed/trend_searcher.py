@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Dict, Any, List
 from langchain.agents import AgentExecutor, create_openai_functions_agent
 from langchain_openai import ChatOpenAI
-from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
 from backend.config.settings import settings
 from backend.config.prompts import get_global_system_prompt
@@ -16,6 +16,7 @@ from backend.tools import (
     create_knowledge_base_tools
 )
 from backend.database.repositories.trend_seeds import TrendSeedsRepository
+from backend.models.seeds import TrendSeed
 from backend.utils import get_logger
 
 logger = get_logger(__name__)
@@ -170,23 +171,21 @@ Provide your final analysis as a structured trend insight."""
         structured_data = await self._extract_structured_trend(agent_output, list(hashtags), posts)
 
         # Save to database
-        trend_data = {
-            "name": structured_data.get("name", "Unnamed Trend"),
-            "description": structured_data.get("description", agent_output[:500]),
-            "hashtags": structured_data.get("hashtags", list(hashtags)),
-            "posts": posts[:10],  # Limit to 10 example posts
-            "users": users[:10],  # Limit to 10 users
-            "created_by": settings.default_model_name
-        }
+        trend_seed = TrendSeed(
+            name=structured_data.get("name", "Unnamed Trend"),
+            description=structured_data.get("description", agent_output[:500]),
+            hashtags=structured_data.get("hashtags", list(hashtags)),
+            posts=posts[:10],  # Limit to 10 example posts
+            users=users[:10],  # Limit to 10 users
+            created_by=settings.default_model_name
+        )
 
-        trend_id = await self.repo.create(trend_data)
+        # Save to database (note: create is synchronous, not async)
+        created_trend = self.repo.create(trend_seed)
 
-        logger.info("Trend seed saved", trend_id=trend_id, name=trend_data["name"])
+        logger.info("Trend seed saved", trend_id=str(created_trend.id), name=created_trend.name)
 
-        return {
-            "id": trend_id,
-            **trend_data
-        }
+        return created_trend.model_dump(mode="json")
 
     async def _extract_structured_trend(
         self,

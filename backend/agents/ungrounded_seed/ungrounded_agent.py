@@ -6,12 +6,13 @@ from pathlib import Path
 from typing import Dict, Any, List
 from langchain.agents import AgentExecutor, create_openai_functions_agent
 from langchain_openai import ChatOpenAI
-from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
 from backend.config.settings import settings
 from backend.config.prompts import get_global_system_prompt
 from backend.tools import create_knowledge_base_tools
 from backend.database.repositories.ungrounded_seeds import UngroundedSeedsRepository
+from backend.models.seeds import UngroundedSeed
 from backend.utils import get_logger
 
 logger = get_logger(__name__)
@@ -126,21 +127,19 @@ Provide a structured content idea with:
         structured_data = await self._extract_structured_seed(agent_output)
 
         # Save to database
-        seed_data = {
-            "idea": structured_data.get("idea", agent_output[:200]),
-            "format": structured_data.get("format", "text"),
-            "details": structured_data.get("details", agent_output),
-            "created_by": settings.default_model_name
-        }
+        ungrounded_seed = UngroundedSeed(
+            idea=structured_data.get("idea", agent_output[:200]),
+            format=structured_data.get("format", "text"),
+            details=structured_data.get("details", agent_output),
+            created_by=settings.default_model_name
+        )
 
-        seed_id = await self.repo.create(seed_data)
+        # Save to database (note: create is synchronous, not async)
+        created_seed = self.repo.create(ungrounded_seed)
 
-        logger.info("Ungrounded seed saved", seed_id=seed_id)
+        logger.info("Ungrounded seed saved", seed_id=str(created_seed.id))
 
-        return {
-            "id": seed_id,
-            **seed_data
-        }
+        return created_seed.model_dump(mode="json")
 
     async def _extract_structured_seed(self, agent_output: str) -> Dict[str, Any]:
         """Use LLM to extract structured seed data from agent output."""
