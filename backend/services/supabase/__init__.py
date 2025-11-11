@@ -1,5 +1,5 @@
 # backend/services/supabase/__init__.py
 
-from .storage import SupabaseStorage
+from .storage import StorageService
 
-__all__ = ["SupabaseStorage"]
+__all__ = ["StorageService"]

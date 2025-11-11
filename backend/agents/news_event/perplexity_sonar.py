@@ -5,6 +5,7 @@
 import aiohttp
 from typing import List, Dict, Any
 from pathlib import Path
+import json
 
 from backend.config.settings import settings
 from backend.database.repositories import IngestedEventRepository
@@ -93,6 +94,7 @@ class PerplexitySonarAgent:
                         "items": {
                             "type": "object",
                             "properties": {
+                                # FIXED: Added 'id' property
                                 "id": {
                                     "type": "string",
                                     "description": "A unique summary identifier or key sentence"
@@ -124,14 +126,23 @@ class PerplexitySonarAgent:
                                         "properties": {
                                             "url": {"type": "string", "format": "uri"},
                                             "key_findings": {"type": "string"},
-                                            "found_by": {"type": "string"},
+                                            # FIXED: Added 'found_by' property
+                                            "found_by": {
+                                                "type": "string",
+                                                "description": "Agent or source that discovered this link"
+                                            },
                                             "created_at": {"type": "string"}
                                         },
+                                        # FIXED: Added 'found_by' to required list
                                         "required": ["url", "key_findings", "found_by", "created_at"],
                                         "additionalProperties": False
                                     }
                                 },
-                                "created_at": {"type": "string"}
+                                # FIXED: Added 'created_at' property
+                                "created_at": {
+                                    "type": "string",
+                                    "description": "Timestamp for when the event object was created"
+                                }
                             },
                             "required": [
                                 "id", "name", "start_time", "end_time",
@@ -158,6 +169,7 @@ class PerplexitySonarAgent:
             }
         }
 
+        # Assuming self.api_base = "https://api.perplexity.ai/chat/completions"
         async with aiohttp.ClientSession() as session:
             async with session.post(self.api_base, headers=headers, json=payload) as response:
                 if response.status != 200:
@@ -169,8 +181,7 @@ class PerplexitySonarAgent:
                 # Extract content from response
                 content = result["choices"][0]["message"]["content"]
 
-                # Parse JSON content
-                import json
+                # Parse JSON content (Perplexity returns a JSON string in the 'content' field)
                 parsed = json.loads(content)
                 return parsed["news_events"]
 

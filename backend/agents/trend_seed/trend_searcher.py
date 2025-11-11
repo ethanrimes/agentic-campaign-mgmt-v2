@@ -4,9 +4,12 @@
 
 from pathlib import Path
 from typing import Dict, Any, List
-from langchain.agents import AgentExecutor, create_openai_functions_agent
+from pydantic import BaseModel, Field
+from langchain.agents import create_agent
+from langchain.agents.structured_output import ToolStrategy
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.messages import AIMessage, ToolMessage
 
 from backend.config.settings import settings
 from backend.config.prompts import get_global_system_prompt
@@ -20,6 +23,14 @@ from backend.models.seeds import TrendSeed
 from backend.utils import get_logger
 
 logger = get_logger(__name__)
+
+
+class TrendSeedOutput(BaseModel):
+    """Structured social media trend seed."""
+    name: str = Field(..., description="Concise trend name (5-10 words)")
+    description: str = Field(..., description="Detailed analysis of why this trend matters (2-3 paragraphs)")
+    hashtags: List[str] = Field(default_factory=list, description="List of relevant hashtags (without # symbol)")
+    key_insights: List[str] = Field(default_factory=list, description="Key insights about the trend")
 
 
 class TrendSearcherAgent:
@@ -52,26 +63,12 @@ class TrendSearcherAgent:
             *create_knowledge_base_tools(),
         ]
 
-        # Create agent prompt template
-        self.prompt_template = ChatPromptTemplate.from_messages([
-            ("system", f"{self.global_prompt}\n\n{self.agent_prompt}"),
-            ("human", "{input}"),
-            MessagesPlaceholder(variable_name="agent_scratchpad"),
-        ])
-
         # Create agent
-        self.agent = create_openai_functions_agent(
-            llm=self.llm,
+        self.agent_executor = create_agent(
+            model=self.llm,
             tools=self.tools,
-            prompt=self.prompt_template
-        )
-
-        self.agent_executor = AgentExecutor(
-            agent=self.agent,
-            tools=self.tools,
-            verbose=True,
-            max_iterations=15,  # Allow multiple tool calls
-            return_intermediate_steps=True
+            system_prompt=f"{self.global_prompt}\n\n{self.agent_prompt}",
+            response_format=ToolStrategy(TrendSeedOutput)
         )
 
     async def discover_trends(self, query: str, count: int = 1) -> List[Dict[str, Any]]:
@@ -93,9 +90,7 @@ class TrendSearcherAgent:
             try:
                 logger.info(f"Discovering trend {i+1}/{count}")
 
-                # Run agent
-                result = await self.agent_executor.ainvoke({
-                    "input": f"""Discover a new social media trend relevant to our audience.
+                input_context = f"""Discover a new social media trend relevant to our audience.
 
 Search Query/Theme: {query}
 
@@ -112,136 +107,79 @@ Focus on trends that are:
 - Supported by specific examples
 
 Provide your final analysis as a structured trend insight."""
-                })
+                
+                # Run agent
+                config = {"verbose": True, "max_iterations": 15}
+                result = await self.agent_executor.ainvoke(
+                    {"messages": [("human", input_context)]},
+                    config=config
+                )
 
-                # Extract the output
-                output = result["output"]
+                # The agent's structured response is here
+                structured_output: TrendSeedOutput = result.get("structured_response")
 
-                # Parse and save trend seed
-                trend_seed = await self._parse_and_save_trend(output, result)
+                if not structured_output:
+                    logger.warning("Agent did not return a structured response")
+                    continue
 
-                if trend_seed:
-                    trends.append(trend_seed)
-                    logger.info("Trend seed created", trend_id=trend_seed["id"])
+                # Extract posts and hashtags from tool calls
+                messages = result.get("messages", [])
+                posts = []
+                hashtags = set(structured_output.hashtags)
+                users = []
+
+                tool_calls = {}  # tool_call_id -> {name: str, args: dict}
+                for message in messages:
+                    if isinstance(message, AIMessage) and message.tool_calls:
+                        for tc in message.tool_calls:
+                            tool_calls[tc["id"]] = {"name": tc["name"], "args": tc["args"]}
+
+                    if isinstance(message, ToolMessage):
+                        tool_call_id = message.tool_call_id
+                        observation = str(message.content)
+
+                        if tool_call_id in tool_calls:
+                            tool_name = tool_calls[tool_call_id]["name"]
+                            tool_input = tool_calls[tool_call_id]["args"]
+
+                            # Extract relevant data from tool calls
+                            if "instagram" in tool_name.lower():
+                                if "hashtag" in tool_name.lower() and isinstance(tool_input, dict):
+                                    query = tool_input.get("query", "")
+                                    if query:
+                                        hashtags.add(query)
+
+                            # Parse observation for posts/users
+                            if "instagram.com/p/" in observation:
+                                import re
+                                codes = re.findall(r'instagram\.com/p/([A-Za-z0-9_-]+)', observation)
+                                for code in codes:
+                                    if code not in [p.get("link", "").split("/")[-2] for p in posts if "link" in p]:
+                                        posts.append({
+                                            "link": f"https://www.instagram.com/p/{code}/",
+                                            "platform": "instagram"
+                                        })
+
+                # Save to database
+                trend_seed = TrendSeed(
+                    name=structured_output.name,
+                    description=structured_output.description,
+                    hashtags=list(hashtags),
+                    posts=posts[:10],  # Limit to 10 example posts
+                    users=users[:10],  # Limit to 10 users
+                    created_by=settings.default_model_name
+                )
+
+                # Save to database (note: create is synchronous, not async)
+                created_trend = self.repo.create(trend_seed)
+                logger.info("Trend seed saved", trend_id=str(created_trend.id), name=created_trend.name)
+                trends.append(created_trend.model_dump(mode="json"))
 
             except Exception as e:
                 logger.error(f"Error discovering trend {i+1}", error=str(e))
 
         logger.info("Trend discovery complete", trends_created=len(trends))
         return trends
-
-    async def _parse_and_save_trend(
-        self,
-        agent_output: str,
-        full_result: Dict[str, Any]
-    ) -> Dict[str, Any]:
-        """Parse agent output and save trend seed."""
-        # Extract tool calls from intermediate steps
-        intermediate_steps = full_result.get("intermediate_steps", [])
-
-        # Collect posts, hashtags, and users mentioned in tool calls
-        posts = []
-        hashtags = set()
-        users = []
-
-        for action, observation in intermediate_steps:
-            tool_name = action.tool
-            tool_input = action.tool_input
-
-            # Extract relevant data from tool calls
-            if "instagram" in tool_name.lower():
-                if "hashtag" in tool_name.lower() and isinstance(tool_input, dict):
-                    query = tool_input.get("query", "")
-                    if query:
-                        hashtags.add(query)
-
-            # Parse observation for posts/users (simplified - could be more sophisticated)
-            if "instagram.com/p/" in str(observation):
-                # Extract Instagram post codes
-                import re
-                codes = re.findall(r'instagram\.com/p/([A-Za-z0-9_-]+)', str(observation))
-                for code in codes:
-                    if code not in [p.get("link", "").split("/")[-2] for p in posts]:
-                        posts.append({
-                            "link": f"https://www.instagram.com/p/{code}/",
-                            "platform": "instagram"
-                        })
-
-        # Use LLM to extract structured data from agent output
-        structured_data = await self._extract_structured_trend(agent_output, list(hashtags), posts)
-
-        # Save to database
-        trend_seed = TrendSeed(
-            name=structured_data.get("name", "Unnamed Trend"),
-            description=structured_data.get("description", agent_output[:500]),
-            hashtags=structured_data.get("hashtags", list(hashtags)),
-            posts=posts[:10],  # Limit to 10 example posts
-            users=users[:10],  # Limit to 10 users
-            created_by=settings.default_model_name
-        )
-
-        # Save to database (note: create is synchronous, not async)
-        created_trend = self.repo.create(trend_seed)
-
-        logger.info("Trend seed saved", trend_id=str(created_trend.id), name=created_trend.name)
-
-        return created_trend.model_dump(mode="json")
-
-    async def _extract_structured_trend(
-        self,
-        agent_output: str,
-        hashtags: List[str],
-        posts: List[Dict[str, Any]]
-    ) -> Dict[str, Any]:
-        """Use LLM to extract structured trend data from agent output."""
-        extraction_prompt = f"""Extract structured trend information from the following trend analysis.
-
-Trend Analysis:
-{agent_output}
-
-Extracted Hashtags: {', '.join(hashtags) if hashtags else 'None'}
-Example Posts Found: {len(posts)}
-
-Provide a JSON response with:
-{{
-  "name": "Concise trend name (5-10 words)",
-  "description": "Detailed analysis of why this trend matters (2-3 paragraphs)",
-  "hashtags": ["list", "of", "relevant", "hashtags"],
-  "key_insights": ["insight 1", "insight 2", "insight 3"]
-}}
-
-Focus on creating a clear, actionable trend description that explains:
-- What the trend is
-- Why it's relevant to the target audience
-- How it could be leveraged for content creation
-- Supporting evidence from the analysis
-"""
-
-        extraction_llm = ChatOpenAI(
-            model="gpt-4o-mini",  # Use faster model for extraction
-            api_key=settings.openai_api_key,
-            temperature=0.3
-        )
-
-        messages = [
-            {"role": "system", "content": "You are a data extraction assistant. Extract structured information from text."},
-            {"role": "user", "content": extraction_prompt}
-        ]
-
-        response = await extraction_llm.ainvoke(messages)
-
-        # Parse JSON
-        import json
-        try:
-            return json.loads(response.content)
-        except json.JSONDecodeError:
-            logger.warning("Failed to parse extraction response")
-            return {
-                "name": "Trend Analysis",
-                "description": agent_output[:500],
-                "hashtags": hashtags,
-                "key_insights": []
-            }
 
 
 async def run_trend_discovery(query: str = "", count: int = 1) -> List[Dict[str, Any]]:

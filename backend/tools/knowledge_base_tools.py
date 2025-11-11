@@ -25,8 +25,8 @@ class SearchNewsEventsInput(BaseModel):
 class SearchNewsEventsTool(BaseTool):
     """Tool to search news event seeds."""
 
-    name = "search_news_events"
-    description = "Search for news event seeds by name/description"
+    name: str = "search_news_events"
+    description: str = "Search for news event seeds by name/description"
     args_schema: Type[BaseModel] = SearchNewsEventsInput
 
     def _run(self, query: str, limit: int = 5) -> str:
@@ -55,8 +55,8 @@ class GetRecentSeedsInput(BaseModel):
 class GetRecentSeedsTool(BaseTool):
     """Tool to get recent content seeds."""
 
-    name = "get_recent_seeds"
-    description = "Get recent content seeds of a specific type"
+    name: str = "get_recent_seeds"
+    description: str = "Get recent content seeds of a specific type"
     args_schema: Type[BaseModel] = GetRecentSeedsInput
 
     def _run(self, seed_type: str, limit: int = 10) -> str:
@@ -93,8 +93,8 @@ class GetLatestInsightsInput(BaseModel):
 class GetLatestInsightsTool(BaseTool):
     """Tool to get the latest insights report."""
 
-    name = "get_latest_insights"
-    description = "Get the most recent insights report about content performance"
+    name: str = "get_latest_insights"
+    description: str = "Get the most recent insights report about content performance"
     args_schema: Type[BaseModel] = GetLatestInsightsInput
 
     def _run(self) -> str:
@@ -112,3 +112,12 @@ Summary: {report.summary}
 Findings:
 {report.findings}
 """
+
+
+def create_knowledge_base_tools():
+    """Create all knowledge base tools for use with Langchain agents."""
+    return [
+        SearchNewsEventsTool(),
+        GetRecentSeedsTool(),
+        GetLatestInsightsTool(),
+    ]
