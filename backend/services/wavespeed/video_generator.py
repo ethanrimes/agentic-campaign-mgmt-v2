@@ -10,13 +10,13 @@ from .base import WavespeedBaseClient
 logger = get_logger(__name__)
 
 
-class WavespeedVideoGenerator(WavespeedBaseClient):
+class VideoGenerator(WavespeedBaseClient):
     """
     Video generator using Wavespeed WAN-2.2 (image-to-video) model.
 
     Example:
         ```python
-        generator = WavespeedVideoGenerator()
+        generator = VideoGenerator()
         video_bytes = await generator.generate(
             input_image_url="https://...",
             prompt="Gentle camera pan with moving clouds"

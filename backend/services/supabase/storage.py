@@ -14,7 +14,7 @@ from backend.models import Image, Video
 logger = get_logger(__name__)
 
 
-class SupabaseStorage:
+class StorageService:
     """
     Helper for uploading and managing media in Supabase storage.
     """

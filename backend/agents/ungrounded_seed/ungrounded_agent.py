@@ -3,19 +3,31 @@
 """Creative content ideation agent (not grounded in news or trends)."""
 
 from pathlib import Path
-from typing import Dict, Any, List
-from langchain.agents import AgentExecutor, create_openai_functions_agent
+from typing import Dict, Any, List, Literal
+from pydantic import BaseModel, Field
+from langchain.agents import create_agent
+from langchain.agents.structured_output import ToolStrategy
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
 from backend.config.settings import settings
 from backend.config.prompts import get_global_system_prompt
 from backend.tools import create_knowledge_base_tools
-from backend.database.repositories.ungrounded_seeds import UngroundedSeedsRepository
+from backend.database.repositories.ungrounded_seeds import UngroundedSeedRepository
 from backend.models.seeds import UngroundedSeed
 from backend.utils import get_logger
 
 logger = get_logger(__name__)
+
+
+class UngroundedSeedOutput(BaseModel):
+    """A structured creative content idea."""
+    idea: str = Field(..., description="Clear, concise description of the content concept (1-2 sentences)")
+    format: Literal["image", "video", "carousel", "reel", "story", "text"] = Field(
+        ...,
+        description="The medium (must be one of: image, video, carousel, reel, story, text)"
+    )
+    details: str = Field(..., description="Detailed creative direction and execution notes (2-3 paragraphs)")
 
 
 class UngroundedSeedAgent:
@@ -26,7 +38,7 @@ class UngroundedSeedAgent:
     """
 
     def __init__(self):
-        self.repo = UngroundedSeedsRepository()
+        self.repo = UngroundedSeedRepository()
 
         # Load prompts
         prompt_path = Path(__file__).parent / "prompts" / "ungrounded_seed.txt"
@@ -43,26 +55,12 @@ class UngroundedSeedAgent:
         # Create tools (only knowledge base access)
         self.tools = create_knowledge_base_tools()
 
-        # Create agent prompt template
-        self.prompt_template = ChatPromptTemplate.from_messages([
-            ("system", f"{self.global_prompt}\n\n{self.agent_prompt}"),
-            ("human", "{input}"),
-            MessagesPlaceholder(variable_name="agent_scratchpad"),
-        ])
-
         # Create agent
-        self.agent = create_openai_functions_agent(
-            llm=self.llm,
+        self.agent_executor = create_agent(
+            model=self.llm,
             tools=self.tools,
-            prompt=self.prompt_template
-        )
-
-        self.agent_executor = AgentExecutor(
-            agent=self.agent,
-            tools=self.tools,
-            verbose=True,
-            max_iterations=10,
-            return_intermediate_steps=True
+            system_prompt=f"{self.global_prompt}\n\n{self.agent_prompt}",
+            response_format=ToolStrategy(UngroundedSeedOutput)
         )
 
     async def generate_ideas(self, count: int = 1) -> List[Dict[str, Any]]:
@@ -83,9 +81,7 @@ class UngroundedSeedAgent:
             try:
                 logger.info(f"Generating idea {i+1}/{count}")
 
-                # Run agent
-                result = await self.agent_executor.ainvoke({
-                    "input": f"""Generate a creative, original content idea for our social media.
+                input_context = f"""Generate a creative, original content idea for our social media.
 
 Instructions:
 1. First, use your tools to review what content has been successful and what gaps exist
@@ -103,88 +99,36 @@ Provide a structured content idea with:
 - The intended format (image, video, carousel, reel, text, etc.)
 - Detailed creative direction for execution
 """
-                })
+                # Run agent
+                config = {"verbose": True, "max_iterations": 10}
+                result = await self.agent_executor.ainvoke(
+                    {"messages": [("human", input_context)]},
+                    config=config
+                )
 
-                # Extract the output
-                output = result["output"]
+                # The agent's structured response is here
+                structured_output: UngroundedSeedOutput = result.get("structured_response")
 
-                # Parse and save ungrounded seed
-                seed = await self._parse_and_save_seed(output)
+                if structured_output:
+                    # Save directly to database
+                    ungrounded_seed = UngroundedSeed(
+                        idea=structured_output.idea,
+                        format=structured_output.format,
+                        details=structured_output.details,
+                        created_by=settings.default_model_name
+                    )
 
-                if seed:
-                    seeds.append(seed)
-                    logger.info("Ungrounded seed created", seed_id=seed["id"])
+                    created_seed = self.repo.create(ungrounded_seed)
+                    logger.info("Ungrounded seed saved", seed_id=str(created_seed.id))
+                    seeds.append(created_seed.model_dump(mode="json"))
+                else:
+                    logger.warning("Agent did not return a structured response")
 
             except Exception as e:
                 logger.error(f"Error generating idea {i+1}", error=str(e))
 
         logger.info("Ungrounded seed generation complete", seeds_created=len(seeds))
         return seeds
-
-    async def _parse_and_save_seed(self, agent_output: str) -> Dict[str, Any]:
-        """Parse agent output and save ungrounded seed."""
-        # Use LLM to extract structured data from agent output
-        structured_data = await self._extract_structured_seed(agent_output)
-
-        # Save to database
-        ungrounded_seed = UngroundedSeed(
-            idea=structured_data.get("idea", agent_output[:200]),
-            format=structured_data.get("format", "text"),
-            details=structured_data.get("details", agent_output),
-            created_by=settings.default_model_name
-        )
-
-        # Save to database (note: create is synchronous, not async)
-        created_seed = self.repo.create(ungrounded_seed)
-
-        logger.info("Ungrounded seed saved", seed_id=str(created_seed.id))
-
-        return created_seed.model_dump(mode="json")
-
-    async def _extract_structured_seed(self, agent_output: str) -> Dict[str, Any]:
-        """Use LLM to extract structured seed data from agent output."""
-        extraction_prompt = f"""Extract structured content idea information from the following creative concept.
-
-Content Idea:
-{agent_output}
-
-Provide a JSON response with:
-{{
-  "idea": "Clear, concise description of the content concept (1-2 sentences)",
-  "format": "The medium (must be one of: image, video, carousel, reel, story, text)",
-  "details": "Detailed creative direction and execution notes (2-3 paragraphs)"
-}}
-
-Make sure:
-- The idea is concise and captures the core concept
-- The format is a single, specific medium (not multiple)
-- The details provide actionable creative direction
-"""
-
-        extraction_llm = ChatOpenAI(
-            model="gpt-4o-mini",
-            api_key=settings.openai_api_key,
-            temperature=0.3
-        )
-
-        messages = [
-            {"role": "system", "content": "You are a data extraction assistant. Extract structured information from text."},
-            {"role": "user", "content": extraction_prompt}
-        ]
-
-        response = await extraction_llm.ainvoke(messages)
-
-        # Parse JSON
-        import json
-        try:
-            return json.loads(response.content)
-        except json.JSONDecodeError:
-            logger.warning("Failed to parse extraction response")
-            return {
-                "idea": agent_output[:200],
-                "format": "text",
-                "details": agent_output
-            }
 
 
 async def run_ungrounded_generation(count: int = 1) -> List[Dict[str, Any]]:

@@ -3,8 +3,10 @@
 """Content creation agent for generating social media posts."""
 
 from pathlib import Path
-from typing import Dict, Any, List
-from langchain.agents import AgentExecutor, create_openai_functions_agent
+from typing import Dict, Any, List, Literal, Optional
+from pydantic import BaseModel, Field
+from langchain.agents import create_agent
+from langchain.agents.structured_output import ToolStrategy
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
@@ -15,17 +17,34 @@ from backend.database.repositories.content_creation_tasks import ContentTasksRep
 from backend.database.repositories.completed_posts import CompletedPostRepository
 from backend.database.repositories.news_event_seeds import NewsEventSeedRepository
 from backend.database.repositories.trend_seeds import TrendSeedsRepository
-from backend.database.repositories.ungrounded_seeds import UngroundedSeedsRepository
+from backend.database.repositories.ungrounded_seeds import UngroundedSeedRepository
 from backend.models.posts import CompletedPost
 from backend.utils import get_logger
 
 logger = get_logger(__name__)
 
 
+class PostOutput(BaseModel):
+    """A structured social media post."""
+    platform: Literal["instagram", "facebook"] = Field(..., description="Social media platform")
+    post_type: Literal["instagram_image", "instagram_reel", "facebook_feed", "facebook_video"] = Field(
+        ...,
+        description="Type of post (must match platform)"
+    )
+    text: str = Field(..., description="The full caption/text for the post")
+    media_urls: List[str] = Field(default_factory=list, description="List of generated media URLs")
+    location: Optional[str] = Field(None, description="Optional location tag")
+    hashtags: List[str] = Field(default_factory=list, description="List of hashtags (without # symbol)")
+
+
+class AgentResponse(BaseModel):
+    """Complete response from content creation agent."""
+    posts: List[PostOutput] = Field(..., description="List of all created posts")
+
+
 class ContentCreationAgent:
     """
     Agent for creating social media posts from content tasks.
-
     Uses Wavespeed AI to generate media and creates structured posts.
     """
 
@@ -34,7 +53,7 @@ class ContentCreationAgent:
         self.posts_repo = CompletedPostRepository()
         self.news_repo = NewsEventSeedRepository()
         self.trend_repo = TrendSeedsRepository()
-        self.ungrounded_repo = UngroundedSeedsRepository()
+        self.ungrounded_repo = UngroundedSeedRepository()
 
         # Load prompts
         prompt_path = Path(__file__).parent / "prompts" / "content_creation.txt"
@@ -51,32 +70,17 @@ class ContentCreationAgent:
         # Create tools
         self.tools = create_media_generation_tools()
 
-        # Create agent prompt template
-        self.prompt_template = ChatPromptTemplate.from_messages([
-            ("system", f"{self.global_prompt}\n\n{self.agent_prompt}"),
-            ("human", "{input}"),
-            MessagesPlaceholder(variable_name="agent_scratchpad"),
-        ])
-
-        # Create agent
-        self.agent = create_openai_functions_agent(
-            llm=self.llm,
+        self.agent_executor = create_agent(
+            model=self.llm,
             tools=self.tools,
-            prompt=self.prompt_template
+            system_prompt=f"{self.global_prompt}\n\n{self.agent_prompt}",
+            response_format=ToolStrategy(AgentResponse)
         )
 
-        self.agent_executor = AgentExecutor(
-            agent=self.agent,
-            tools=self.tools,
-            verbose=True,
-            max_iterations=20,  # Allow multiple media generations
-            return_intermediate_steps=True
-        )
 
     async def create_content_for_task(self, task_id: str) -> List[Dict[str, Any]]:
         """
         Create all content for a specific task.
-
         Args:
             task_id: Content creation task ID
 
@@ -101,14 +105,42 @@ class ContentCreationAgent:
             context = self._format_task_context(task, seed)
 
             # Run agent
-            result = await self.agent_executor.ainvoke({"input": context})
-
-            # Parse outputs into completed posts
-            posts = await self._parse_and_save_posts(
-                result["output"],
-                task,
-                result.get("intermediate_steps", [])
+            config = {"verbose": True}
+            result = await self.agent_executor.ainvoke(
+                {"messages": [("human", context)]},
+                config=config
             )
+
+            # The agent's structured response is here
+            structured_output: AgentResponse = result.get("structured_response")
+
+            if not structured_output:
+                logger.warning("Agent did not return a structured response")
+                raise Exception("Agent did not return structured posts")
+
+            # Save posts to database
+            posts = []
+            for post_data in structured_output.posts:
+                try:
+                    # Create CompletedPost model instance
+                    completed_post = CompletedPost(
+                        task_id=task["id"],
+                        content_seed_id=task["content_seed_id"],
+                        content_seed_type=task["content_seed_type"],
+                        platform=post_data.platform,
+                        post_type=post_data.post_type,
+                        text=post_data.text,
+                        media_urls=post_data.media_urls if post_data.media_urls else [],
+                        location=post_data.location,
+                        hashtags=post_data.hashtags
+                    )
+
+                    # Save to database (note: create is synchronous, not async)
+                    created_post = self.posts_repo.create(completed_post)
+                    posts.append(created_post.model_dump(mode="json"))
+                    logger.info("Completed post saved", post_id=str(created_post.id))
+                except Exception as e:
+                    logger.error("Error saving post", error=str(e))
 
             # Update task status
             await self.tasks_repo.update(task_id, {"status": "completed"})
@@ -184,8 +216,7 @@ Details: {seed.get('details', '')}
 """
 
         # Add allocations
-        context += f"""
-
+        context += f"""\n
 ** Required Posts **
 Instagram:
 - Image/Carousel Posts: {task['instagram_image_posts']}
@@ -214,137 +245,3 @@ For each post, specify:
 """
 
         return context
-
-    async def _parse_and_save_posts(
-        self,
-        agent_output: str,
-        task: Dict[str, Any],
-        intermediate_steps: List
-    ) -> List[Dict[str, Any]]:
-        """Parse agent output and save completed posts."""
-        # Extract media URLs from tool calls
-        media_urls = self._extract_media_urls(intermediate_steps)
-
-        # Use LLM to extract structured posts
-        posts_data = await self._extract_structured_posts(
-            agent_output,
-            task,
-            media_urls
-        )
-
-        # Save posts to database
-        saved_posts = []
-        for post_data in posts_data:
-            try:
-                # Create CompletedPost model instance
-                completed_post = CompletedPost(
-                    task_id=post_data["task_id"],
-                    content_seed_id=post_data["content_seed_id"],
-                    content_seed_type=post_data["content_seed_type"],
-                    platform=post_data["platform"],
-                    post_type=post_data["post_type"],
-                    text=post_data["text"],
-                    media_urls=post_data.get("media_urls", []),
-                    location=post_data.get("location"),
-                    hashtags=post_data.get("hashtags", [])
-                )
-
-                # Save to database (note: create is synchronous, not async)
-                created_post = self.posts_repo.create(completed_post)
-                saved_posts.append(created_post.model_dump(mode="json"))
-                logger.info("Completed post saved", post_id=str(created_post.id))
-            except Exception as e:
-                logger.error("Error saving post", error=str(e))
-
-        return saved_posts
-
-    def _extract_media_urls(self, intermediate_steps: List) -> List[str]:
-        """Extract generated media URLs from tool calls."""
-        media_urls = []
-
-        for action, observation in intermediate_steps:
-            tool_name = action.tool
-
-            if "generate" in tool_name.lower():
-                # Extract URL from observation
-                obs_str = str(observation)
-                if "URL:" in obs_str:
-                    # Parse URL from observation
-                    import re
-                    urls = re.findall(r'URL: (https?://[^\s]+)', obs_str)
-                    media_urls.extend(urls)
-
-        logger.info("Extracted media URLs", count=len(media_urls))
-        return media_urls
-
-    async def _extract_structured_posts(
-        self,
-        agent_output: str,
-        task: Dict[str, Any],
-        media_urls: List[str]
-    ) -> List[Dict[str, Any]]:
-        """Extract structured post data from agent output."""
-        extraction_prompt = f"""Extract structured social media posts from the following content creation output.
-
-Content Output:
-{agent_output}
-
-Task Context:
-- Task ID: {task['id']}
-- Content Seed ID: {task['content_seed_id']}
-- Content Seed Type: {task['content_seed_type']}
-
-Available Media URLs:
-{', '.join(media_urls) if media_urls else 'None'}
-
-Expected Posts:
-- Instagram Image/Carousel: {task['instagram_image_posts']}
-- Instagram Reels: {task['instagram_reel_posts']}
-- Facebook Feed: {task['facebook_feed_posts']}
-- Facebook Video: {task['facebook_video_posts']}
-
-Provide a JSON response with an array of posts:
-{{
-  "posts": [
-    {{
-      "task_id": "{task['id']}",
-      "content_seed_id": "{task['content_seed_id']}",
-      "content_seed_type": "{task['content_seed_type']}",
-      "platform": "instagram" | "facebook",
-      "post_type": "instagram_image" | "instagram_reel" | "facebook_feed" | "facebook_video",
-      "text": "The full caption/text",
-      "media_urls": ["url1", "url2"],
-      "location": "Optional location",
-      "hashtags": ["tag1", "tag2"]
-    }}
-  ]
-}}
-
-IMPORTANT:
-- Extract ALL posts mentioned in the output
-- Match media URLs to appropriate posts
-- Ensure post_type matches the platform
-- Include all hashtags from the text
-"""
-
-        extraction_llm = ChatOpenAI(
-            model="gpt-4o-mini",
-            api_key=settings.openai_api_key,
-            temperature=0.1
-        )
-
-        messages = [
-            {"role": "system", "content": "You are a data extraction assistant. Extract structured information from text."},
-            {"role": "user", "content": extraction_prompt}
-        ]
-
-        response = await extraction_llm.ainvoke(messages)
-
-        # Parse JSON
-        import json
-        try:
-            result = json.loads(response.content)
-            return result.get("posts", [])
-        except json.JSONDecodeError as e:
-            logger.error("Failed to parse posts extraction", error=str(e))
-            return []

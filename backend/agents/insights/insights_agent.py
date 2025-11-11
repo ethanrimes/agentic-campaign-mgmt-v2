@@ -5,19 +5,29 @@
 from pathlib import Path
 from datetime import datetime
 from typing import Dict, Any, List
-from langchain.agents import AgentExecutor, create_openai_functions_agent
+from pydantic import BaseModel, Field
+from langchain.agents import create_agent
+from langchain.agents.structured_output import ToolStrategy
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.messages import AIMessage
 
 from backend.config.settings import settings
 from backend.config.prompts import get_global_system_prompt
 from backend.tools import create_engagement_tools
 from backend.database.repositories.insights import InsightsRepository
 from backend.database.repositories.completed_posts import CompletedPostRepository
-from backend.models.insights import InsightReport, ToolCall
+from backend.models.insights import InsightReport
 from backend.utils import get_logger
 
 logger = get_logger(__name__)
+
+
+class InsightReportOutput(BaseModel):
+    """Structured engagement insight report."""
+    summary: str = Field(..., description="High-level takeaway in 1-2 sentences")
+    findings: str = Field(..., description="Detailed analysis with specific metrics, patterns, and recommendations (2-4 paragraphs)")
+    key_recommendations: List[str] = Field(default_factory=list, description="Concrete, implementable recommendations")
 
 
 class InsightsAgent:
@@ -47,26 +57,12 @@ class InsightsAgent:
         # Create tools
         self.tools = create_engagement_tools()
 
-        # Create agent prompt template
-        self.prompt_template = ChatPromptTemplate.from_messages([
-            ("system", f"{self.global_prompt}\n\n{self.agent_prompt}"),
-            ("human", "{input}"),
-            MessagesPlaceholder(variable_name="agent_scratchpad"),
-        ])
-
         # Create agent
-        self.agent = create_openai_functions_agent(
-            llm=self.llm,
+        self.agent_executor = create_agent(
+            model=self.llm,
             tools=self.tools,
-            prompt=self.prompt_template
-        )
-
-        self.agent_executor = AgentExecutor(
-            agent=self.agent,
-            tools=self.tools,
-            verbose=True,
-            max_iterations=20,  # Allow many tool calls for thorough analysis
-            return_intermediate_steps=True
+            system_prompt=f"{self.global_prompt}\n\n{self.agent_prompt}",
+            response_format=ToolStrategy(InsightReportOutput)
         )
 
     async def analyze_engagement(self, days: int = 14) -> Dict[str, Any]:
@@ -93,8 +89,7 @@ class InsightsAgent:
             posts_context = self._format_posts_context(recent_posts)
 
             # Run agent
-            result = await self.agent_executor.ainvoke({
-                "input": f"""Analyze engagement data for our social media content from the past {days} days.
+            input_context = f"""Analyze engagement data for our social media content from the past {days} days.
 
 Recent Posts Context:
 {posts_context}
@@ -112,14 +107,32 @@ Instructions:
 
 Your analysis should be thorough, data-driven, and honest about what's working and what isn't.
 """
-            })
+            config = {"verbose": True, "max_iterations": 20}
+            result = await self.agent_executor.ainvoke(
+                {"messages": [("human", input_context)]},
+                config=config
+            )
 
-            # Extract output and tool calls
-            output = result["output"]
-            tool_calls = self._extract_tool_calls(result.get("intermediate_steps", []))
+            # Extract structured output and tool calls
+            structured_output: InsightReportOutput = result.get("structured_response")
+            tool_calls = self._extract_tool_calls(result.get("messages", []))
+
+            if not structured_output:
+                logger.warning("Agent did not return a structured response")
+                return await self._create_empty_report()
 
             # Save insight report
-            report = await self._save_insight_report(output, tool_calls)
+            insight_report = InsightReport(
+                summary=structured_output.summary,
+                findings=structured_output.findings,
+                tool_calls=tool_calls,
+                created_by=settings.default_model_name
+            )
+
+            # Save to database (note: create is synchronous, not async)
+            created_report = self.insights_repo.create(insight_report)
+            logger.info("Insight report saved", report_id=str(created_report.id))
+            report = created_report.model_dump(mode="json")
 
             logger.info("Engagement analysis complete", report_id=report["id"])
             return report
@@ -161,86 +174,21 @@ Your analysis should be thorough, data-driven, and honest about what's working a
 
         return context
 
-    def _extract_tool_calls(self, intermediate_steps: List) -> List[Dict[str, Any]]:
+    def _extract_tool_calls(self, messages: List) -> List[Dict[str, Any]]:
         """Extract tool calls from agent execution for logging."""
         tool_calls = []
 
-        for action, observation in intermediate_steps:
-            tool_calls.append({
-                "tool": action.tool,
-                "input": str(action.tool_input)[:200],  # Truncate long inputs
-                "timestamp": datetime.utcnow().isoformat()
-            })
+        for message in messages:
+            # Check if the message is an AIMessage with tool_calls
+            if isinstance(message, AIMessage) and message.tool_calls:
+                for tool_call in message.tool_calls:
+                    tool_calls.append({
+                        "tool": tool_call.get("name"),
+                        "input": str(tool_call.get("args"))[:200],  # Truncate
+                        "timestamp": datetime.utcnow().isoformat()
+                    })
 
         return tool_calls
-
-    async def _save_insight_report(
-        self,
-        agent_output: str,
-        tool_calls: List[Dict[str, Any]]
-    ) -> Dict[str, Any]:
-        """Parse agent output and save insight report."""
-        # Use LLM to extract structured insights
-        structured_data = await self._extract_structured_insights(agent_output)
-
-        # Save to database
-        insight_report = InsightReport(
-            summary=structured_data.get("summary", agent_output[:200]),
-            findings=structured_data.get("findings", agent_output),
-            tool_calls=tool_calls,
-            created_by=settings.default_model_name
-        )
-
-        # Save to database (note: create is synchronous, not async)
-        created_report = self.insights_repo.create(insight_report)
-
-        logger.info("Insight report saved", report_id=str(created_report.id))
-
-        return created_report.model_dump(mode="json")
-
-    async def _extract_structured_insights(self, agent_output: str) -> Dict[str, Any]:
-        """Use LLM to extract structured insights from agent output."""
-        extraction_prompt = f"""Extract structured insights from the following engagement analysis.
-
-Analysis:
-{agent_output}
-
-Provide a JSON response with:
-{{
-  "summary": "High-level takeaway in 1-2 sentences",
-  "findings": "Detailed analysis with specific metrics, patterns, and recommendations (2-4 paragraphs)",
-  "key_recommendations": ["rec 1", "rec 2", "rec 3"]
-}}
-
-Ensure:
-- Summary is concise and actionable
-- Findings include specific examples and data points
-- Recommendations are concrete and implementable
-"""
-
-        extraction_llm = ChatOpenAI(
-            model="gpt-4o-mini",
-            api_key=settings.openai_api_key,
-            temperature=0.3
-        )
-
-        messages = [
-            {"role": "system", "content": "You are a data extraction assistant. Extract structured information from text."},
-            {"role": "user", "content": extraction_prompt}
-        ]
-
-        response = await extraction_llm.ainvoke(messages)
-
-        # Parse JSON
-        import json
-        try:
-            return json.loads(response.content)
-        except json.JSONDecodeError:
-            logger.warning("Failed to parse extraction response")
-            return {
-                "summary": agent_output[:200],
-                "findings": agent_output
-            }
 
     async def _create_empty_report(self) -> Dict[str, Any]:
         """Create a report when no posts are available."""

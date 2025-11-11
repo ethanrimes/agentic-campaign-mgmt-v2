@@ -4,8 +4,9 @@
 
 from pathlib import Path
 from datetime import datetime, timedelta
-from typing import Dict, Any, List
-from langchain.agents import AgentExecutor, create_openai_functions_agent
+from typing import Dict, Any
+from langchain.agents import create_agent
+from langchain.agents.structured_output import ToolStrategy
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
@@ -15,7 +16,7 @@ from backend.config.guardrails_config import guardrails
 from backend.tools import create_knowledge_base_tools
 from backend.database.repositories.news_event_seeds import NewsEventSeedRepository
 from backend.database.repositories.trend_seeds import TrendSeedsRepository
-from backend.database.repositories.ungrounded_seeds import UngroundedSeedsRepository
+from backend.database.repositories.ungrounded_seeds import UngroundedSeedRepository
 from backend.database.repositories.insights import InsightsRepository
 from backend.models.planner import PlannerOutput
 from backend.utils import get_logger
@@ -33,7 +34,7 @@ class PlannerAgent:
     def __init__(self):
         self.news_repo = NewsEventSeedRepository()
         self.trend_repo = TrendSeedsRepository()
-        self.ungrounded_repo = UngroundedSeedsRepository()
+        self.ungrounded_repo = UngroundedSeedRepository()
         self.insights_repo = InsightsRepository()
 
         # Load prompts
@@ -67,36 +68,33 @@ class PlannerAgent:
             # Fill in guardrails in prompt
             agent_prompt = self._format_prompt_with_guardrails()
 
-            # Create agent prompt template
-            prompt_template = ChatPromptTemplate.from_messages([
-                ("system", f"{self.global_prompt}\n\n{agent_prompt}"),
-                ("human", "{input}"),
-                MessagesPlaceholder(variable_name="agent_scratchpad"),
-            ])
-
             # Create agent
-            agent = create_openai_functions_agent(
-                llm=self.llm,
+            agent_executor = create_agent(
+                model=self.llm,
                 tools=self.tools,
-                prompt=prompt_template
-            )
-
-            agent_executor = AgentExecutor(
-                agent=agent,
-                tools=self.tools,
-                verbose=True,
-                max_iterations=10,
-                return_intermediate_steps=True
+                system_prompt=f"{self.global_prompt}\n\n{agent_prompt}",
+                response_format=ToolStrategy(PlannerOutput)
             )
 
             # Build input with context
             input_text = self._format_input(context)
 
             # Run agent
-            result = await agent_executor.ainvoke({"input": input_text})
+            config = {"verbose": True, "max_iterations": 10}
+            result = await agent_executor.ainvoke(
+                {"messages": [("human", input_text)]},
+                config=config
+            )
 
-            # Parse output into structured plan
-            plan = await self._parse_plan(result["output"], context)
+            # The agent's structured response is here
+            structured_output: PlannerOutput = result.get("structured_response")
+
+            if not structured_output:
+                logger.warning("Agent did not return a structured response")
+                raise Exception("Agent did not return structured plan")
+
+            # Convert to dict for return
+            plan = structured_output.model_dump(mode="json")
 
             logger.info("Weekly plan created successfully")
             return plan
@@ -189,72 +187,6 @@ Remember to STRICTLY follow the guardrails!
 """
 
         return input_text
-
-    async def _parse_plan(self, agent_output: str, context: Dict[str, Any]) -> Dict[str, Any]:
-        """Parse agent output into structured plan."""
-        # Use LLM to extract structured plan
-        structured_plan = await self._extract_structured_plan(agent_output, context)
-
-        return structured_plan
-
-    async def _extract_structured_plan(
-        self,
-        agent_output: str,
-        context: Dict[str, Any]
-    ) -> Dict[str, Any]:
-        """Use LLM to extract structured plan from agent output."""
-        extraction_prompt = f"""Extract a structured weekly content plan from the following planning output.
-
-Planning Output:
-{agent_output}
-
-Week Start Date: {context['week_start']}
-
-Provide a JSON response with this exact structure:
-{{
-  "allocations": [
-    {{
-      "seed_id": "uuid-here",
-      "seed_type": "news_event" | "trend" | "ungrounded",
-      "instagram_image_posts": 0,
-      "instagram_reel_posts": 0,
-      "facebook_feed_posts": 0,
-      "facebook_video_posts": 0,
-      "image_budget": 0,
-      "video_budget": 0
-    }}
-  ],
-  "reasoning": "Explanation of the planning strategy",
-  "week_start_date": "{context['week_start']}"
-}}
-
-IMPORTANT:
-- All counts must be non-negative integers
-- seed_id must be a valid UUID from the provided context
-- seed_type must be exactly one of: "news_event", "trend", "ungrounded"
-- Extract ALL allocations mentioned in the output
-"""
-
-        extraction_llm = ChatOpenAI(
-            model="gpt-4o-mini",
-            api_key=settings.openai_api_key,
-            temperature=0.1  # Very low for consistent extraction
-        )
-
-        messages = [
-            {"role": "system", "content": "You are a data extraction assistant. Extract structured information from text."},
-            {"role": "user", "content": extraction_prompt}
-        ]
-
-        response = await extraction_llm.ainvoke(messages)
-
-        # Parse JSON
-        import json
-        try:
-            return json.loads(response.content)
-        except json.JSONDecodeError as e:
-            logger.error("Failed to parse plan extraction", error=str(e))
-            raise Exception(f"Failed to parse plan: {str(e)}")
 
     def _get_next_monday(self) -> datetime:
         """Get the date of the next Monday."""

@@ -10,13 +10,13 @@ from .base import WavespeedBaseClient
 logger = get_logger(__name__)
 
 
-class WavespeedImageGenerator(WavespeedBaseClient):
+class ImageGenerator(WavespeedBaseClient):
     """
     Image generator using Wavespeed SDXL-LoRA model.
 
     Example:
         ```python
-        generator = WavespeedImageGenerator()
+        generator = ImageGenerator()
         image_bytes = await generator.generate(
             prompt="A vibrant photo of Penn campus in winter",
             size="1024*1024"
