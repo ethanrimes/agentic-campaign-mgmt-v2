@@ -1,0 +1,45 @@
+# backend/cli/ungrounded.py
+
+"""CLI commands for ungrounded seed agent."""
+
+import click
+from backend.utils import get_logger
+
+logger = get_logger(__name__)
+
+
+@click.group(name="ungrounded")
+def ungrounded():
+    """Ungrounded (creative) seed generation commands"""
+    pass
+
+
+@ungrounded.command()
+@click.option("--count", default=5, help="Number of ideas to generate")
+def generate(count: int):
+    """Generate creative content ideas"""
+    logger.info("Generating ungrounded seeds", count=count)
+    click.echo(f"💡 Generating {count} creative content ideas...")
+
+    # TODO: Implement ungrounded seed generation
+    # from backend.agents.ungrounded_seed.ungrounded_agent import generate_ideas
+    # result = generate_ideas(count)
+
+    click.echo("✅ Creative ideas generated")
+
+
+@ungrounded.command()
+@click.option("--limit", default=10, help="Number of seeds to display")
+def list(limit: int):
+    """List recent ungrounded seeds"""
+    from backend.database.repositories import UngroundedSeedRepository
+
+    repo = UngroundedSeedRepository()
+    seeds = repo.get_recent(limit=limit)
+
+    click.echo(f"\n💭 Recent Ungrounded Seeds ({len(seeds)}):\n")
+    for seed in seeds:
+        click.echo(f"  • {seed.idea}")
+        click.echo(f"    Format: {seed.format}")
+        click.echo(f"    Created: {seed.created_at}")
+        click.echo()

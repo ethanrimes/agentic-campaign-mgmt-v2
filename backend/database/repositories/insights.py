@@ -1,0 +1,33 @@
+# backend/database/repositories/insights.py
+
+"""Repository for insight reports."""
+
+from typing import List
+from backend.models import InsightReport
+from .base import BaseRepository
+
+
+class InsightReportRepository(BaseRepository[InsightReport]):
+    """Repository for managing insight reports."""
+
+    def __init__(self):
+        super().__init__("insight_reports", InsightReport)
+
+    def get_recent(self, limit: int = 5) -> List[InsightReport]:
+        """Get most recent insight reports."""
+        try:
+            result = (
+                self.client.table(self.table_name)
+                .select("*")
+                .order("created_at", desc=True)
+                .limit(limit)
+                .execute()
+            )
+            return [self.model_class(**item) for item in result.data]
+        except Exception as e:
+            return []
+
+    def get_latest(self) -> InsightReport | None:
+        """Get the most recent insight report."""
+        reports = self.get_recent(limit=1)
+        return reports[0] if reports else None
