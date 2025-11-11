@@ -7,13 +7,13 @@ from datetime import datetime, timedelta
 from typing import Dict, Any, List
 from langchain.agents import AgentExecutor, create_openai_functions_agent
 from langchain_openai import ChatOpenAI
-from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
 from backend.config.settings import settings
 from backend.config.prompts import get_global_system_prompt
 from backend.config.guardrails_config import guardrails
 from backend.tools import create_knowledge_base_tools
-from backend.database.repositories.news_event_seeds import NewsEventSeedsRepository
+from backend.database.repositories.news_event_seeds import NewsEventSeedRepository
 from backend.database.repositories.trend_seeds import TrendSeedsRepository
 from backend.database.repositories.ungrounded_seeds import UngroundedSeedsRepository
 from backend.database.repositories.insights import InsightsRepository
@@ -31,7 +31,7 @@ class PlannerAgent:
     """
 
     def __init__(self):
-        self.news_repo = NewsEventSeedsRepository()
+        self.news_repo = NewsEventSeedRepository()
         self.trend_repo = TrendSeedsRepository()
         self.ungrounded_repo = UngroundedSeedsRepository()
         self.insights_repo = InsightsRepository()

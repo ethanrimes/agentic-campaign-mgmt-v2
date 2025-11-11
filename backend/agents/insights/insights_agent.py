@@ -7,13 +7,14 @@ from datetime import datetime
 from typing import Dict, Any, List
 from langchain.agents import AgentExecutor, create_openai_functions_agent
 from langchain_openai import ChatOpenAI
-from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
 from backend.config.settings import settings
 from backend.config.prompts import get_global_system_prompt
 from backend.tools import create_engagement_tools
 from backend.database.repositories.insights import InsightsRepository
-from backend.database.repositories.completed_posts import CompletedPostsRepository
+from backend.database.repositories.completed_posts import CompletedPostRepository
+from backend.models.insights import InsightReport, ToolCall
 from backend.utils import get_logger
 
 logger = get_logger(__name__)
@@ -29,7 +30,7 @@ class InsightsAgent:
 
     def __init__(self):
         self.insights_repo = InsightsRepository()
-        self.posts_repo = CompletedPostsRepository()
+        self.posts_repo = CompletedPostRepository()
 
         # Load prompts
         prompt_path = Path(__file__).parent / "prompts" / "insights.txt"
@@ -183,20 +184,19 @@ Your analysis should be thorough, data-driven, and honest about what's working a
         structured_data = await self._extract_structured_insights(agent_output)
 
         # Save to database
-        report_data = {
-            "summary": structured_data.get("summary", agent_output[:200]),
-            "findings": structured_data.get("findings", agent_output),
-            "tool_calls": tool_calls
-        }
+        insight_report = InsightReport(
+            summary=structured_data.get("summary", agent_output[:200]),
+            findings=structured_data.get("findings", agent_output),
+            tool_calls=tool_calls,
+            created_by=settings.default_model_name
+        )
 
-        report_id = await self.insights_repo.create(report_data)
+        # Save to database (note: create is synchronous, not async)
+        created_report = self.insights_repo.create(insight_report)
 
-        logger.info("Insight report saved", report_id=report_id)
+        logger.info("Insight report saved", report_id=str(created_report.id))
 
-        return {
-            "id": report_id,
-            **report_data
-        }
+        return created_report.model_dump(mode="json")
 
     async def _extract_structured_insights(self, agent_output: str) -> Dict[str, Any]:
         """Use LLM to extract structured insights from agent output."""
@@ -244,19 +244,18 @@ Ensure:
 
     async def _create_empty_report(self) -> Dict[str, Any]:
         """Create a report when no posts are available."""
-        report_data = {
-            "summary": "No posts available for analysis in the specified time period.",
-            "findings": "Unable to generate insights as no posts have been published recently. "
-                       "Run content creation and publishing workflows first.",
-            "tool_calls": []
-        }
+        insight_report = InsightReport(
+            summary="No posts available for analysis in the specified time period.",
+            findings="Unable to generate insights as no posts have been published recently. "
+                    "Run content creation and publishing workflows first.",
+            tool_calls=[],
+            created_by=settings.default_model_name
+        )
 
-        report_id = await self.insights_repo.create(report_data)
+        # Save to database (note: create is synchronous, not async)
+        created_report = self.insights_repo.create(insight_report)
 
-        return {
-            "id": report_id,
-            **report_data
-        }
+        return created_report.model_dump(mode="json")
 
 
 async def run_insights_analysis(days: int = 14) -> Dict[str, Any]:

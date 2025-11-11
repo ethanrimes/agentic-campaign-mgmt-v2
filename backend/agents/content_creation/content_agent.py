@@ -6,16 +6,17 @@ from pathlib import Path
 from typing import Dict, Any, List
 from langchain.agents import AgentExecutor, create_openai_functions_agent
 from langchain_openai import ChatOpenAI
-from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
 from backend.config.settings import settings
 from backend.config.prompts import get_global_system_prompt
 from backend.tools import create_media_generation_tools
 from backend.database.repositories.content_creation_tasks import ContentTasksRepository
-from backend.database.repositories.completed_posts import CompletedPostsRepository
-from backend.database.repositories.news_event_seeds import NewsEventSeedsRepository
+from backend.database.repositories.completed_posts import CompletedPostRepository
+from backend.database.repositories.news_event_seeds import NewsEventSeedRepository
 from backend.database.repositories.trend_seeds import TrendSeedsRepository
 from backend.database.repositories.ungrounded_seeds import UngroundedSeedsRepository
+from backend.models.posts import CompletedPost
 from backend.utils import get_logger
 
 logger = get_logger(__name__)
@@ -30,8 +31,8 @@ class ContentCreationAgent:
 
     def __init__(self):
         self.tasks_repo = ContentTasksRepository()
-        self.posts_repo = CompletedPostsRepository()
-        self.news_repo = NewsEventSeedsRepository()
+        self.posts_repo = CompletedPostRepository()
+        self.news_repo = NewsEventSeedRepository()
         self.trend_repo = TrendSeedsRepository()
         self.ungrounded_repo = UngroundedSeedsRepository()
 
@@ -235,12 +236,23 @@ For each post, specify:
         saved_posts = []
         for post_data in posts_data:
             try:
-                post_id = await self.posts_repo.create(post_data)
-                saved_posts.append({
-                    "id": post_id,
-                    **post_data
-                })
-                logger.info("Completed post saved", post_id=post_id)
+                # Create CompletedPost model instance
+                completed_post = CompletedPost(
+                    task_id=post_data["task_id"],
+                    content_seed_id=post_data["content_seed_id"],
+                    content_seed_type=post_data["content_seed_type"],
+                    platform=post_data["platform"],
+                    post_type=post_data["post_type"],
+                    text=post_data["text"],
+                    media_urls=post_data.get("media_urls", []),
+                    location=post_data.get("location"),
+                    hashtags=post_data.get("hashtags", [])
+                )
+
+                # Save to database (note: create is synchronous, not async)
+                created_post = self.posts_repo.create(completed_post)
+                saved_posts.append(created_post.model_dump(mode="json"))
+                logger.info("Completed post saved", post_id=str(created_post.id))
             except Exception as e:
                 logger.error("Error saving post", error=str(e))
 

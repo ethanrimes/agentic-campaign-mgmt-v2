@@ -5,10 +5,11 @@
 from datetime import datetime
 from typing import List, Dict, Any, Optional
 from langchain_openai import ChatOpenAI
-from langchain.prompts import ChatPromptTemplate
+from langchain_core.prompts import ChatPromptTemplate
 
 from backend.config.settings import settings
-from backend.database.repositories.news_event_seeds import NewsEventSeedsRepository
+from backend.database.repositories.news_event_seeds import NewsEventSeedRepository
+from backend.models.seeds import NewsEventSeed, Source
 from backend.utils import get_logger
 
 logger = get_logger(__name__)
@@ -23,7 +24,7 @@ class DeduplicatorAgent:
     """
 
     def __init__(self):
-        self.repo = NewsEventSeedsRepository()
+        self.repo = NewsEventSeedRepository()
 
         # Initialize LLM
         self.llm = ChatOpenAI(
@@ -196,23 +197,34 @@ Is this a duplicate? Which event does it match (if any)?""")
         description = ingested.get("description", "")
         name = description.split(".")[0] if "." in description else description[:100]
 
-        canonical_data = {
-            "name": name,
-            "start_time": ingested.get("start_time"),
-            "end_time": ingested.get("end_time"),
-            "location": ingested.get("location"),
-            "description": ingested.get("description"),
-            "sources": ingested.get("sources", [])
-        }
+        # Convert sources to Source objects if they're dictionaries
+        sources = []
+        for src in ingested.get("sources", []):
+            if isinstance(src, dict):
+                sources.append(Source(
+                    url=src["url"],
+                    key_findings=src["key_findings"],
+                    found_by=src.get("found_by", "Unknown")
+                ))
+            else:
+                sources.append(src)
 
-        canonical_id = await self.repo.create(canonical_data)
+        # Create NewsEventSeed model instance
+        canonical_event = NewsEventSeed(
+            name=name,
+            start_time=ingested.get("start_time"),
+            end_time=ingested.get("end_time"),
+            location=ingested.get("location"),
+            description=ingested.get("description"),
+            sources=sources
+        )
 
-        logger.info("Created new canonical event", canonical_id=canonical_id, name=name)
+        # Save to database (note: create is synchronous, not async)
+        created_event = self.repo.create(canonical_event)
 
-        return {
-            "id": canonical_id,
-            **canonical_data
-        }
+        logger.info("Created new canonical event", canonical_id=str(created_event.id), name=name)
+
+        return created_event.model_dump(mode="json")
 
     async def _merge_with_canonical(self, ingested: Dict[str, Any], canonical_id: str):
         """Merge ingested event with existing canonical event."""

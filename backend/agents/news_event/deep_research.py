@@ -8,7 +8,7 @@ from datetime import datetime
 from typing import List, Dict, Any, Optional
 
 from backend.config.settings import settings
-from backend.database.repositories.news_event_seeds import NewsEventSeedsRepository
+from backend.database.repositories.news_event_seeds import NewsEventSeedRepository
 from backend.utils import get_logger
 
 logger = get_logger(__name__)
@@ -30,7 +30,7 @@ class DeepResearchAgent:
         self.api_base = "https://api.openai.com/v1/responses"
         self.research_model = "o4-mini-deep-research"
         self.parser_model = "gpt-4o-mini"  # Use GPT-4o-mini for parsing
-        self.repo = NewsEventSeedsRepository()
+        self.repo = NewsEventSeedRepository()
 
     async def research_and_ingest(
         self,
