@@ -1,0 +1,79 @@
+# render.yaml
+# Render Blueprint for deployment
+
+services:
+  # Python Backend
+  - type: web
+    name: social-media-agent-backend
+    env: python
+    region: oregon
+    plan: starter
+    buildCommand: pip install -r requirements.txt
+    startCommand: python -m backend.cli.main --help
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.10.0
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: ENCRYPTION_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: META_APP_ID
+        sync: false
+      - key: META_APP_SECRET
+        sync: false
+      - key: FACEBOOK_PAGE_ID
+        sync: false
+      - key: INSTAGRAM_BUSINESS_ACCOUNT_ID
+        sync: false
+      - key: FACEBOOK_PAGE_ACCESS_TOKEN
+        sync: false
+      - key: INSTAGRAM_USER_ACCESS_TOKEN
+        sync: false
+      - key: WAVESPEED_API_KEY
+        sync: false
+      - key: RAPIDAPI_KEY
+        sync: false
+      - key: PERPLEXITY_API_KEY
+        sync: false
+
+  # Cron Jobs (scheduled tasks)
+  - type: cron
+    name: news-ingestion
+    env: python
+    schedule: "0 6 * * *"  # Daily at 6 AM
+    buildCommand: pip install -r requirements.txt
+    startCommand: python -m backend.cli.main news-events ingest-perplexity --topic "Philadelphia news"
+
+  - type: cron
+    name: trend-discovery
+    env: python
+    schedule: "0 8 * * *"  # Daily at 8 AM
+    buildCommand: pip install -r requirements.txt
+    startCommand: python -m backend.cli.main trends discover --keyword "UPenn"
+
+  - type: cron
+    name: content-planning
+    env: python
+    schedule: "0 10 * * 1"  # Weekly on Monday at 10 AM
+    buildCommand: pip install -r requirements.txt
+    startCommand: python -m backend.cli.main planner run --max-retries 3
+
+  - type: cron
+    name: content-creation
+    env: python
+    schedule: "0 11 * * *"  # Daily at 11 AM
+    buildCommand: pip install -r requirements.txt
+    startCommand: python -m backend.cli.main content create-all
+
+  - type: cron
+    name: publishing
+    env: python
+    schedule: "0 */6 * * *"  # Every 6 hours
+    buildCommand: pip install -r requirements.txt
+    startCommand: python -m backend.cli.main publish all
