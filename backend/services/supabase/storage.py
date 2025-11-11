@@ -22,9 +22,9 @@ class StorageService:
     BUCKET_NAME = "generated-media"
 
     def __init__(self):
-        self.client = get_supabase_admin_client()
+        pass
 
-    def upload_image(
+    async def upload_image(
         self,
         image_bytes: bytes,
         task_id: str,
@@ -56,15 +56,16 @@ class StorageService:
         logger.info("Uploading image to Supabase", path=storage_path, size=len(image_bytes))
 
         try:
+            client = await get_supabase_admin_client()
             # Upload to storage
-            self.client.storage.from_(self.BUCKET_NAME).upload(
+            client.storage.from_(self.BUCKET_NAME).upload(
                 storage_path,
                 image_bytes,
                 file_options={"content-type": mime_type},
             )
 
             # Get public URL
-            public_url = self.client.storage.from_(self.BUCKET_NAME).get_public_url(storage_path)
+            public_url = client.storage.from_(self.BUCKET_NAME).get_public_url(storage_path)
 
             # Create Image model
             image = Image(
@@ -83,7 +84,7 @@ class StorageService:
             logger.error("Failed to upload image", error=str(e))
             raise
 
-    def upload_video(
+    async def upload_video(
         self,
         video_bytes: bytes,
         task_id: str,
@@ -117,15 +118,16 @@ class StorageService:
         logger.info("Uploading video to Supabase", path=storage_path, size=len(video_bytes))
 
         try:
+            client = await get_supabase_admin_client()
             # Upload to storage
-            self.client.storage.from_(self.BUCKET_NAME).upload(
+            client.storage.from_(self.BUCKET_NAME).upload(
                 storage_path,
                 video_bytes,
                 file_options={"content-type": mime_type},
             )
 
             # Get public URL
-            public_url = self.client.storage.from_(self.BUCKET_NAME).get_public_url(storage_path)
+            public_url = client.storage.from_(self.BUCKET_NAME).get_public_url(storage_path)
 
             # Create Video model
             video = Video(
@@ -145,7 +147,7 @@ class StorageService:
             logger.error("Failed to upload video", error=str(e))
             raise
 
-    def delete_file(self, storage_path: str) -> bool:
+    async def delete_file(self, storage_path: str) -> bool:
         """
         Delete a file from storage.
 
@@ -156,7 +158,8 @@ class StorageService:
             True if successful
         """
         try:
-            self.client.storage.from_(self.BUCKET_NAME).remove([storage_path])
+            client = await get_supabase_admin_client()
+            client.storage.from_(self.BUCKET_NAME).remove([storage_path])
             logger.info("File deleted", path=storage_path)
             return True
         except Exception as e:

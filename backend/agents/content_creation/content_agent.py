@@ -13,7 +13,7 @@ from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from backend.config.settings import settings
 from backend.config.prompts import get_global_system_prompt
 from backend.tools import create_media_generation_tools
-from backend.database.repositories.content_creation_tasks import ContentTasksRepository
+from backend.database.repositories.content_creation_tasks import ContentCreationTaskRepository
 from backend.database.repositories.completed_posts import CompletedPostRepository
 from backend.database.repositories.news_event_seeds import NewsEventSeedRepository
 from backend.database.repositories.trend_seeds import TrendSeedsRepository
@@ -49,7 +49,7 @@ class ContentCreationAgent:
     """
 
     def __init__(self):
-        self.tasks_repo = ContentTasksRepository()
+        self.tasks_repo = ContentCreationTaskRepository()
         self.posts_repo = CompletedPostRepository()
         self.news_repo = NewsEventSeedRepository()
         self.trend_repo = TrendSeedsRepository()

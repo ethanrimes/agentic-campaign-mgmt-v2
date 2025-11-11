@@ -13,7 +13,7 @@ from datetime import datetime
 from backend.models import NewsEventSeed, TrendSeed, UngroundedSeed
 from backend.database.repositories import (
     NewsEventSeedRepository,
-    TrendSeedRepository,
+    TrendSeedsRepository,
     UngroundedSeedRepository,
 )
 
@@ -38,7 +38,7 @@ except Exception as e:
     print(f"  ⚠️  News seed may already exist: {e}")
 
 # Trend Seeds
-trend_repo = TrendSeedRepository()
+trend_repo = TrendSeedsRepository()
 
 trend_seed = TrendSeed(
     name="Penn Campus Winter Aesthetic",

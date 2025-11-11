@@ -10,9 +10,9 @@ from typing import Optional, Type
 from pydantic import BaseModel, Field
 from backend.database.repositories import (
     NewsEventSeedRepository,
-    TrendSeedRepository,
+    TrendSeedsRepository,
     UngroundedSeedRepository,
-    InsightReportRepository,
+    InsightsRepository,
 )
 
 
@@ -64,7 +64,7 @@ class GetRecentSeedsTool(BaseTool):
         if seed_type == "news":
             repo = NewsEventSeedRepository()
         elif seed_type == "trend":
-            repo = TrendSeedRepository()
+            repo = TrendSeedsRepository()
         elif seed_type == "ungrounded":
             repo = UngroundedSeedRepository()
         else:
@@ -99,7 +99,7 @@ class GetLatestInsightsTool(BaseTool):
 
     def _run(self) -> str:
         """Get latest insights."""
-        repo = InsightReportRepository()
+        repo = InsightsRepository()
         report = repo.get_latest()
 
         if not report:

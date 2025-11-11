@@ -13,11 +13,11 @@ class UngroundedSeedRepository(BaseRepository[UngroundedSeed]):
     def __init__(self):
         super().__init__("ungrounded_seeds", UngroundedSeed)
 
-    def get_recent(self, limit: int = 10) -> List[UngroundedSeed]:
+    async def get_recent(self, limit: int = 10) -> List[UngroundedSeed]:
         """Get most recent ungrounded seeds."""
         try:
             result = (
-                self.client.table(self.table_name)
+                await self.client.table(self.table_name)
                 .select("*")
                 .order("created_at", desc=True)
                 .limit(limit)

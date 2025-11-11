@@ -12,7 +12,7 @@ from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
 from backend.config.settings import settings
 from backend.config.prompts import get_global_system_prompt
-from backend.config.guardrails_config import guardrails
+from backend.config.guardrails_config import guardrails_config
 from backend.tools import create_knowledge_base_tools
 from backend.database.repositories.news_event_seeds import NewsEventSeedRepository
 from backend.database.repositories.trend_seeds import TrendSeedsRepository
@@ -135,14 +135,14 @@ class PlannerAgent:
     def _format_prompt_with_guardrails(self) -> str:
         """Fill in guardrail values in prompt template."""
         return self.agent_prompt_template.format(
-            min_posts_per_week=guardrails.min_posts_per_week,
-            max_posts_per_week=guardrails.max_posts_per_week,
-            min_content_seeds_per_week=guardrails.min_content_seeds_per_week,
-            max_content_seeds_per_week=guardrails.max_content_seeds_per_week,
-            min_videos_per_week=guardrails.min_videos_per_week,
-            max_videos_per_week=guardrails.max_videos_per_week,
-            min_images_per_week=guardrails.min_images_per_week,
-            max_images_per_week=guardrails.max_images_per_week
+            min_posts_per_week=guardrails_config.min_posts_per_week,
+            max_posts_per_week=guardrails_config.max_posts_per_week,
+            min_content_seeds_per_week=guardrails_config.min_content_seeds_per_week,
+            max_content_seeds_per_week=guardrails_config.max_content_seeds_per_week,
+            min_videos_per_week=guardrails_config.min_videos_per_week,
+            max_videos_per_week=guardrails_config.max_videos_per_week,
+            min_images_per_week=guardrails_config.min_images_per_week,
+            max_images_per_week=guardrails_config.max_images_per_week
         )
 
     def _format_input(self, context: Dict[str, Any]) -> str:

@@ -18,11 +18,11 @@ class NewsEventSeedRepository(BaseRepository[NewsEventSeed]):
     def __init__(self):
         super().__init__("news_event_seeds", NewsEventSeed)
 
-    def search_by_name(self, query: str, limit: int = 10) -> List[NewsEventSeed]:
+    async def search_by_name(self, query: str, limit: int = 10) -> List[NewsEventSeed]:
         """Search news events by name."""
         try:
             result = (
-                self.client.table(self.table_name)
+                await self.client.table(self.table_name)
                 .select("*")
                 .ilike("name", f"%{query}%")
                 .limit(limit)
@@ -32,11 +32,11 @@ class NewsEventSeedRepository(BaseRepository[NewsEventSeed]):
         except Exception as e:
             return []
 
-    def get_recent(self, limit: int = 10) -> List[NewsEventSeed]:
+    async def get_recent(self, limit: int = 10) -> List[NewsEventSeed]:
         """Get most recent news event seeds."""
         try:
             result = (
-                self.client.table(self.table_name)
+                await self.client.table(self.table_name)
                 .select("*")
                 .order("created_at", desc=True)
                 .limit(limit)
@@ -53,11 +53,11 @@ class IngestedEventRepository(BaseRepository[IngestedEvent]):
     def __init__(self):
         super().__init__("ingested_events", IngestedEvent)
 
-    def get_by_ingested_by(self, ingested_by: str) -> List[IngestedEvent]:
+    async def get_by_ingested_by(self, ingested_by: str) -> List[IngestedEvent]:
         """Get events by the agent that ingested them."""
         try:
             result = (
-                self.client.table(self.table_name)
+                await self.client.table(self.table_name)
                 .select("*")
                 .eq("ingested_by", ingested_by)
                 .order("created_at", desc=True)
@@ -67,7 +67,7 @@ class IngestedEventRepository(BaseRepository[IngestedEvent]):
         except Exception as e:
             return []
 
-    def get_unprocessed(self, limit: Optional[int] = None) -> List[IngestedEvent]:
+    async def get_unprocessed(self, limit: Optional[int] = None) -> List[IngestedEvent]:
         """
         Get all unprocessed ingested events.
 
@@ -88,7 +88,7 @@ class IngestedEventRepository(BaseRepository[IngestedEvent]):
             if limit:
                 query = query.limit(limit)
 
-            result = query.execute()
+            result = await query.execute()
             return [self.model_class(**item) for item in result.data]
         except Exception as e:
             logger.error(
@@ -98,7 +98,7 @@ class IngestedEventRepository(BaseRepository[IngestedEvent]):
             )
             return []
 
-    def mark_as_processed(
+    async def mark_as_processed(
         self,
         event_id: UUID,
         canonical_event_id: UUID
@@ -121,7 +121,7 @@ class IngestedEventRepository(BaseRepository[IngestedEvent]):
             }
 
             result = (
-                self.client.table(self.table_name)
+                await self.client.table(self.table_name)
                 .update(updates)
                 .eq("id", str(event_id))
                 .execute()
