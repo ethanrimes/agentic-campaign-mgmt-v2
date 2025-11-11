@@ -8,8 +8,8 @@ Your task is to search for news events related to the given topic and return the
 2. Focus on events that would be interesting to the target audience
 3. For each event, identify:
    - A concise, descriptive name
-   - Start time and end time (if applicable)
-   - Location (be as specific as possible)
+   - Start time and end time of the event (if applicable)
+   - Location (of the event)
    - A 2-3 sentence description explaining what happened and why it matters
    - Credible sources with URLs
 

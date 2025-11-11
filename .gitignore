@@ -9,6 +9,7 @@ frontend/.env.local
 # docs
 docs
 IMPLEMENTATION_COMPLETE.md
+backend/database/migrations/migrations.md
 
 # Python
 __pycache__/

@@ -50,6 +50,18 @@ class IngestedEvent(BaseModel):
         ...,
         description="Agent that ingested this event (e.g., 'Perplexity Sonar', 'ChatGPT Deep Research')",
     )
+    processed: bool = Field(
+        default=False,
+        description="Whether this event has been processed by the deduplicator",
+    )
+    processed_at: Optional[datetime] = Field(
+        None,
+        description="Timestamp when event was processed by the deduplicator",
+    )
+    canonical_event_id: Optional[UUID] = Field(
+        None,
+        description="ID of the canonical news event seed this was deduplicated into",
+    )
 
     class Config:
         json_schema_extra = {
