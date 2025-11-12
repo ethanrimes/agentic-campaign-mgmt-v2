@@ -21,8 +21,10 @@ class NewsEventSeedRepository(BaseRepository[NewsEventSeed]):
     async def search_by_name(self, query: str, limit: int = 10) -> List[NewsEventSeed]:
         """Search news events by name."""
         try:
+            from backend.database import get_supabase_client
+            client = await get_supabase_client()
             result = (
-                await self.client.table(self.table_name)
+                await client.table(self.table_name)
                 .select("*")
                 .ilike("name", f"%{query}%")
                 .limit(limit)
@@ -30,13 +32,20 @@ class NewsEventSeedRepository(BaseRepository[NewsEventSeed]):
             )
             return [self.model_class(**item) for item in result.data]
         except Exception as e:
+            logger.error(
+                "Failed to search news events by name",
+                query=query,
+                error=str(e),
+            )
             return []
 
     async def get_recent(self, limit: int = 10) -> List[NewsEventSeed]:
         """Get most recent news event seeds."""
         try:
+            from backend.database import get_supabase_client
+            client = await get_supabase_client()
             result = (
-                await self.client.table(self.table_name)
+                await client.table(self.table_name)
                 .select("*")
                 .order("created_at", desc=True)
                 .limit(limit)
@@ -44,6 +53,10 @@ class NewsEventSeedRepository(BaseRepository[NewsEventSeed]):
             )
             return [self.model_class(**item) for item in result.data]
         except Exception as e:
+            logger.error(
+                "Failed to get recent news event seeds",
+                error=str(e),
+            )
             return []
 
 
@@ -56,8 +69,10 @@ class IngestedEventRepository(BaseRepository[IngestedEvent]):
     async def get_by_ingested_by(self, ingested_by: str) -> List[IngestedEvent]:
         """Get events by the agent that ingested them."""
         try:
+            from backend.database import get_supabase_client
+            client = await get_supabase_client()
             result = (
-                await self.client.table(self.table_name)
+                await client.table(self.table_name)
                 .select("*")
                 .eq("ingested_by", ingested_by)
                 .order("created_at", desc=True)
@@ -65,6 +80,11 @@ class IngestedEventRepository(BaseRepository[IngestedEvent]):
             )
             return [self.model_class(**item) for item in result.data]
         except Exception as e:
+            logger.error(
+                "Failed to get events by ingested_by",
+                ingested_by=ingested_by,
+                error=str(e),
+            )
             return []
 
     async def get_unprocessed(self, limit: Optional[int] = None) -> List[IngestedEvent]:
@@ -78,8 +98,10 @@ class IngestedEventRepository(BaseRepository[IngestedEvent]):
             List of unprocessed ingested events, ordered by creation time (oldest first)
         """
         try:
+            from backend.database import get_supabase_client
+            client = await get_supabase_client()
             query = (
-                self.client.table(self.table_name)
+                client.table(self.table_name)
                 .select("*")
                 .eq("processed", False)
                 .order("created_at", desc=False)  # Process oldest first

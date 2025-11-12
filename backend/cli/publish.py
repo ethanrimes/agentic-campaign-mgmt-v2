@@ -4,13 +4,33 @@
 
 import click
 import asyncio
-from typing import Dict, Any
+from typing import List
+from uuid import UUID
 from backend.utils import get_logger
+from backend.models import CompletedPost
 from backend.database.repositories.completed_posts import CompletedPostRepository
+from backend.database.repositories.media import MediaRepository
 from backend.services.meta.facebook_publisher import FacebookPublisher
 from backend.services.meta.instagram_publisher import InstagramPublisher
 
 logger = get_logger(__name__)
+
+
+async def get_media_urls(media_ids: List[UUID]) -> List[str]:
+    """Fetch media URLs from media IDs."""
+    if not media_ids:
+        return []
+
+    media_repo = MediaRepository()
+    urls = []
+    for media_id in media_ids:
+        try:
+            media = await media_repo.get_by_id(media_id)
+            if media and "public_url" in media:
+                urls.append(str(media["public_url"]))
+        except Exception as e:
+            logger.error("Failed to fetch media", media_id=str(media_id), error=str(e))
+    return urls
 
 
 @click.group(name="publish")
@@ -19,12 +39,12 @@ def publish():
     pass
 
 
-async def publish_facebook_post(post: Dict[str, Any], publisher: FacebookPublisher, repo: CompletedPostRepository) -> bool:
+async def publish_facebook_post(post: CompletedPost, publisher: FacebookPublisher, repo: CompletedPostRepository) -> bool:
     """Publish a single Facebook post."""
     try:
-        post_type = post.get("post_type", "")
-        media_urls = post.get("media_urls", [])
-        text = post.get("text", "")
+        post_type = post.post_type
+        media_urls = await get_media_urls(post.media_ids)
+        text = post.text or ""
 
         # Determine publishing method based on post type and media
         if post_type == "facebook_video" or (media_urls and len(media_urls) == 1 and ".mp4" in media_urls[0]):
@@ -38,30 +58,30 @@ async def publish_facebook_post(post: Dict[str, Any], publisher: FacebookPublish
             platform_post_id = await publisher.post_image(media_urls[0], text)
         else:
             # Text/link post
-            platform_post_id = await publisher.post_text(text, post.get("link"))
+            platform_post_id = await publisher.post_text(text, None)
 
         # Mark as published
         await repo.mark_published(
-            post["id"],
+            post.id,
             platform_post_id,
             f"https://www.facebook.com/{platform_post_id}"
         )
 
-        logger.info("Published Facebook post", post_id=post["id"], platform_post_id=platform_post_id)
+        logger.info("Published Facebook post", post_id=str(post.id), platform_post_id=platform_post_id)
         return True
 
     except Exception as e:
-        logger.error("Failed to publish Facebook post", post_id=post["id"], error=str(e))
-        await repo.mark_failed(post["id"], str(e))
+        logger.error("Failed to publish Facebook post", post_id=str(post.id), error=str(e))
+        await repo.mark_failed(post.id, str(e))
         return False
 
 
-async def publish_instagram_post(post: Dict[str, Any], publisher: InstagramPublisher, repo: CompletedPostRepository) -> bool:
+async def publish_instagram_post(post: CompletedPost, publisher: InstagramPublisher, repo: CompletedPostRepository) -> bool:
     """Publish a single Instagram post."""
     try:
-        post_type = post.get("post_type", "")
-        media_urls = post.get("media_urls", [])
-        caption = post.get("text", "")
+        post_type = post.post_type
+        media_urls = await get_media_urls(post.media_ids)
+        caption = post.text or ""
 
         # Determine publishing method based on post type
         if post_type == "instagram_reel" or (media_urls and ".mp4" in media_urls[0]):
@@ -74,23 +94,23 @@ async def publish_instagram_post(post: Dict[str, Any], publisher: InstagramPubli
             # Single image post
             platform_post_id = await publisher.post_image(media_urls[0], caption)
         else:
-            logger.error("Instagram post requires media", post_id=post["id"])
-            await repo.mark_failed(post["id"], "Instagram posts require media")
+            logger.error("Instagram post requires media", post_id=str(post.id))
+            await repo.mark_failed(post.id, "Instagram posts require media")
             return False
 
         # Mark as published
         await repo.mark_published(
-            post["id"],
+            post.id,
             platform_post_id,
             f"https://www.instagram.com/p/{platform_post_id}/"
         )
 
-        logger.info("Published Instagram post", post_id=post["id"], platform_post_id=platform_post_id)
+        logger.info("Published Instagram post", post_id=str(post.id), platform_post_id=platform_post_id)
         return True
 
     except Exception as e:
-        logger.error("Failed to publish Instagram post", post_id=post["id"], error=str(e))
-        await repo.mark_failed(post["id"], str(e))
+        logger.error("Failed to publish Instagram post", post_id=str(post.id), error=str(e))
+        await repo.mark_failed(post.id, str(e))
         return False
 
 

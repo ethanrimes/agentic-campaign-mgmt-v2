@@ -16,8 +16,10 @@ class TrendSeedsRepository(BaseRepository[TrendSeed]):
     async def get_recent(self, limit: int = 10) -> List[TrendSeed]:
         """Get most recent trend seeds."""
         try:
+            from backend.database import get_supabase_client
+            client = await get_supabase_client()
             result = (
-                await self.client.table(self.table_name)
+                await client.table(self.table_name)
                 .select("*")
                 .order("created_at", desc=True)
                 .limit(limit)
@@ -25,4 +27,10 @@ class TrendSeedsRepository(BaseRepository[TrendSeed]):
             )
             return [self.model_class(**item) for item in result.data]
         except Exception as e:
+            from backend.utils import get_logger
+            logger = get_logger(__name__)
+            logger.error(
+                "Failed to get recent trend seeds",
+                error=str(e),
+            )
             return []

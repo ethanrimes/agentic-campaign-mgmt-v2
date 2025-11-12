@@ -19,8 +19,10 @@ class CompletedPostRepository(BaseRepository[CompletedPost]):
     ) -> List[CompletedPost]:
         """Get pending posts for a specific platform."""
         try:
+            from backend.database import get_supabase_client
+            client = await get_supabase_client()
             result = (
-                await self.client.table(self.table_name)
+                await client.table(self.table_name)
                 .select("*")
                 .eq("platform", platform)
                 .eq("status", "pending")
@@ -30,19 +32,35 @@ class CompletedPostRepository(BaseRepository[CompletedPost]):
             )
             return [self.model_class(**item) for item in result.data]
         except Exception as e:
+            from backend.utils import get_logger
+            logger = get_logger(__name__)
+            logger.error(
+                "Failed to get pending posts for platform",
+                platform=platform,
+                error=str(e),
+            )
             return []
 
     async def get_by_task_id(self, task_id: UUID) -> List[CompletedPost]:
         """Get all posts for a specific task."""
         try:
+            from backend.database import get_supabase_client
+            client = await get_supabase_client()
             result = (
-                await self.client.table(self.table_name)
+                await client.table(self.table_name)
                 .select("*")
                 .eq("task_id", str(task_id))
                 .execute()
             )
             return [self.model_class(**item) for item in result.data]
         except Exception as e:
+            from backend.utils import get_logger
+            logger = get_logger(__name__)
+            logger.error(
+                "Failed to get posts by task ID",
+                task_id=str(task_id),
+                error=str(e),
+            )
             return []
 
     async def mark_published(
@@ -68,8 +86,10 @@ class CompletedPostRepository(BaseRepository[CompletedPost]):
     ) -> List[CompletedPost]:
         """Get recent posts for a platform (for UI)."""
         try:
+            from backend.database import get_supabase_client
+            client = await get_supabase_client()
             result = (
-                await self.client.table(self.table_name)
+                await client.table(self.table_name)
                 .select("*")
                 .eq("platform", platform)
                 .order("created_at", desc=True)
@@ -78,4 +98,11 @@ class CompletedPostRepository(BaseRepository[CompletedPost]):
             )
             return [self.model_class(**item) for item in result.data]
         except Exception as e:
+            from backend.utils import get_logger
+            logger = get_logger(__name__)
+            logger.error(
+                "Failed to get recent posts for platform",
+                platform=platform,
+                error=str(e),
+            )
             return []
