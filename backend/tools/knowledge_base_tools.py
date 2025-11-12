@@ -29,10 +29,10 @@ class SearchNewsEventsTool(BaseTool):
     description: str = "Search for news event seeds by name/description"
     args_schema: Type[BaseModel] = SearchNewsEventsInput
 
-    def _run(self, query: str, limit: int = 5) -> str:
-        """Sync version - not used with async agents."""
+    def _run(self) -> str:
+        """Raise error, as this is an async-only tool."""
         raise NotImplementedError("Use async version (_arun) instead")
-
+    
     async def _arun(self, query: str, limit: int = 5) -> str:
         """Search news events."""
         repo = NewsEventSeedRepository()
@@ -60,11 +60,11 @@ class GetRecentSeedsTool(BaseTool):
     """Tool to get recent content seeds."""
 
     name: str = "get_recent_seeds"
-    description: str = "Get recent content seeds of a specific type"
+    description: str = "Get recent content seeds of a specific type (news, trend, or ungrounded). Only use this when you need to see what content already exists to avoid duplication."
     args_schema: Type[BaseModel] = GetRecentSeedsInput
 
-    def _run(self, seed_type: str, limit: int = 10) -> str:
-        """Sync version - not used with async agents."""
+    def _run(self) -> str:
+        """Raise error, as this is an async-only tool."""
         raise NotImplementedError("Use async version (_arun) instead")
 
     async def _arun(self, seed_type: str, limit: int = 10) -> str:
@@ -102,11 +102,11 @@ class GetLatestInsightsTool(BaseTool):
     """Tool to get the latest insights report."""
 
     name: str = "get_latest_insights"
-    description: str = "Get the most recent insights report about content performance"
+    description: str = "Get the most recent insights report about content performance. Use this to understand what content works well with the audience."
     args_schema: Type[BaseModel] = GetLatestInsightsInput
 
     def _run(self) -> str:
-        """Sync version - not used with async agents."""
+        """Raise error, as this is an async-only tool."""
         raise NotImplementedError("Use async version (_arun) instead")
 
     async def _arun(self) -> str:

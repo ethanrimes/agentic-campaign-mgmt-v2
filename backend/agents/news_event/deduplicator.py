@@ -52,7 +52,7 @@ Consider:
 Return your analysis as JSON:
 {{
   "is_duplicate": true/false,
-  "matching_event_id": "uuid or null",
+  "matching_event_id": "uuid of matching event if match or null",
   "confidence": "high/medium/low",
   "reasoning": "explanation of your decision"
 }}"""),
@@ -78,14 +78,14 @@ Is this a duplicate? Which event does it match (if any)?""")
         logger.info("Starting deduplication process")
 
         # Get all ingested events that haven't been processed
-        ingested_events = self.ingested_repo.get_unprocessed()
+        ingested_events = await self.ingested_repo.get_unprocessed()
 
         if not ingested_events:
             logger.info("No ingested events to process")
             return {"processed": 0, "merged": 0, "new": 0}
 
         # Get all existing canonical events
-        canonical_events = self.canonical_repo.get_all()
+        canonical_events = await self.canonical_repo.get_all()
 
         stats = {
             "processed": 0,
@@ -129,7 +129,7 @@ Is this a duplicate? Which event does it match (if any)?""")
         if not canonical_events:
             canonical = await self._create_canonical_event(ingested)
             # Mark ingested event as processed
-            self.ingested_repo.mark_as_processed(ingested.id, canonical["id"])
+            await self.ingested_repo.mark_as_processed(ingested.id, UUID(canonical["id"]))
             return {"action": "new", "canonical_event": canonical}
 
         # Check for duplicates using LLM
@@ -137,16 +137,40 @@ Is this a duplicate? Which event does it match (if any)?""")
 
         if duplicate_result["is_duplicate"]:
             # Merge with existing event
-            canonical_id = duplicate_result["matching_event_id"]
-            await self._merge_with_canonical(ingested, canonical_id)
+            canonical_id_str = duplicate_result["matching_event_id"]
+
+            # Validate and clean UUID string
+            if not canonical_id_str:
+                logger.warning("LLM returned is_duplicate=True but no matching_event_id, creating new event")
+                canonical = await self._create_canonical_event(ingested)
+                await self.ingested_repo.mark_as_processed(ingested.id, UUID(canonical["id"]))
+                return {"action": "new", "canonical_event": canonical}
+
+            # Clean up UUID string (strip whitespace, remove quotes)
+            canonical_id_str = str(canonical_id_str).strip().strip('"').strip("'")
+
+            # Validate it's a proper UUID
+            try:
+                canonical_id = UUID(canonical_id_str)
+            except (ValueError, AttributeError) as e:
+                logger.warning(
+                    "Invalid UUID from LLM, creating new event",
+                    raw_id=canonical_id_str,
+                    error=str(e)
+                )
+                canonical = await self._create_canonical_event(ingested)
+                await self.ingested_repo.mark_as_processed(ingested.id, UUID(canonical["id"]))
+                return {"action": "new", "canonical_event": canonical}
+
+            await self._merge_with_canonical(ingested, str(canonical_id))
             # Mark ingested event as processed
-            self.ingested_repo.mark_as_processed(ingested.id, canonical_id)
-            return {"action": "merged", "canonical_id": canonical_id}
+            await self.ingested_repo.mark_as_processed(ingested.id, canonical_id)
+            return {"action": "merged", "canonical_id": str(canonical_id)}
         else:
             # Create new canonical event
             canonical = await self._create_canonical_event(ingested)
             # Mark ingested event as processed
-            self.ingested_repo.mark_as_processed(ingested.id, canonical["id"])
+            await self.ingested_repo.mark_as_processed(ingested.id, UUID(canonical["id"]))
             return {"action": "new", "canonical_event": canonical}
 
     async def _find_duplicate(
@@ -178,12 +202,18 @@ Is this a duplicate? Which event does it match (if any)?""")
         chain = self.dedup_prompt | self.llm
         response = await chain.ainvoke(prompt_vars)
 
-        # Parse JSON response
+        # Parse JSON response (handle markdown-wrapped JSON)
         import json
+        import re
         try:
-            result = json.loads(response.content)
-        except json.JSONDecodeError:
-            logger.warning("Failed to parse LLM response, assuming not duplicate")
+            content = response.content
+            # Strip markdown code fences if present
+            json_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', content, re.DOTALL)
+            if json_match:
+                content = json_match.group(1)
+            result = json.loads(content)
+        except (json.JSONDecodeError, AttributeError) as e:
+            logger.warning("Failed to parse LLM response, assuming not duplicate", error=str(e), content=response.content[:200])
             result = {
                 "is_duplicate": False,
                 "matching_event_id": None,
@@ -215,8 +245,8 @@ Is this a duplicate? Which event does it match (if any)?""")
             sources=ingested.sources
         )
 
-        # Save to database (note: create is synchronous, not async)
-        created_event = self.canonical_repo.create(canonical_event)
+        # Save to database
+        created_event = await self.canonical_repo.create(canonical_event)
 
         logger.info("Created new canonical event", canonical_id=str(created_event.id), name=name)
 
@@ -225,7 +255,7 @@ Is this a duplicate? Which event does it match (if any)?""")
     async def _merge_with_canonical(self, ingested: IngestedEvent, canonical_id: str):
         """Merge ingested event with existing canonical event."""
         # Get existing canonical event
-        canonical = self.canonical_repo.get_by_id(UUID(canonical_id))
+        canonical = await self.canonical_repo.get_by_id(UUID(canonical_id))
         if not canonical:
             raise Exception(f"Canonical event {canonical_id} not found")
 
@@ -254,7 +284,7 @@ Is this a duplicate? Which event does it match (if any)?""")
             "sources": sources_dict
         }
 
-        self.canonical_repo.update(UUID(canonical_id), updates)
+        await self.canonical_repo.update(UUID(canonical_id), updates)
 
         logger.info(
             "Merged ingested event with canonical",

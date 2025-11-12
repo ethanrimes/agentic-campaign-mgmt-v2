@@ -170,8 +170,8 @@ Provide your final analysis as a structured trend insight."""
                     created_by=settings.default_model_name
                 )
 
-                # Save to database (note: create is synchronous, not async)
-                created_trend = self.repo.create(trend_seed)
+                # Save to database
+                created_trend = await self.repo.create(trend_seed)
                 logger.info("Trend seed saved", trend_id=str(created_trend.id), name=created_trend.name)
                 trends.append(created_trend.model_dump(mode="json"))
 

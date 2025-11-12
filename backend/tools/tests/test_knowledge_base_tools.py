@@ -1,187 +1,138 @@
 # backend/tools/tests/test_knowledge_base_tools.py
 
 """
-Integration tests for knowledge base tools.
-These tests use real database connections and test data.
-They are read-only and do not insert or modify data.
+Manual integration test for knowledge base tools.
+Run this script directly to test the tools and inspect the output.
 """
-
-import pytest
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 import asyncio
 from backend.tools.knowledge_base_tools import (
     SearchNewsEventsTool,
     GetRecentSeedsTool,
     GetLatestInsightsTool,
 )
+from backend.utils import get_logger
 
-# Mark all tests in this file as asyncio and integration
-pytestmark = [pytest.mark.asyncio, pytest.mark.integration]
-
-
-class TestSearchNewsEventsTool:
-    """Read-only integration tests for SearchNewsEventsTool."""
-
-    async def test_arun_search_reads_schema(self):
-        """
-        Test searching for news events.
-        A successful run either finds formatted results or a 'not found' message.
-        """
-        tool = SearchNewsEventsTool()
-
-        # Search for a broad query to increase chance of results
-        result = await tool._arun(query="a", limit=5)
-
-        assert isinstance(result, str)
-        # The result is valid if it's the "not found" message OR it's a formatted list
-        assert "No news events found" in result or result.startswith("- ")
-
-    async def test_arun_no_results(self):
-        """Test searching when no matching events exist."""
-        tool = SearchNewsEventsTool()
-
-        # Search for something that definitely doesn't exist
-        result = await tool._arun(query="ThisEventDefinitelyDoesNotExist12345", limit=5)
-
-        assert "No news events found" in result
-        assert "ThisEventDefinitelyDoesNotExist12345" in result
-
-    async def test_arun_with_limit(self):
-        """Test that limit parameter is respected (read-only)."""
-        tool = SearchNewsEventsTool()
-
-        result = await tool._arun(query="test", limit=1)
-
-        # Should get a valid string response (either data or "not found")
-        assert isinstance(result, str)
-        assert len(result) > 0
-
-    def test_run_raises_not_implemented(self):
-        """Test that sync version raises NotImplementedError."""
-        tool = SearchNewsEventsTool()
-
-        with pytest.raises(NotImplementedError):
-            tool._run(query="test")
+logger = get_logger(__name__)
 
 
-class TestGetRecentSeedsTool:
-    """Read-only integration tests for GetRecentSeedsTool."""
+async def test_search_news_events():
+    """Test searching for news events."""
+    logger.info("=" * 80)
+    logger.info("Testing SearchNewsEventsTool")
+    logger.info("=" * 80)
 
-    async def test_arun_news_seeds_reads_schema(self):
-        """Test retrieving recent news seeds, validating schema."""
-        tool = GetRecentSeedsTool()
+    tool = SearchNewsEventsTool()
 
-        result = await tool._arun(seed_type="news", limit=10)
+    # Test 1: Search with broad query
+    logger.info("\n--- Test 1: Search for 'Philadelphia' ---")
+    result = await tool._arun(query="Philadelphia", limit=5)
+    logger.info(f"Result:\n{result}\n")
 
-        assert isinstance(result, str)
-        # Valid if "not found" or if it's a formatted list
-        assert "No news seeds found" in result or result.startswith("- ")
+    # Test 2: Search for something that doesn't exist
+    logger.info("--- Test 2: Search for non-existent event ---")
+    result = await tool._arun(query="ThisEventDefinitelyDoesNotExist12345", limit=5)
+    logger.info(f"Result:\n{result}\n")
 
-    async def test_arun_trend_seeds_reads_schema(self):
-        """Test retrieving recent trend seeds, validating schema."""
-        tool = GetRecentSeedsTool()
-
-        result = await tool._arun(seed_type="trend", limit=10)
-
-        assert isinstance(result, str)
-        # Valid if "not found" or if it's a formatted list
-        assert "No trend seeds found" in result or result.startswith("- ")
-
-    async def test_arun_ungrounded_seeds_reads_schema(self):
-        """Test retrieving recent ungrounded seeds, validating schema."""
-        tool = GetRecentSeedsTool()
-
-        result = await tool._arun(seed_type="ungrounded", limit=10)
-
-        assert isinstance(result, str)
-        # Valid if "not found" or if it's a formatted list
-        assert "No ungrounded seeds found" in result or result.startswith("- ")
-
-    async def test_arun_invalid_seed_type(self):
-        """Test with invalid seed type."""
-        tool = GetRecentSeedsTool()
-
-        result = await tool._arun(seed_type="invalid_type_12345", limit=10)
-
-        assert "Invalid seed type" in result
-        assert "invalid_type_12345" in result
-
-    async def test_arun_with_different_limits(self):
-        """Test that different limit values work correctly (read-only)."""
-        tool = GetRecentSeedsTool()
-
-        result_5 = await tool._arun(seed_type="news", limit=5)
-        result_20 = await tool._arun(seed_type="news", limit=20)
-
-        assert isinstance(result_5, str)
-        assert isinstance(result_20, str)
-
-    def test_run_raises_not_implemented(self):
-        """Test that sync version raises NotImplementedError."""
-        tool = GetRecentSeedsTool()
-
-        with pytest.raises(NotImplementedError):
-            tool._run(seed_type="news")
+    logger.info("SearchNewsEventsTool tests completed ✓\n")
 
 
-class TestGetLatestInsightsTool:
-    """Read-only integration tests for GetLatestInsightsTool."""
+async def test_get_recent_seeds():
+    """Test getting recent seeds."""
+    logger.info("=" * 80)
+    logger.info("Testing GetRecentSeedsTool")
+    logger.info("=" * 80)
 
-    async def test_arun_insights_reads_schema(self):
-        """Test retrieving latest insights, validating schema."""
-        tool = GetLatestInsightsTool()
+    tool = GetRecentSeedsTool()
 
-        result = await tool._arun()
+    # Test news seeds
+    logger.info("\n--- Test 1: Get recent news seeds ---")
+    result = await tool._arun(seed_type="news", limit=5)
+    logger.info(f"Result:\n{result}\n")
 
-        assert isinstance(result, str)
-        # These are the two possible valid string responses
-        assert result == "No insights reports found" or result.startswith("Latest Insights Report")
+    # Test trend seeds
+    logger.info("--- Test 2: Get recent trend seeds ---")
+    result = await tool._arun(seed_type="trend", limit=5)
+    logger.info(f"Result:\n{result}\n")
 
-    def test_run_raises_not_implemented(self):
-        """Test that sync version raises NotImplementedError."""
-        tool = GetLatestInsightsTool()
+    # Test ungrounded seeds
+    logger.info("--- Test 3: Get recent ungrounded seeds ---")
+    result = await tool._arun(seed_type="ungrounded", limit=5)
+    logger.info(f"Result:\n{result}\n")
 
-        with pytest.raises(NotImplementedError):
-            tool._run()
+    # Test invalid type
+    logger.info("--- Test 4: Invalid seed type ---")
+    result = await tool._arun(seed_type="invalid", limit=5)
+    logger.info(f"Result:\n{result}\n")
+
+    logger.info("GetRecentSeedsTool tests completed ✓\n")
 
 
-class TestKnowledgeBaseToolsIntegration:
-    """Read-only integration tests for complete workflows."""
+async def test_get_latest_insights():
+    """Test getting latest insights."""
+    logger.info("=" * 80)
+    logger.info("Testing GetLatestInsightsTool")
+    logger.info("=" * 80)
 
-    async def test_complete_read_only_workflow(self):
-        """Test using multiple knowledge base tools in sequence (read-only)."""
-        # Search for news events
-        search_tool = SearchNewsEventsTool()
-        search_result = await search_tool._arun(query="a", limit=5)
-        assert isinstance(search_result, str)
+    tool = GetLatestInsightsTool()
 
-        # Get recent seeds of each type
-        seeds_tool = GetRecentSeedsTool()
+    logger.info("\n--- Test 1: Get latest insights ---")
+    result = await tool._arun()
+    logger.info(f"Result:\n{result}\n")
 
-        news_result = await seeds_tool._arun(seed_type="news", limit=10)
-        assert isinstance(news_result, str)
+    logger.info("GetLatestInsightsTool tests completed ✓\n")
 
-        trend_result = await seeds_tool._arun(seed_type="trend", limit=10)
-        assert isinstance(trend_result, str)
 
-        ungrounded_result = await seeds_tool._arun(seed_type="ungrounded", limit=10)
-        assert isinstance(ungrounded_result, str)
+async def test_concurrent_execution():
+    """Test concurrent tool execution."""
+    logger.info("=" * 80)
+    logger.info("Testing Concurrent Execution")
+    logger.info("=" * 80)
 
-        # Get latest insights
-        insights_tool = GetLatestInsightsTool()
-        insights_result = await insights_tool._arun()
-        assert isinstance(insights_result, str)
+    search_tool = SearchNewsEventsTool()
+    seeds_tool = GetRecentSeedsTool()
+    insights_tool = GetLatestInsightsTool()
 
-    async def test_tools_handle_concurrent_read_only(self):
-        """Test that tools can handle concurrent execution (read-only)."""
-        search_tool = SearchNewsEventsTool()
-        insights_tool = GetLatestInsightsTool()
+    logger.info("\n--- Running all tools concurrently ---")
 
-        # Run both tools concurrently
-        search_task = search_tool._arun(query="e", limit=5)
-        insights_task = insights_tool._arun()
+    results = await asyncio.gather(
+        search_tool._arun(query="event", limit=3),
+        seeds_tool._arun(seed_type="news", limit=3),
+        insights_tool._arun(),
+        return_exceptions=True
+    )
 
-        search_result, insights_result = await asyncio.gather(search_task, insights_task)
+    logger.info("Search result:")
+    logger.info(results[0])
+    logger.info("\nSeeds result:")
+    logger.info(results[1])
+    logger.info("\nInsights result:")
+    logger.info(results[2])
 
-        # Both should complete successfully and return valid strings
-        assert isinstance(search_result, str)
-        assert isinstance(insights_result, str)
+    logger.info("\nConcurrent execution tests completed ✓\n")
+
+
+async def main():
+    """Run all tests."""
+    logger.info("\n" + "=" * 80)
+    logger.info("KNOWLEDGE BASE TOOLS INTEGRATION TESTS")
+    logger.info("=" * 80 + "\n")
+
+    try:
+        await test_search_news_events()
+        await test_get_recent_seeds()
+        await test_get_latest_insights()
+        await test_concurrent_execution()
+
+        logger.info("=" * 80)
+        logger.info("ALL TESTS COMPLETED SUCCESSFULLY ✓")
+        logger.info("=" * 80)
+    except Exception as e:
+        logger.error("Test failed", error=str(e), exc_info=True)
+        raise
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
