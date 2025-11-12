@@ -5,9 +5,9 @@ Media entities for generated images and videos.
 Stored in Supabase storage bucket.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, Literal
-from pydantic import BaseModel, Field, HttpUrl
+from pydantic import BaseModel, Field, HttpUrl, ConfigDict
 from uuid import UUID, uuid4
 from enum import Enum
 
@@ -43,12 +43,12 @@ class Image(BaseModel):
     file_size: Optional[int] = Field(None, description="File size in bytes")
     mime_type: str = Field(default="image/png", description="MIME type")
     created_at: datetime = Field(
-        default_factory=datetime.utcnow,
+        default_factory=lambda: datetime.now(timezone.utc),
         description="Timestamp when image was generated",
     )
 
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "id": "f6a7b8c9-d0e1-9f0a-3b4c-5d6e7f8a9b0c",
                 "storage_path": "task_abc123/images/20250118_143022_a1b2c3d4.png",
@@ -62,6 +62,7 @@ class Image(BaseModel):
                 "created_at": "2025-01-18T14:30:22Z",
             }
         }
+    )
 
 
 class Video(BaseModel):
@@ -92,12 +93,12 @@ class Video(BaseModel):
     file_size: Optional[int] = Field(None, description="File size in bytes")
     mime_type: str = Field(default="video/mp4", description="MIME type")
     created_at: datetime = Field(
-        default_factory=datetime.utcnow,
+        default_factory=lambda: datetime.now(timezone.utc),
         description="Timestamp when video was generated",
     )
 
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "id": "a7b8c9d0-e1f2-0a1b-4c5d-6e7f8a9b0c1d",
                 "storage_path": "task_abc123/videos/20250118_144530_e5f6g7h8.mp4",
@@ -113,3 +114,4 @@ class Video(BaseModel):
                 "created_at": "2025-01-18T14:45:30Z",
             }
         }
+    )

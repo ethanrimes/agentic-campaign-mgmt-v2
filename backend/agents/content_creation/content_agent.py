@@ -4,6 +4,7 @@
 
 from pathlib import Path
 from typing import Dict, Any, List, Literal, Optional
+from uuid import UUID
 from pydantic import BaseModel, Field
 from langchain.agents import create_agent
 from langchain.agents.structured_output import ToolStrategy
@@ -32,7 +33,10 @@ class PostOutput(BaseModel):
         description="Type of post (must match platform)"
     )
     text: str = Field(..., description="The full caption/text for the post")
-    media_urls: List[str] = Field(default_factory=list, description="List of generated media URLs")
+    media_ids: List[str] = Field(
+        default_factory=list,
+        description="List of Media IDs (UUIDs) from the media generation tools. Extract 'Media ID' values from tool responses, NOT URLs."
+    )
     location: Optional[str] = Field(None, description="Optional location tag")
     hashtags: List[str] = Field(default_factory=list, description="List of hashtags (without # symbol)")
 
@@ -123,6 +127,9 @@ class ContentCreationAgent:
             for post_data in structured_output.posts:
                 try:
                     # Create CompletedPost model instance
+                    # Convert media_ids from strings to UUIDs
+                    media_uuids = [UUID(media_id) for media_id in post_data.media_ids] if post_data.media_ids else []
+
                     completed_post = CompletedPost(
                         task_id=task.id,
                         content_seed_id=task.content_seed_id,
@@ -130,13 +137,13 @@ class ContentCreationAgent:
                         platform=post_data.platform,
                         post_type=post_data.post_type,
                         text=post_data.text,
-                        media_urls=post_data.media_urls if post_data.media_urls else [],
+                        media_ids=media_uuids,
                         location=post_data.location,
                         hashtags=post_data.hashtags
                     )
 
-                    # Save to database (note: create is synchronous, not async)
-                    created_post = self.posts_repo.create(completed_post)
+                    # Save to database
+                    created_post = await self.posts_repo.create(completed_post)
                     posts.append(created_post.model_dump(mode="json"))
                     logger.info("Completed post saved", post_id=str(created_post.id))
                 except Exception as e:
