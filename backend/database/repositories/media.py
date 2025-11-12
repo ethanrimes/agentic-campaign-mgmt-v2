@@ -4,6 +4,8 @@
 
 from typing import List, Literal
 from backend.models import Image, Video
+from backend.database import get_supabase_client
+from backend.utils import DatabaseError
 from .base import BaseRepository
 
 
@@ -17,25 +19,27 @@ class MediaRepository(BaseRepository):
     async def create_image(self, image: Image) -> Image:
         """Create image record."""
         try:
+            client = await get_supabase_client()
             data = image.model_dump(mode="json", exclude_unset=True)
             data["media_type"] = "image"
-            result = await self.client.table(self.table_name).insert(data).execute()
+            result = await client.table(self.table_name).insert(data).execute()
             if result.data:
                 return Image(**result.data[0])
+            raise DatabaseError("No data returned from create_image")
         except Exception as e:
-            from backend.utils import DatabaseError
             raise DatabaseError(f"Failed to create image: {e}")
 
     async def create_video(self, video: Video) -> Video:
         """Create video record."""
         try:
+            client = await get_supabase_client()
             data = video.model_dump(mode="json", exclude_unset=True)
             data["media_type"] = "video"
-            result = await self.client.table(self.table_name).insert(data).execute()
+            result = await client.table(self.table_name).insert(data).execute()
             if result.data:
                 return Video(**result.data[0])
+            raise DatabaseError("No data returned from create_video")
         except Exception as e:
-            from backend.utils import DatabaseError
             raise DatabaseError(f"Failed to create video: {e}")
 
     async def get_recent_media(
@@ -43,7 +47,8 @@ class MediaRepository(BaseRepository):
     ) -> List:
         """Get recent media."""
         try:
-            query = self.client.table(self.table_name).select("*")
+            client = await get_supabase_client()
+            query = client.table(self.table_name).select("*")
             if media_type:
                 query = query.eq("media_type", media_type)
             result = await query.order("created_at", desc=True).limit(limit).execute()

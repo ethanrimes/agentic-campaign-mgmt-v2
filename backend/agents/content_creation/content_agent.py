@@ -97,8 +97,8 @@ class ContentCreationAgent:
 
             # Get content seed
             seed = await self._get_content_seed(
-                task["content_seed_id"],
-                task["content_seed_type"]
+                str(task.content_seed_id),
+                task.content_seed_type
             )
 
             # Build task context
@@ -124,9 +124,9 @@ class ContentCreationAgent:
                 try:
                     # Create CompletedPost model instance
                     completed_post = CompletedPost(
-                        task_id=task["id"],
-                        content_seed_id=task["content_seed_id"],
-                        content_seed_type=task["content_seed_type"],
+                        task_id=task.id,
+                        content_seed_id=task.content_seed_id,
+                        content_seed_type=task.content_seed_type,
                         platform=post_data.platform,
                         post_type=post_data.post_type,
                         text=post_data.text,
@@ -163,7 +163,7 @@ class ContentCreationAgent:
         self,
         seed_id: str,
         seed_type: str
-    ) -> Dict[str, Any]:
+    ):
         """Fetch content seed based on type."""
         if seed_type == "news_event":
             return await self.news_repo.get_by_id(seed_id)
@@ -176,59 +176,60 @@ class ContentCreationAgent:
 
     def _format_task_context(
         self,
-        task: Dict[str, Any],
-        seed: Dict[str, Any]
+        task,  # ContentCreationTask model
+        seed  # Pydantic model (NewsEventSeed, TrendSeed, or UngroundedSeed)
     ) -> str:
         """Format task and seed information for the agent."""
         context = f"""Create social media content for the following task:
 
 ** Content Seed **
-Type: {task['content_seed_type']}
+Type: {task.content_seed_type}
 """
 
         # Add seed-specific information
-        if task['content_seed_type'] == "news_event":
-            context += f"""Name: {seed.get('name', 'Unnamed')}
-Location: {seed.get('location', 'Unknown')}
-Time: {seed.get('start_time')} to {seed.get('end_time', 'ongoing')}
-Description: {seed.get('description', '')}
+        if task.content_seed_type == "news_event":
+            context += f"""Name: {seed.name if hasattr(seed, 'name') else 'Unnamed'}
+Location: {seed.location if hasattr(seed, 'location') else 'Unknown'}
+Time: {seed.start_time} to {seed.end_time if hasattr(seed, 'end_time') and seed.end_time else 'ongoing'}
+Description: {seed.description if hasattr(seed, 'description') else ''}
 
 Sources:
 """
-            for i, src in enumerate(seed.get('sources', []), 1):
-                context += f"{i}. {src.get('url', 'No URL')}\n"
-                context += f"   Key Findings: {src.get('key_findings', 'N/A')}\n"
+            if hasattr(seed, 'sources') and seed.sources:
+                for i, src in enumerate(seed.sources, 1):
+                    context += f"{i}. {src.url if hasattr(src, 'url') else 'No URL'}\n"
+                    context += f"   Key Findings: {src.key_findings if hasattr(src, 'key_findings') else 'N/A'}\n"
 
-        elif task['content_seed_type'] == "trend":
-            context += f"""Name: {seed.get('name', 'Unnamed')}
-Description: {seed.get('description', '')}
-Hashtags: {', '.join(seed.get('hashtags', []))}
+        elif task.content_seed_type == "trend":
+            context += f"""Name: {seed.name if hasattr(seed, 'name') else 'Unnamed'}
+Description: {seed.description if hasattr(seed, 'description') else ''}
+Hashtags: {', '.join(seed.hashtags) if hasattr(seed, 'hashtags') and seed.hashtags else 'None'}
 """
-            if seed.get('posts'):
+            if hasattr(seed, 'posts') and seed.posts:
                 context += f"\nExample Posts:\n"
-                for post in seed['posts'][:5]:
-                    context += f"- {post.get('link', 'No link')}\n"
+                for post in seed.posts[:5]:
+                    context += f"- {post.link if hasattr(post, 'link') else 'No link'}\n"
 
-        elif task['content_seed_type'] == "ungrounded":
-            context += f"""Idea: {seed.get('idea', '')}
-Format: {seed.get('format', 'Unknown')}
-Details: {seed.get('details', '')}
+        elif task.content_seed_type == "ungrounded":
+            context += f"""Idea: {seed.idea if hasattr(seed, 'idea') else ''}
+Format: {seed.format if hasattr(seed, 'format') else 'Unknown'}
+Details: {seed.details if hasattr(seed, 'details') else ''}
 """
 
         # Add allocations
         context += f"""\n
 ** Required Posts **
 Instagram:
-- Image/Carousel Posts: {task['instagram_image_posts']}
-- Reel Posts: {task['instagram_reel_posts']}
+- Image/Carousel Posts: {task.instagram_image_posts}
+- Reel Posts: {task.instagram_reel_posts}
 
 Facebook:
-- Feed Posts: {task['facebook_feed_posts']}
-- Video Posts: {task['facebook_video_posts']}
+- Feed Posts: {task.facebook_feed_posts}
+- Video Posts: {task.facebook_video_posts}
 
 ** Media Budgets **
-- Maximum Images: {task['image_budget']}
-- Maximum Videos: {task['video_budget']}
+- Maximum Images: {task.image_budget}
+- Maximum Videos: {task.video_budget}
 
 ** Instructions **
 Create ALL required posts with engaging captions, relevant hashtags, and appropriate media.

@@ -4,7 +4,7 @@
 Supabase storage operations for generated media.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import uuid4
 from pathlib import Path
 from backend.database import get_supabase_admin_client
@@ -46,7 +46,7 @@ class StorageService:
             Image model with public URL
         """
         # Generate unique filename
-        timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
         file_id = uuid4().hex[:8]
         filename = f"{timestamp}_{file_id}.png"
 
@@ -108,7 +108,7 @@ class StorageService:
             Video model with public URL
         """
         # Generate unique filename
-        timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
         file_id = uuid4().hex[:8]
         filename = f"{timestamp}_{file_id}.mp4"
 
@@ -146,6 +146,62 @@ class StorageService:
         except Exception as e:
             logger.error("Failed to upload video", error=str(e))
             raise
+
+    async def upload_media(
+        self,
+        storage_path: str,
+        media_bytes: bytes,
+        content_type: str,
+    ) -> str:
+        """
+        Generic method to upload media to Supabase storage.
+
+        This is a lower-level method for tools that don't have a task_id context.
+        For task-specific uploads, use upload_image() or upload_video().
+
+        Args:
+            storage_path: Full path in storage bucket (e.g., "ai-generated/images/file.png")
+            media_bytes: Media data
+            content_type: MIME type (e.g., "image/png", "video/mp4")
+
+        Returns:
+            Public URL of uploaded media
+        """
+        logger.info("Uploading media to Supabase", path=storage_path, size=len(media_bytes))
+
+        try:
+            client = await get_supabase_admin_client()
+
+            # Upload to storage
+            await client.storage.from_(self.BUCKET_NAME).upload(
+                storage_path,
+                media_bytes,
+                file_options={"content-type": content_type},
+            )
+
+            # Get public URL (async method)
+            public_url = await client.storage.from_(self.BUCKET_NAME).get_public_url(storage_path)
+
+            logger.info("Media uploaded successfully", url=public_url)
+            return public_url
+
+        except Exception as e:
+            logger.error("Failed to upload media", error=str(e))
+            raise
+
+    async def delete_media(self, storage_path: str) -> bool:
+        """
+        Delete media from storage.
+
+        Alias for delete_file() for consistency with upload_media().
+
+        Args:
+            storage_path: Path in storage bucket
+
+        Returns:
+            True if successful
+        """
+        return await self.delete_file(storage_path)
 
     async def delete_file(self, storage_path: str) -> bool:
         """

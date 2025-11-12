@@ -2,13 +2,14 @@
 
 """Langchain tools for AI media generation via Wavespeed."""
 
-from typing import Type, Optional
+from typing import Type
 from pydantic import BaseModel, Field
 from langchain.tools import BaseTool
 from backend.services.wavespeed.image_generator import ImageGenerator
 from backend.services.wavespeed.video_generator import VideoGenerator
 from backend.services.supabase.storage import StorageService
 from backend.database.repositories.media import MediaRepository
+from backend.models.media import Image, Video
 from backend.utils import get_logger
 
 logger = get_logger(__name__)
@@ -50,36 +51,44 @@ class GenerateImageTool(BaseTool):
     ) -> str:
         """Execute the tool asynchronously."""
         try:
+            from datetime import datetime, timezone
+            from uuid import uuid4
+
             generator = ImageGenerator()
             storage = StorageService()
             media_repo = MediaRepository()
 
-            # Generate image
+            # Generate image (returns bytes directly)
             logger.info("Generating image", prompt=prompt)
-            temp_url = await generator.generate(prompt, size, guidance_scale)
+            image_bytes = await generator.generate(prompt, size, guidance_scale)
 
-            # Download from Wavespeed
-            image_bytes = await generator.download_media(temp_url)
+            # Generate unique filename
+            timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+            file_id = uuid4().hex[:8]
+            filename = f"{timestamp}_{file_id}.png"
 
             # Upload to Supabase
-            storage_path = f"ai-generated/images/{generator._generate_filename()}.png"
+            storage_path = f"ai-generated/images/{filename}"
             public_url = await storage.upload_media(
                 storage_path,
                 image_bytes,
                 "image/png"
             )
 
-            # Save to database
-            media_id = await media_repo.create({
-                "type": "image",
-                "url": public_url,
-                "storage_path": storage_path,
-                "generation_prompt": prompt,
-                "file_size": len(image_bytes)
-            })
+            # Create Image model
+            image = Image(
+                storage_path=storage_path,
+                public_url=public_url,
+                prompt=prompt,
+                file_size=len(image_bytes),
+                mime_type="image/png"
+            )
 
-            logger.info("Image generated successfully", url=public_url, media_id=media_id)
-            return f"Image generated successfully!\nURL: {public_url}\nMedia ID: {media_id}\nPrompt: {prompt}"
+            # Save to database
+            saved_image = await media_repo.create_image(image)
+
+            logger.info("Image generated successfully", url=public_url, media_id=str(saved_image.id))
+            return f"Image generated successfully!\nURL: {public_url}\nMedia ID: {saved_image.id}\nPrompt: {prompt}"
 
         except Exception as e:
             logger.error("Error generating image", error=str(e))
@@ -88,8 +97,8 @@ class GenerateImageTool(BaseTool):
 
 class GenerateVideoInput(BaseModel):
     """Input for GenerateVideo tool."""
-    image_url: str = Field(..., description="URL of the input image to animate")
-    prompt: str = Field(..., description="Text prompt describing the desired video motion/animation")
+    prompt: str = Field(..., description="Text prompt describing the desired video content and motion")
+    size: str = Field("1280*720", description="Video resolution (e.g., '1280*720', '1920*1080')")
     seed: int = Field(-1, description="Random seed (-1 for random, or specific number for reproducibility)")
 
 
@@ -98,17 +107,18 @@ class GenerateVideoTool(BaseTool):
 
     name: str = "generate_video"
     description: str = """
-    Generate an AI video from an input image using Wavespeed WAN-2.2.
-    The input image will be animated according to the prompt.
+    Generate an AI video from a text prompt using Wavespeed WAN-2.2 (text-to-video).
+    Creates dynamic video content based on the text description.
     Returns the public URL of the generated video.
-    Use this to create dynamic video content from static images.
+    Use this to create video content for social media posts.
+    Note: Video generation takes 1-5 minutes depending on complexity.
     """
     args_schema: Type[BaseModel] = GenerateVideoInput
 
     def _run(
         self,
-        image_url: str,
         prompt: str,
+        size: str = "1280*720",
         seed: int = -1
     ) -> str:
         """Sync version - not used by async agents."""
@@ -116,43 +126,50 @@ class GenerateVideoTool(BaseTool):
 
     async def _arun(
         self,
-        image_url: str,
         prompt: str,
+        size: str = "1280*720",
         seed: int = -1
     ) -> str:
         """Execute the tool asynchronously."""
         try:
+            from datetime import datetime, timezone
+            from uuid import uuid4
+
             generator = VideoGenerator()
             storage = StorageService()
             media_repo = MediaRepository()
 
-            # Generate video
-            logger.info("Generating video", prompt=prompt, image_url=image_url)
-            temp_url = await generator.generate(image_url, prompt, seed)
+            # Generate video (returns bytes directly)
+            logger.info("Generating video", prompt=prompt, size=size)
+            video_bytes = await generator.generate(prompt, size, seed)
 
-            # Download from Wavespeed
-            video_bytes = await generator.download_media(temp_url)
+            # Generate unique filename
+            timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+            file_id = uuid4().hex[:8]
+            filename = f"{timestamp}_{file_id}.mp4"
 
             # Upload to Supabase
-            storage_path = f"ai-generated/videos/{generator._generate_filename()}.mp4"
+            storage_path = f"ai-generated/videos/{filename}"
             public_url = await storage.upload_media(
                 storage_path,
                 video_bytes,
                 "video/mp4"
             )
 
-            # Save to database
-            media_id = await media_repo.create({
-                "type": "video",
-                "url": public_url,
-                "storage_path": storage_path,
-                "generation_prompt": prompt,
-                "source_image": image_url,
-                "file_size": len(video_bytes)
-            })
+            # Create Video model
+            video = Video(
+                storage_path=storage_path,
+                public_url=public_url,
+                prompt=prompt,
+                file_size=len(video_bytes),
+                mime_type="video/mp4"
+            )
 
-            logger.info("Video generated successfully", url=public_url, media_id=media_id)
-            return f"Video generated successfully!\nURL: {public_url}\nMedia ID: {media_id}\nPrompt: {prompt}"
+            # Save to database
+            saved_video = await media_repo.create_video(video)
+
+            logger.info("Video generated successfully", url=public_url, media_id=str(saved_video.id))
+            return f"Video generated successfully!\nURL: {public_url}\nMedia ID: {saved_video.id}\nPrompt: {prompt}"
 
         except Exception as e:
             logger.error("Error generating video", error=str(e))
@@ -161,9 +178,10 @@ class GenerateVideoTool(BaseTool):
 
 class GenerateImageAndVideoInput(BaseModel):
     """Input for GenerateImageAndVideo tool."""
-    image_prompt: str = Field(..., description="Text prompt for generating the base image")
-    video_prompt: str = Field(..., description="Text prompt for animating the image into video")
+    image_prompt: str = Field(..., description="Text prompt for generating the image")
+    video_prompt: str = Field(..., description="Text prompt for generating the video")
     image_size: str = Field("1024*1024", description="Image size (default: '1024*1024')")
+    video_size: str = Field("1280*720", description="Video size (default: '1280*720')")
 
 
 class GenerateImageAndVideoTool(BaseTool):
@@ -172,9 +190,10 @@ class GenerateImageAndVideoTool(BaseTool):
     name: str = "generate_image_and_video"
     description: str = """
     Generate both an AI image and video in one workflow.
-    First generates an image from image_prompt, then animates it with video_prompt.
+    Generates an image from image_prompt and a video from video_prompt independently.
     Returns both the image URL and video URL.
-    Use this when you need both image and video content from the same concept.
+    Use this when you need both image and video content for a post.
+    Note: This takes 1-5 minutes due to video generation time.
     """
     args_schema: Type[BaseModel] = GenerateImageAndVideoInput
 
@@ -182,7 +201,8 @@ class GenerateImageAndVideoTool(BaseTool):
         self,
         image_prompt: str,
         video_prompt: str,
-        image_size: str = "1024*1024"
+        image_size: str = "1024*1024",
+        video_size: str = "1280*720"
     ) -> str:
         """Sync version - not used by async agents."""
         raise NotImplementedError("Use async version (_arun) instead")
@@ -191,63 +211,76 @@ class GenerateImageAndVideoTool(BaseTool):
         self,
         image_prompt: str,
         video_prompt: str,
-        image_size: str = "1024*1024"
+        image_size: str = "1024*1024",
+        video_size: str = "1280*720"
     ) -> str:
         """Execute the tool asynchronously."""
         try:
+            from datetime import datetime, timezone
+            from uuid import uuid4
+
             image_gen = ImageGenerator()
             video_gen = VideoGenerator()
             storage = StorageService()
             media_repo = MediaRepository()
 
-            # Step 1: Generate image
+            # Step 1: Generate image (returns bytes directly)
             logger.info("Generating image", prompt=image_prompt)
-            temp_image_url = await image_gen.generate(image_prompt, image_size)
-            image_bytes = await image_gen.download_media(temp_image_url)
+            image_bytes = await image_gen.generate(image_prompt, image_size)
+
+            # Generate unique filename for image
+            timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+            file_id = uuid4().hex[:8]
+            image_filename = f"{timestamp}_{file_id}.png"
 
             # Upload image to Supabase
-            image_path = f"ai-generated/images/{image_gen._generate_filename()}.png"
+            image_path = f"ai-generated/images/{image_filename}"
             image_url = await storage.upload_media(image_path, image_bytes, "image/png")
 
-            # Save image to database
-            image_id = await media_repo.create({
-                "type": "image",
-                "url": image_url,
-                "storage_path": image_path,
-                "generation_prompt": image_prompt,
-                "file_size": len(image_bytes)
-            })
+            # Create Image model and save to database
+            image_model = Image(
+                storage_path=image_path,
+                public_url=image_url,
+                prompt=image_prompt,
+                file_size=len(image_bytes),
+                mime_type="image/png"
+            )
+            saved_image = await media_repo.create_image(image_model)
 
-            # Step 2: Generate video from the image
-            logger.info("Generating video from image", prompt=video_prompt)
-            temp_video_url = await video_gen.generate(image_url, video_prompt)
-            video_bytes = await video_gen.download_media(temp_video_url)
+            # Step 2: Generate video independently (text-to-video)
+            logger.info("Generating video", prompt=video_prompt)
+            video_bytes = await video_gen.generate(video_prompt, video_size)
+
+            # Generate unique filename for video
+            timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+            file_id = uuid4().hex[:8]
+            video_filename = f"{timestamp}_{file_id}.mp4"
 
             # Upload video to Supabase
-            video_path = f"ai-generated/videos/{video_gen._generate_filename()}.mp4"
+            video_path = f"ai-generated/videos/{video_filename}"
             video_url = await storage.upload_media(video_path, video_bytes, "video/mp4")
 
-            # Save video to database
-            video_id = await media_repo.create({
-                "type": "video",
-                "url": video_url,
-                "storage_path": video_path,
-                "generation_prompt": video_prompt,
-                "source_image": image_url,
-                "file_size": len(video_bytes)
-            })
+            # Create Video model and save to database
+            video_model = Video(
+                storage_path=video_path,
+                public_url=video_url,
+                prompt=video_prompt,
+                file_size=len(video_bytes),
+                mime_type="video/mp4"
+            )
+            saved_video = await media_repo.create_video(video_model)
 
             logger.info("Image and video generated successfully")
             return f"""Image and Video generated successfully!
 
 Image:
   URL: {image_url}
-  Media ID: {image_id}
+  Media ID: {saved_image.id}
   Prompt: {image_prompt}
 
 Video:
   URL: {video_url}
-  Media ID: {video_id}
+  Media ID: {saved_video.id}
   Prompt: {video_prompt}
 """
 

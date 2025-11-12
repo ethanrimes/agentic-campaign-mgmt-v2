@@ -49,7 +49,7 @@ class ContentCreationRunner:
             total_posts = 0
 
             for task in pending_tasks:
-                task_id = task["id"]
+                task_id = str(task.id)
 
                 try:
                     logger.info(f"Processing task {task_id}")
@@ -61,7 +61,7 @@ class ContentCreationRunner:
                         "task_id": task_id,
                         "success": True,
                         "posts_created": len(posts),
-                        "post_ids": [p["id"] for p in posts]
+                        "post_ids": [str(p.id) if hasattr(p, 'id') else p["id"] for p in posts]
                     })
 
                     total_posts += len(posts)
@@ -118,7 +118,7 @@ class ContentCreationRunner:
             if not task:
                 raise Exception(f"Task {task_id} not found")
 
-            if task.get("status") == "completed":
+            if task.status == "completed":
                 logger.warning(f"Task {task_id} is already completed")
                 return {
                     "success": False,
@@ -139,7 +139,7 @@ class ContentCreationRunner:
                 "success": True,
                 "task_id": task_id,
                 "posts_created": len(posts),
-                "post_ids": [p["id"] for p in posts],
+                "post_ids": [str(p.id) if hasattr(p, 'id') else p["id"] for p in posts],
                 "posts": posts
             }
 
