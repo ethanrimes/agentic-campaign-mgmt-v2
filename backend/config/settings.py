@@ -46,7 +46,7 @@ class Settings(BaseSettings):
     facebook_page_id: str
     instagram_business_account_id: str
     facebook_page_access_token: str
-    instagram_user_access_token: str
+    instagram_page_access_token: str
 
     # Wavespeed AI
     wavespeed_api_key: str
