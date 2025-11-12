@@ -8,7 +8,6 @@ from backend.utils import get_logger
 
 logger = get_logger(__name__)
 
-
 class PlannerValidator:
     """
     Validates planner output against guardrails.
@@ -38,46 +37,47 @@ class PlannerValidator:
 
         # Calculate totals
         totals = PlannerValidator._calculate_totals(allocations)
+        guardrails_config = GuardrailsConfig()
 
         # Validate total posts
-        if totals["posts"] < GuardrailsConfig.min_posts_per_week:
+        if totals["posts"] < guardrails_config.min_posts_per_week:
             errors.append(
-                f"Total posts ({totals['posts']}) is below minimum ({GuardrailsConfig.min_posts_per_week})"
+                f"Total posts ({totals['posts']}) is below minimum ({guardrails_config.min_posts_per_week})"
             )
-        if totals["posts"] > GuardrailsConfig.max_posts_per_week:
+        if totals["posts"] > guardrails_config.max_posts_per_week:
             errors.append(
-                f"Total posts ({totals['posts']}) exceeds maximum ({GuardrailsConfig.max_posts_per_week})"
+                f"Total posts ({totals['posts']}) exceeds maximum ({guardrails_config.max_posts_per_week})"
             )
 
         # Validate total seeds
         num_seeds = len(allocations)
-        if num_seeds < GuardrailsConfig.min_content_seeds_per_week:
+        if num_seeds < guardrails_config.min_content_seeds_per_week:
             errors.append(
-                f"Number of content seeds ({num_seeds}) is below minimum ({GuardrailsConfig.min_content_seeds_per_week})"
+                f"Number of content seeds ({num_seeds}) is below minimum ({guardrails_config.min_content_seeds_per_week})"
             )
-        if num_seeds > GuardrailsConfig.max_content_seeds_per_week:
+        if num_seeds > guardrails_config.max_content_seeds_per_week:
             errors.append(
-                f"Number of content seeds ({num_seeds}) exceeds maximum ({GuardrailsConfig.max_content_seeds_per_week})"
+                f"Number of content seeds ({num_seeds}) exceeds maximum ({guardrails_config.max_content_seeds_per_week})"
             )
 
         # Validate total videos
-        if totals["videos"] < GuardrailsConfig.min_videos_per_week:
+        if totals["videos"] < guardrails_config.min_videos_per_week:
             errors.append(
-                f"Total videos ({totals['videos']}) is below minimum ({GuardrailsConfig.min_videos_per_week})"
+                f"Total videos ({totals['videos']}) is below minimum ({guardrails_config.min_videos_per_week})"
             )
-        if totals["videos"] > GuardrailsConfig.max_videos_per_week:
+        if totals["videos"] > guardrails_config.max_videos_per_week:
             errors.append(
-                f"Total videos ({totals['videos']}) exceeds maximum ({GuardrailsConfig.max_videos_per_week})"
+                f"Total videos ({totals['videos']}) exceeds maximum ({guardrails_config.max_videos_per_week})"
             )
 
         # Validate total images
-        if totals["images"] < GuardrailsConfig.min_images_per_week:
+        if totals["images"] < guardrails_config.min_images_per_week:
             errors.append(
-                f"Total images ({totals['images']}) is below minimum ({GuardrailsConfig.min_images_per_week})"
+                f"Total images ({totals['images']}) is below minimum ({guardrails_config.min_images_per_week})"
             )
-        if totals["images"] > GuardrailsConfig.max_images_per_week:
+        if totals["images"] > guardrails_config.max_images_per_week:
             errors.append(
-                f"Total images ({totals['images']}) exceeds maximum ({GuardrailsConfig.max_images_per_week})"
+                f"Total images ({totals['images']}) exceeds maximum ({guardrails_config.max_images_per_week})"
             )
 
         # Validate individual allocations

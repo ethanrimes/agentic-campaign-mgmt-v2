@@ -28,11 +28,14 @@ class SearchPagesTool(BaseTool):
     args_schema: Type[BaseModel] = SearchPagesInput
 
     def _run(self, query: str) -> str:
-        """Execute the tool."""
+        """Sync version - not used by async agents."""
+        raise NotImplementedError("Use async version (_arun) instead")
+
+    async def _arun(self, query: str) -> str:
+        """Execute the tool asynchronously."""
         try:
             scraper = FacebookScraper()
-            import asyncio
-            pages = asyncio.run(scraper.search_pages(query))
+            pages = await scraper.search_pages(query)
 
             if not pages:
                 return f"No pages found for query: {query}"
@@ -74,11 +77,14 @@ class GetPagePostsTool(BaseTool):
     args_schema: Type[BaseModel] = GetPagePostsInput
 
     def _run(self, page_id: str, limit: int = 10) -> str:
-        """Execute the tool."""
+        """Sync version - not used by async agents."""
+        raise NotImplementedError("Use async version (_arun) instead")
+
+    async def _arun(self, page_id: str, limit: int = 10) -> str:
+        """Execute the tool asynchronously."""
         try:
             scraper = FacebookScraper()
-            import asyncio
-            posts = asyncio.run(scraper.get_page_posts(page_id, limit))
+            posts = await scraper.get_page_posts(page_id, limit)
 
             if not posts:
                 return f"No posts found for page {page_id}"
@@ -118,11 +124,14 @@ class SearchPostsTool(BaseTool):
     args_schema: Type[BaseModel] = SearchPostsInput
 
     def _run(self, query: str) -> str:
-        """Execute the tool."""
+        """Sync version - not used by async agents."""
+        raise NotImplementedError("Use async version (_arun) instead")
+
+    async def _arun(self, query: str) -> str:
+        """Execute the tool asynchronously."""
         try:
             scraper = FacebookScraper()
-            import asyncio
-            posts = asyncio.run(scraper.search_posts(query))
+            posts = await scraper.search_posts(query)
 
             if not posts:
                 return f"No posts found for query: {query}"
@@ -162,11 +171,14 @@ class GetGroupPostsTool(BaseTool):
     args_schema: Type[BaseModel] = GetGroupPostsInput
 
     def _run(self, group_id: str, limit: int = 10) -> str:
-        """Execute the tool."""
+        """Sync version - not used by async agents."""
+        raise NotImplementedError("Use async version (_arun) instead")
+
+    async def _arun(self, group_id: str, limit: int = 10) -> str:
+        """Execute the tool asynchronously."""
         try:
             scraper = FacebookScraper()
-            import asyncio
-            posts = asyncio.run(scraper.get_group_posts(group_id, limit))
+            posts = await scraper.get_group_posts(group_id, limit)
 
             if not posts:
                 return f"No posts found for group {group_id}"

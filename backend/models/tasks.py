@@ -40,6 +40,11 @@ class ContentCreationTask(BaseModel):
     image_budget: int = Field(default=0, ge=0, description="Max images to generate")
     video_budget: int = Field(default=0, ge=0, description="Max videos to generate")
 
+    # Planning context
+    week_start_date: Optional[str] = Field(
+        None, description="ISO date for the start of the week this task belongs to"
+    )
+
     # Status tracking
     status: Literal["pending", "in_progress", "completed", "failed"] = Field(
         default="pending", description="Current task status"
