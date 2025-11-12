@@ -7,6 +7,7 @@ from typing import List, Optional
 from uuid import UUID
 from backend.models import NewsEventSeed, IngestedEvent
 from backend.utils import get_logger
+from backend.database import get_supabase_client
 from .base import BaseRepository
 
 logger = get_logger(__name__)
@@ -142,8 +143,9 @@ class IngestedEventRepository(BaseRepository[IngestedEvent]):
                 "canonical_event_id": str(canonical_event_id)
             }
 
+            client = await get_supabase_client()
             result = (
-                await self.client.table(self.table_name)
+                await client.table(self.table_name)
                 .update(updates)
                 .eq("id", str(event_id))
                 .execute()

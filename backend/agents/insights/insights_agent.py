@@ -129,8 +129,8 @@ Your analysis should be thorough, data-driven, and honest about what's working a
                 created_by=settings.default_model_name
             )
 
-            # Save to database (note: create is synchronous, not async)
-            created_report = self.insights_repo.create(insight_report)
+            # Save to database
+            created_report = await self.insights_repo.create(insight_report)
             logger.info("Insight report saved", report_id=str(created_report.id))
             report = created_report.model_dump(mode="json")
 
@@ -200,8 +200,8 @@ Your analysis should be thorough, data-driven, and honest about what's working a
             created_by=settings.default_model_name
         )
 
-        # Save to database (note: create is synchronous, not async)
-        created_report = self.insights_repo.create(insight_report)
+        # Save to database
+        created_report = await self.insights_repo.create(insight_report)
 
         return created_report.model_dump(mode="json")
 

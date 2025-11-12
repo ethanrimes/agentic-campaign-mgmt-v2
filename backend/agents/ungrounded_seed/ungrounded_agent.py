@@ -84,23 +84,25 @@ class UngroundedSeedAgent:
                 input_context = f"""Generate a creative, original content idea for our social media.
 
 Instructions:
-1. First, use your tools to review what content has been successful and what gaps exist
-2. Then, create a completely original content concept
-3. Make sure it's different from existing content seeds
+1. You MAY optionally check existing content (use 1-2 tools at most), but feel free to generate ideas directly
+2. Create a completely original content concept
+3. Ensure variety in format if generating multiple ideas
 
 Your idea should be:
 - Creative and engaging
 - Aligned with our target audience
 - Executable with clear direction
-- Varied in format (don't repeat the same format)
+- Varied in format
 
 Provide a structured content idea with:
 - A clear concept/idea description
 - The intended format (image, video, carousel, reel, text, etc.)
 - Detailed creative direction for execution
+
+DO NOT call tools more than 2-3 times. After that, generate your idea directly.
 """
-                # Run agent
-                config = {"verbose": True, "max_iterations": 10}
+                # Run agent with limited iterations to prevent loops
+                config = {"verbose": True, "max_iterations": 5}
                 result = await self.agent_executor.ainvoke(
                     {"messages": [("human", input_context)]},
                     config=config
@@ -118,7 +120,7 @@ Provide a structured content idea with:
                         created_by=settings.default_model_name
                     )
 
-                    created_seed = self.repo.create(ungrounded_seed)
+                    created_seed = await self.repo.create(ungrounded_seed)
                     logger.info("Ungrounded seed saved", seed_id=str(created_seed.id))
                     seeds.append(created_seed.model_dump(mode="json"))
                 else:
