@@ -2,6 +2,7 @@
 
 """Instagram posting service."""
 
+import asyncio
 from typing import List
 from backend.utils import get_logger, PublishingError
 from .base import MetaBaseClient
@@ -16,6 +17,46 @@ class InstagramPublisher(MetaBaseClient):
     Uses two-step process: create container → publish container.
     Supports: images, carousels, reels, stories.
     """
+
+    async def _wait_for_container(self, container_id: str, max_polls: int = 60, poll_interval: int = 5) -> None:
+        """
+        Poll container status until ready.
+
+        Args:
+            container_id: The container ID to check
+            max_polls: Maximum number of polls (default 60 = 5 minutes for reels)
+            poll_interval: Seconds between polls
+
+        Raises:
+            PublishingError: If container fails or times out
+        """
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self.ig_token}",
+        }
+
+        for _ in range(max_polls):
+            status_url = f"{self.INSTAGRAM_BASE_URL}/{container_id}?fields=status_code"
+            result = await self._make_request("GET", status_url, headers=headers)
+            status_code = result.get("status_code")
+
+            if status_code == "FINISHED":
+                logger.info("Container ready", container_id=container_id)
+                return
+            elif status_code == "ERROR":
+                raise PublishingError("Media container processing failed")
+            elif status_code == "IN_PROGRESS":
+                logger.debug("Container processing", container_id=container_id, status=status_code)
+                await asyncio.sleep(poll_interval)
+            else:
+                # For images, status_code might not be present - treat as ready
+                if status_code is None:
+                    logger.info("Container ready (no status)", container_id=container_id)
+                    return
+                logger.debug("Container status", container_id=container_id, status=status_code)
+                await asyncio.sleep(poll_interval)
+
+        raise PublishingError(f"Container processing timed out after {max_polls * poll_interval} seconds")
 
     async def post_image(self, image_url: str, caption: str) -> str:
         """
@@ -48,7 +89,10 @@ class InstagramPublisher(MetaBaseClient):
             result = await self._make_request("POST", url, json_data=json_data, headers=headers)
             container_id = result["id"]
 
-            # Step 2: Publish container
+            # Step 2: Wait for container to be ready
+            await self._wait_for_container(container_id, max_polls=12, poll_interval=5)
+
+            # Step 3: Publish container
             publish_url = f"{self.INSTAGRAM_BASE_URL}/{self.ig_user_id}/media_publish"
             publish_data = {
                 "creation_id": container_id,
@@ -105,7 +149,10 @@ class InstagramPublisher(MetaBaseClient):
             result = await self._make_request("POST", url, json_data=json_data, headers=headers)
             carousel_id = result["id"]
 
-            # Step 3: Publish carousel
+            # Step 3: Wait for carousel container to be ready
+            await self._wait_for_container(carousel_id, max_polls=12, poll_interval=5)
+
+            # Step 4: Publish carousel
             publish_url = f"{self.INSTAGRAM_BASE_URL}/{self.ig_user_id}/media_publish"
             publish_data = {
                 "creation_id": carousel_id,
@@ -150,7 +197,10 @@ class InstagramPublisher(MetaBaseClient):
             result = await self._make_request("POST", url, json_data=json_data, headers=headers)
             container_id = result["id"]
 
-            # Step 2: Publish reel
+            # Step 2: Wait for reel to be processed (videos take longer)
+            await self._wait_for_container(container_id, max_polls=60, poll_interval=5)
+
+            # Step 3: Publish reel
             publish_url = f"{self.INSTAGRAM_BASE_URL}/{self.ig_user_id}/media_publish"
             publish_data = {
                 "creation_id": container_id,
