@@ -12,14 +12,14 @@ logger = get_logger(__name__)
 
 class VideoGenerator(WavespeedBaseClient):
     """
-    Video generator using Wavespeed WAN-2.2 (image-to-video) model.
+    Video generator using Wavespeed WAN-2.2 (text-to-video) model.
 
     Example:
         ```python
         generator = VideoGenerator()
         video_bytes = await generator.generate(
-            input_image_url="https://...",
-            prompt="Gentle camera pan with moving clouds"
+            prompt="An old man adjusts his glasses while reading a newspaper",
+            size="1280*720"
         )
         ```
     """
@@ -27,19 +27,23 @@ class VideoGenerator(WavespeedBaseClient):
     def __init__(self):
         super().__init__()
         self.model = settings.wavespeed_video_model
+        # Videos need much longer polling time - override if env vars not set for videos
+        # Default to 20 minutes (240 attempts * 5s) if not configured
+        if self.max_poll_attempts < 120:  # If less than 10 minutes
+            self.max_poll_attempts = 240  # Override to 20 minutes for videos
 
     async def generate(
         self,
-        input_image_url: str,
         prompt: str,
+        size: str = "1280*720",
         seed: int = -1,
     ) -> bytes:
         """
-        Generate a video from an input image.
+        Generate a video from a text prompt.
 
         Args:
-            input_image_url: URL to input image (must be publicly accessible)
-            prompt: Text prompt describing the desired motion/effect
+            prompt: Text prompt describing the desired video content
+            size: Video resolution (e.g., "1280*720", "1920*1080")
             seed: Random seed (-1 for random)
 
         Returns:
@@ -51,19 +55,19 @@ class VideoGenerator(WavespeedBaseClient):
         logger.info(
             "Generating video",
             prompt=prompt[:50],
-            input_image=input_image_url[:50],
+            size=size,
         )
 
         payload = {
-            "image": input_image_url,
             "prompt": prompt,
             "seed": seed,
+            "size": size,
         }
 
         # Submit task
         request_id = await self._submit_task(self.model, payload)
 
-        # Poll for completion (videos take longer)
+        # Poll for completion (videos take much longer than images)
         output_url = await self._poll_for_completion(request_id)
 
         # Download video
