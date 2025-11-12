@@ -15,12 +15,13 @@ class MetaBaseClient:
 
     API_VERSION = "v23.0"
     BASE_URL = f"https://graph.facebook.com/{API_VERSION}"
+    INSTAGRAM_BASE_URL = f"https://graph.instagram.com/{API_VERSION}"
 
     def __init__(self):
         self.page_id = settings.facebook_page_id
         self.ig_user_id = settings.instagram_business_account_id
         self.page_token = settings.facebook_page_access_token
-        self.ig_token = settings.instagram_user_access_token
+        self.ig_token = settings.instagram_page_access_token
 
     async def _make_request(
         self,

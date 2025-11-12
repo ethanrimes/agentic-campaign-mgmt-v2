@@ -33,7 +33,7 @@ services:
         sync: false
       - key: FACEBOOK_PAGE_ACCESS_TOKEN
         sync: false
-      - key: INSTAGRAM_USER_ACCESS_TOKEN
+      - key: INSTAGRAM_PAGE_ACCESS_TOKEN
         sync: false
       - key: WAVESPEED_API_KEY
         sync: false
