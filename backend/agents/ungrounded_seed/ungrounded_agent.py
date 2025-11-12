@@ -6,9 +6,7 @@ from pathlib import Path
 from typing import Dict, Any, List, Literal
 from pydantic import BaseModel, Field
 from langchain.agents import create_agent
-from langchain.agents.structured_output import ToolStrategy
 from langchain_openai import ChatOpenAI
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
 from backend.config.settings import settings
 from backend.config.prompts import get_global_system_prompt
@@ -35,6 +33,10 @@ class UngroundedSeedAgent:
     Agent for generating creative, ungrounded content ideas.
 
     Creates original content concepts not based on news or social media trends.
+
+    Uses a two-phase approach:
+    1. Optional exploration phase with tools
+    2. Direct structured output generation
     """
 
     def __init__(self):
@@ -55,17 +57,12 @@ class UngroundedSeedAgent:
         # Create tools (only knowledge base access)
         self.tools = create_knowledge_base_tools()
 
-        # Create agent
-        self.agent_executor = create_agent(
-            model=self.llm,
-            tools=self.tools,
-            system_prompt=f"{self.global_prompt}\n\n{self.agent_prompt}",
-            response_format=ToolStrategy(UngroundedSeedOutput)
-        )
-
     async def generate_ideas(self, count: int = 1) -> List[Dict[str, Any]]:
         """
-        Generate creative content ideas.
+        Generate creative content ideas using a two-phase approach.
+
+        Phase 1: Optional exploration with tools (max 3 iterations)
+        Phase 2: Direct structured output generation
 
         Args:
             count: Number of ideas to generate
@@ -81,35 +78,42 @@ class UngroundedSeedAgent:
             try:
                 logger.info(f"Generating idea {i+1}/{count}")
 
-                input_context = f"""Generate a creative, original content idea for our social media.
-
-Instructions:
-1. You MAY optionally check existing content (use 1-2 tools at most), but feel free to generate ideas directly
-2. Create a completely original content concept
-3. Ensure variety in format if generating multiple ideas
-
-Your idea should be:
-- Creative and engaging
-- Aligned with our target audience
-- Executable with clear direction
-- Varied in format
-
-Provide a structured content idea with:
-- A clear concept/idea description
-- The intended format (image, video, carousel, reel, text, etc.)
-- Detailed creative direction for execution
-
-DO NOT call tools more than 2-3 times. After that, generate your idea directly.
-"""
-                # Run agent with limited iterations to prevent loops
-                config = {"verbose": True, "max_iterations": 5}
-                result = await self.agent_executor.ainvoke(
-                    {"messages": [("human", input_context)]},
-                    config=config
+                # PHASE 1: Exploration with tools (optional, limited)
+                exploration_agent = create_agent(
+                    model=self.llm,
+                    tools=self.tools,
+                    system_prompt=f"{self.global_prompt}\n\n{self.agent_prompt}",
                 )
 
-                # The agent's structured response is here
-                structured_output: UngroundedSeedOutput = result.get("structured_response")
+                exploration_prompt = """Briefly review existing content if helpful (max 2 tool calls).
+Then describe your content idea in natural language. You don't need to format it yet - just describe:
+- What the content is about
+- Why it would be engaging
+- What format would work best
+
+After checking tools (or if you don't need tools), provide your raw idea description."""
+
+                exploration_result = await exploration_agent.ainvoke(
+                    {"messages": [("human", exploration_prompt)]},
+                    config={"verbose": True, "max_iterations": 3}
+                )
+
+                logger.info("Exploration phase complete, generating structured output")
+
+                # PHASE 2: Direct structured output (no agent, no tools)
+                structured_llm = self.llm.with_structured_output(UngroundedSeedOutput)
+
+                # Get the conversation history from exploration
+                messages = exploration_result.get("messages", [])
+                messages.append((
+                    "human",
+                    """Now provide the final structured content idea with all details in the required format:
+- idea: Clear, concise description (1-2 sentences)
+- format: One of: image, video, carousel, reel, story, text
+- details: Detailed creative direction and execution notes (2-3 paragraphs)"""
+                ))
+
+                structured_output = await structured_llm.ainvoke(messages)
 
                 if structured_output:
                     # Save directly to database
@@ -124,14 +128,13 @@ DO NOT call tools more than 2-3 times. After that, generate your idea directly.
                     logger.info("Ungrounded seed saved", seed_id=str(created_seed.id))
                     seeds.append(created_seed.model_dump(mode="json"))
                 else:
-                    logger.warning("Agent did not return a structured response")
+                    logger.warning("Failed to generate structured output")
 
             except Exception as e:
-                logger.error(f"Error generating idea {i+1}", error=str(e))
+                logger.error(f"Error generating idea {i+1}", error=str(e), exc_info=True)
 
         logger.info("Ungrounded seed generation complete", seeds_created=len(seeds))
         return seeds
-
 
 async def run_ungrounded_generation(count: int = 1) -> List[Dict[str, Any]]:
     """
