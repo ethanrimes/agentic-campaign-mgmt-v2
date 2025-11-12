@@ -209,7 +209,7 @@ class PerplexitySonarAgent:
             )
 
             # Save to database
-            created_event = self.repo.create(ingested_event)
+            created_event = await self.repo.create(ingested_event)
 
             logger.info("Ingested event saved", event_id=str(created_event.id), name=event_data["name"])
 
