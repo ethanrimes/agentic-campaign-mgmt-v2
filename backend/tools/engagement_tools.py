@@ -33,14 +33,16 @@ class GetPageInsightsTool(BaseTool):
     args_schema: Type[BaseModel] = GetPageInsightsInput
 
     def _run(self, page_id: str, metric_names: str, period: str = "day") -> str:
-        """Execute the tool."""
+        """Sync version - not used by async agents."""
+        raise NotImplementedError("Use async version (_arun) instead")
+
+    async def _arun(self, page_id: str, metric_names: str, period: str = "day") -> str:
+        """Execute the tool asynchronously."""
         try:
             metrics = [m.strip() for m in metric_names.split(",")]
             api = EngagementAPI()
 
-            # This is synchronous wrapper - in real usage you'd use async
-            import asyncio
-            result = asyncio.run(api.get_page_insights(page_id, metrics, period))
+            result = await api.get_page_insights(page_id, metrics, period)
 
             if not result:
                 return "No insights data available for the specified metrics."
@@ -77,11 +79,14 @@ class GetPostEngagementTool(BaseTool):
     args_schema: Type[BaseModel] = GetPostEngagementInput
 
     def _run(self, post_id: str) -> str:
-        """Execute the tool."""
+        """Sync version - not used by async agents."""
+        raise NotImplementedError("Use async version (_arun) instead")
+
+    async def _arun(self, post_id: str) -> str:
+        """Execute the tool asynchronously."""
         try:
             api = EngagementAPI()
-            import asyncio
-            result = asyncio.run(api.get_post_engagement(post_id))
+            result = await api.get_post_engagement(post_id)
 
             if not result:
                 return f"No engagement data found for post {post_id}"
@@ -115,11 +120,14 @@ class GetPostCommentsTool(BaseTool):
     args_schema: Type[BaseModel] = GetPostCommentsInput
 
     def _run(self, post_id: str, limit: int = 25) -> str:
-        """Execute the tool."""
+        """Sync version - not used by async agents."""
+        raise NotImplementedError("Use async version (_arun) instead")
+
+    async def _arun(self, post_id: str, limit: int = 25) -> str:
+        """Execute the tool asynchronously."""
         try:
             api = EngagementAPI()
-            import asyncio
-            result = asyncio.run(api.get_post_comments(post_id, limit))
+            result = await api.get_post_comments(post_id, limit)
 
             comments = result.get("data", [])
             if not comments:
@@ -161,12 +169,15 @@ class GetInstagramInsightsTool(BaseTool):
     args_schema: Type[BaseModel] = GetInstagramInsightsInput
 
     def _run(self, ig_user_id: str, metric_names: str, period: str = "day") -> str:
-        """Execute the tool."""
+        """Sync version - not used by async agents."""
+        raise NotImplementedError("Use async version (_arun) instead")
+
+    async def _arun(self, ig_user_id: str, metric_names: str, period: str = "day") -> str:
+        """Execute the tool asynchronously."""
         try:
             metrics = [m.strip() for m in metric_names.split(",")]
             api = EngagementAPI()
-            import asyncio
-            result = asyncio.run(api.get_instagram_insights(ig_user_id, metrics, period))
+            result = await api.get_instagram_insights(ig_user_id, metrics, period)
 
             if not result:
                 return "No Instagram insights data available."
@@ -202,11 +213,14 @@ class GetInstagramMediaInsightsTool(BaseTool):
     args_schema: Type[BaseModel] = GetInstagramMediaInsightsInput
 
     def _run(self, media_id: str) -> str:
-        """Execute the tool."""
+        """Sync version - not used by async agents."""
+        raise NotImplementedError("Use async version (_arun) instead")
+
+    async def _arun(self, media_id: str) -> str:
+        """Execute the tool asynchronously."""
         try:
             api = EngagementAPI()
-            import asyncio
-            result = asyncio.run(api.get_instagram_media_insights(media_id))
+            result = await api.get_instagram_media_insights(media_id)
 
             if not result:
                 return f"No insights found for media {media_id}"

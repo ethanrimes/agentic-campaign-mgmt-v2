@@ -16,9 +16,11 @@ class ContentCreationTaskRepository(BaseRepository[ContentCreationTask]):
 
     async def get_pending_tasks(self, limit: int = 10) -> List[ContentCreationTask]:
         """Get pending tasks."""
+        from backend.database import get_supabase_client
         try:
+            client = await get_supabase_client()
             result = (
-                await self.client.table(self.table_name)
+                await client.table(self.table_name)
                 .select("*")
                 .eq("status", "pending")
                 .order("created_at", desc=False)
@@ -31,9 +33,11 @@ class ContentCreationTaskRepository(BaseRepository[ContentCreationTask]):
 
     async def get_by_seed_id(self, seed_id: UUID) -> List[ContentCreationTask]:
         """Get tasks for a specific content seed."""
+        from backend.database import get_supabase_client
         try:
+            client = await get_supabase_client()
             result = (
-                await self.client.table(self.table_name)
+                await client.table(self.table_name)
                 .select("*")
                 .eq("content_seed_id", str(seed_id))
                 .order("created_at", desc=True)

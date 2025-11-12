@@ -6,6 +6,7 @@ from typing import Dict, Any
 from backend.agents.planner.planner_agent import PlannerAgent
 from backend.agents.planner.validator import validate_plan
 from backend.database.repositories.content_creation_tasks import ContentCreationTaskRepository
+from backend.models.tasks import ContentCreationTask
 from backend.utils import get_logger
 
 logger = get_logger(__name__)
@@ -54,7 +55,7 @@ class PlannerRunner:
                         "attempt": attempt,
                         "plan": plan,
                         "tasks_created": len(tasks),
-                        "task_ids": [t["id"] for t in tasks]
+                        "task_ids": [str(t["id"]) for t in tasks]
                     }
                 else:
                     logger.warning(
@@ -102,29 +103,28 @@ class PlannerRunner:
 
         for allocation in allocations:
             try:
-                task_data = {
-                    "content_seed_id": allocation["seed_id"],
-                    "content_seed_type": allocation["seed_type"],
-                    "instagram_image_posts": allocation["instagram_image_posts"],
-                    "instagram_reel_posts": allocation["instagram_reel_posts"],
-                    "facebook_feed_posts": allocation["facebook_feed_posts"],
-                    "facebook_video_posts": allocation["facebook_video_posts"],
-                    "image_budget": allocation["image_budget"],
-                    "video_budget": allocation["video_budget"],
-                    "status": "pending",
-                    "week_start_date": plan.get("week_start_date")
-                }
+                # Create ContentCreationTask model instance
+                task = ContentCreationTask(
+                    content_seed_id=allocation["seed_id"],
+                    content_seed_type=allocation["seed_type"],
+                    instagram_image_posts=allocation["instagram_image_posts"],
+                    instagram_reel_posts=allocation["instagram_reel_posts"],
+                    facebook_feed_posts=allocation["facebook_feed_posts"],
+                    facebook_video_posts=allocation["facebook_video_posts"],
+                    image_budget=allocation["image_budget"],
+                    video_budget=allocation["video_budget"],
+                    status="pending"
+                    # Note: week_start_date not included as column doesn't exist in DB yet
+                )
 
-                task_id = await self.tasks_repo.create(task_data)
+                # Create in database - returns the created task
+                created_task = await self.tasks_repo.create(task)
 
-                tasks.append({
-                    "id": task_id,
-                    **task_data
-                })
+                tasks.append(created_task.model_dump(mode="json"))
 
                 logger.info(
                     "Content task created",
-                    task_id=task_id,
+                    task_id=str(created_task.id),
                     seed_id=allocation["seed_id"]
                 )
 

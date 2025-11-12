@@ -13,7 +13,6 @@ from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from backend.config.settings import settings
 from backend.config.prompts import get_global_system_prompt
 from backend.config.guardrails_config import guardrails_config
-from backend.tools import create_knowledge_base_tools
 from backend.database.repositories.news_event_seeds import NewsEventSeedRepository
 from backend.database.repositories.trend_seeds import TrendSeedsRepository
 from backend.database.repositories.ungrounded_seeds import UngroundedSeedRepository
@@ -49,8 +48,8 @@ class PlannerAgent:
             temperature=0.5,  # Moderate temperature for strategic planning
         )
 
-        # Create tools
-        self.tools = create_knowledge_base_tools()
+        # Create tools - empty list as context is provided in the prompt
+        self.tools = []
 
     async def create_weekly_plan(self) -> Dict[str, Any]:
         """
@@ -177,7 +176,7 @@ Available Content Seeds:
             findings = getattr(insights, 'findings', '')
             input_text += f"Findings: {findings[:300] if findings else 'No findings'}...\n\n"
 
-        input_text += """
+        input_text += f"""
 Based on this context, create a strategic weekly content plan.
 
 Your plan must include:
@@ -186,7 +185,20 @@ Your plan must include:
 3. Media budgets (images and videos)
 4. Reasoning for your choices
 
-Remember to STRICTLY follow the guardrails!
+⚠️ CRITICAL REMINDER - YOUR PLAN MUST STAY WITHIN THESE LIMITS:
+- Maximum {guardrails_config.max_posts_per_week} total posts (you can do fewer, but NOT more)
+- Maximum {guardrails_config.max_images_per_week} total images (instagram_image_posts + facebook_feed_posts)
+- Maximum {guardrails_config.max_videos_per_week} total videos (instagram_reel_posts + facebook_video_posts)
+- Between {guardrails_config.min_content_seeds_per_week} and {guardrails_config.max_content_seeds_per_week} content seeds
+
+Before you finalize your plan:
+1. Count ALL your posts across ALL seeds
+2. Count ALL your images across ALL seeds
+3. Count ALL your videos across ALL seeds
+4. Verify you have not exceeded ANY maximum limit
+5. If you're over any limit, reduce allocations until you're within budget
+
+DO NOT submit a plan that exceeds these limits - it will be automatically rejected!
 """
 
         return input_text

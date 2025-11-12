@@ -39,42 +39,44 @@ class GenerateImageTool(BaseTool):
         size: str = "1024*1024",
         guidance_scale: float = 7.5
     ) -> str:
-        """Execute the tool."""
+        """Sync version - not used by async agents."""
+        raise NotImplementedError("Use async version (_arun) instead")
+
+    async def _arun(
+        self,
+        prompt: str,
+        size: str = "1024*1024",
+        guidance_scale: float = 7.5
+    ) -> str:
+        """Execute the tool asynchronously."""
         try:
             generator = ImageGenerator()
             storage = StorageService()
             media_repo = MediaRepository()
 
-            import asyncio
+            # Generate image
+            logger.info("Generating image", prompt=prompt)
+            temp_url = await generator.generate(prompt, size, guidance_scale)
 
-            async def generate():
-                # Generate image
-                logger.info("Generating image", prompt=prompt)
-                temp_url = await generator.generate(prompt, size, guidance_scale)
+            # Download from Wavespeed
+            image_bytes = await generator.download_media(temp_url)
 
-                # Download from Wavespeed
-                image_bytes = await generator.download_media(temp_url)
+            # Upload to Supabase
+            storage_path = f"ai-generated/images/{generator._generate_filename()}.png"
+            public_url = await storage.upload_media(
+                storage_path,
+                image_bytes,
+                "image/png"
+            )
 
-                # Upload to Supabase
-                storage_path = f"ai-generated/images/{generator._generate_filename()}.png"
-                public_url = await storage.upload_media(
-                    storage_path,
-                    image_bytes,
-                    "image/png"
-                )
-
-                # Save to database
-                media_id = await media_repo.create({
-                    "type": "image",
-                    "url": public_url,
-                    "storage_path": storage_path,
-                    "generation_prompt": prompt,
-                    "file_size": len(image_bytes)
-                })
-
-                return public_url, media_id
-
-            public_url, media_id = asyncio.run(generate())
+            # Save to database
+            media_id = await media_repo.create({
+                "type": "image",
+                "url": public_url,
+                "storage_path": storage_path,
+                "generation_prompt": prompt,
+                "file_size": len(image_bytes)
+            })
 
             logger.info("Image generated successfully", url=public_url, media_id=media_id)
             return f"Image generated successfully!\nURL: {public_url}\nMedia ID: {media_id}\nPrompt: {prompt}"
@@ -109,43 +111,45 @@ class GenerateVideoTool(BaseTool):
         prompt: str,
         seed: int = -1
     ) -> str:
-        """Execute the tool."""
+        """Sync version - not used by async agents."""
+        raise NotImplementedError("Use async version (_arun) instead")
+
+    async def _arun(
+        self,
+        image_url: str,
+        prompt: str,
+        seed: int = -1
+    ) -> str:
+        """Execute the tool asynchronously."""
         try:
             generator = VideoGenerator()
             storage = StorageService()
             media_repo = MediaRepository()
 
-            import asyncio
+            # Generate video
+            logger.info("Generating video", prompt=prompt, image_url=image_url)
+            temp_url = await generator.generate(image_url, prompt, seed)
 
-            async def generate():
-                # Generate video
-                logger.info("Generating video", prompt=prompt, image_url=image_url)
-                temp_url = await generator.generate(image_url, prompt, seed)
+            # Download from Wavespeed
+            video_bytes = await generator.download_media(temp_url)
 
-                # Download from Wavespeed
-                video_bytes = await generator.download_media(temp_url)
+            # Upload to Supabase
+            storage_path = f"ai-generated/videos/{generator._generate_filename()}.mp4"
+            public_url = await storage.upload_media(
+                storage_path,
+                video_bytes,
+                "video/mp4"
+            )
 
-                # Upload to Supabase
-                storage_path = f"ai-generated/videos/{generator._generate_filename()}.mp4"
-                public_url = await storage.upload_media(
-                    storage_path,
-                    video_bytes,
-                    "video/mp4"
-                )
-
-                # Save to database
-                media_id = await media_repo.create({
-                    "type": "video",
-                    "url": public_url,
-                    "storage_path": storage_path,
-                    "generation_prompt": prompt,
-                    "source_image": image_url,
-                    "file_size": len(video_bytes)
-                })
-
-                return public_url, media_id
-
-            public_url, media_id = asyncio.run(generate())
+            # Save to database
+            media_id = await media_repo.create({
+                "type": "video",
+                "url": public_url,
+                "storage_path": storage_path,
+                "generation_prompt": prompt,
+                "source_image": image_url,
+                "file_size": len(video_bytes)
+            })
 
             logger.info("Video generated successfully", url=public_url, media_id=media_id)
             return f"Video generated successfully!\nURL: {public_url}\nMedia ID: {media_id}\nPrompt: {prompt}"
@@ -180,56 +184,58 @@ class GenerateImageAndVideoTool(BaseTool):
         video_prompt: str,
         image_size: str = "1024*1024"
     ) -> str:
-        """Execute the tool."""
+        """Sync version - not used by async agents."""
+        raise NotImplementedError("Use async version (_arun) instead")
+
+    async def _arun(
+        self,
+        image_prompt: str,
+        video_prompt: str,
+        image_size: str = "1024*1024"
+    ) -> str:
+        """Execute the tool asynchronously."""
         try:
             image_gen = ImageGenerator()
             video_gen = VideoGenerator()
             storage = StorageService()
             media_repo = MediaRepository()
 
-            import asyncio
+            # Step 1: Generate image
+            logger.info("Generating image", prompt=image_prompt)
+            temp_image_url = await image_gen.generate(image_prompt, image_size)
+            image_bytes = await image_gen.download_media(temp_image_url)
 
-            async def generate():
-                # Step 1: Generate image
-                logger.info("Generating image", prompt=image_prompt)
-                temp_image_url = await image_gen.generate(image_prompt, image_size)
-                image_bytes = await image_gen.download_media(temp_image_url)
+            # Upload image to Supabase
+            image_path = f"ai-generated/images/{image_gen._generate_filename()}.png"
+            image_url = await storage.upload_media(image_path, image_bytes, "image/png")
 
-                # Upload image to Supabase
-                image_path = f"ai-generated/images/{image_gen._generate_filename()}.png"
-                image_url = await storage.upload_media(image_path, image_bytes, "image/png")
+            # Save image to database
+            image_id = await media_repo.create({
+                "type": "image",
+                "url": image_url,
+                "storage_path": image_path,
+                "generation_prompt": image_prompt,
+                "file_size": len(image_bytes)
+            })
 
-                # Save image to database
-                image_id = await media_repo.create({
-                    "type": "image",
-                    "url": image_url,
-                    "storage_path": image_path,
-                    "generation_prompt": image_prompt,
-                    "file_size": len(image_bytes)
-                })
+            # Step 2: Generate video from the image
+            logger.info("Generating video from image", prompt=video_prompt)
+            temp_video_url = await video_gen.generate(image_url, video_prompt)
+            video_bytes = await video_gen.download_media(temp_video_url)
 
-                # Step 2: Generate video from the image
-                logger.info("Generating video from image", prompt=video_prompt)
-                temp_video_url = await video_gen.generate(image_url, video_prompt)
-                video_bytes = await video_gen.download_media(temp_video_url)
+            # Upload video to Supabase
+            video_path = f"ai-generated/videos/{video_gen._generate_filename()}.mp4"
+            video_url = await storage.upload_media(video_path, video_bytes, "video/mp4")
 
-                # Upload video to Supabase
-                video_path = f"ai-generated/videos/{video_gen._generate_filename()}.mp4"
-                video_url = await storage.upload_media(video_path, video_bytes, "video/mp4")
-
-                # Save video to database
-                video_id = await media_repo.create({
-                    "type": "video",
-                    "url": video_url,
-                    "storage_path": video_path,
-                    "generation_prompt": video_prompt,
-                    "source_image": image_url,
-                    "file_size": len(video_bytes)
-                })
-
-                return image_url, image_id, video_url, video_id
-
-            image_url, image_id, video_url, video_id = asyncio.run(generate())
+            # Save video to database
+            video_id = await media_repo.create({
+                "type": "video",
+                "url": video_url,
+                "storage_path": video_path,
+                "generation_prompt": video_prompt,
+                "source_image": image_url,
+                "file_size": len(video_bytes)
+            })
 
             logger.info("Image and video generated successfully")
             return f"""Image and Video generated successfully!

@@ -28,11 +28,14 @@ class SearchLocationsTool(BaseTool):
     args_schema: Type[BaseModel] = SearchLocationsInput
 
     def _run(self, query: str) -> str:
-        """Execute the tool."""
+        """Sync version - not used by async agents."""
+        raise NotImplementedError("Use async version (_arun) instead")
+
+    async def _arun(self, query: str) -> str:
+        """Execute the tool asynchronously."""
         try:
             scraper = InstagramScraper()
-            import asyncio
-            locations = asyncio.run(scraper.search_locations(query))
+            locations = await scraper.search_locations(query)
 
             if not locations:
                 return f"No locations found for query: {query}"
@@ -71,11 +74,14 @@ class GetLocationMediaTool(BaseTool):
     args_schema: Type[BaseModel] = GetLocationMediaInput
 
     def _run(self, location_id: str, tab: str = "ranked") -> str:
-        """Execute the tool."""
+        """Sync version - not used by async agents."""
+        raise NotImplementedError("Use async version (_arun) instead")
+
+    async def _arun(self, location_id: str, tab: str = "ranked") -> str:
+        """Execute the tool asynchronously."""
         try:
             scraper = InstagramScraper()
-            import asyncio
-            media = asyncio.run(scraper.get_location_media(location_id, tab))
+            media = await scraper.get_location_media(location_id, tab)
 
             if not media:
                 return f"No media found for location {location_id}"
@@ -115,11 +121,14 @@ class SearchHashtagsTool(BaseTool):
     args_schema: Type[BaseModel] = SearchHashtagsInput
 
     def _run(self, query: str) -> str:
-        """Execute the tool."""
+        """Sync version - not used by async agents."""
+        raise NotImplementedError("Use async version (_arun) instead")
+
+    async def _arun(self, query: str) -> str:
+        """Execute the tool asynchronously."""
         try:
             scraper = InstagramScraper()
-            import asyncio
-            hashtags = asyncio.run(scraper.search_hashtags(query))
+            hashtags = await scraper.search_hashtags(query)
 
             if not hashtags:
                 return f"No hashtags found for query: {query}"
@@ -153,11 +162,14 @@ class SearchUsersTool(BaseTool):
     args_schema: Type[BaseModel] = SearchUsersInput
 
     def _run(self, query: str) -> str:
-        """Execute the tool."""
+        """Sync version - not used by async agents."""
+        raise NotImplementedError("Use async version (_arun) instead")
+
+    async def _arun(self, query: str) -> str:
+        """Execute the tool asynchronously."""
         try:
             scraper = InstagramScraper()
-            import asyncio
-            users = asyncio.run(scraper.search_users(query))
+            users = await scraper.search_users(query)
 
             if not users:
                 return f"No users found for query: {query}"
@@ -201,11 +213,14 @@ class GetUserMediaTool(BaseTool):
     args_schema: Type[BaseModel] = GetUserMediaInput
 
     def _run(self, username: str) -> str:
-        """Execute the tool."""
+        """Sync version - not used by async agents."""
+        raise NotImplementedError("Use async version (_arun) instead")
+
+    async def _arun(self, username: str) -> str:
+        """Execute the tool asynchronously."""
         try:
             scraper = InstagramScraper()
-            import asyncio
-            media = asyncio.run(scraper.get_user_media(username))
+            media = await scraper.get_user_media(username)
 
             if not media:
                 return f"No media found for user @{username}"
@@ -245,11 +260,14 @@ class GlobalSearchTool(BaseTool):
     args_schema: Type[BaseModel] = GlobalSearchInput
 
     def _run(self, query: str) -> str:
-        """Execute the tool."""
+        """Sync version - not used by async agents."""
+        raise NotImplementedError("Use async version (_arun) instead")
+
+    async def _arun(self, query: str) -> str:
+        """Execute the tool asynchronously."""
         try:
             scraper = InstagramScraper()
-            import asyncio
-            results = asyncio.run(scraper.global_search(query))
+            results = await scraper.global_search(query)
 
             if not results:
                 return f"No results found for query: {query}"
