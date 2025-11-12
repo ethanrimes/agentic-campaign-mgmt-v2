@@ -16,13 +16,13 @@ from .conftest import skip_if_no_wavespeed
 
 
 pytestmark = [
-    pytest.mark.asyncio,
     pytest.mark.integration,
     pytest.mark.requires_wavespeed,
     skip_if_no_wavespeed,
 ]
 
 
+@pytest.mark.asyncio
 class TestGenerateImageTool:
     """Integration tests for GenerateImageTool with real Wavespeed API."""
 
@@ -64,6 +64,7 @@ class TestGenerateImageTool:
             tool._run(prompt="test")
 
 
+@pytest.mark.asyncio
 class TestGenerateVideoTool:
     """Integration tests for GenerateVideoTool with real Wavespeed API."""
 
@@ -95,6 +96,7 @@ class TestGenerateVideoTool:
             tool._run(prompt="test")
 
 
+@pytest.mark.asyncio
 class TestGenerateImageAndVideoTool:
     """Integration tests for GenerateImageAndVideoTool with real Wavespeed API."""
 
@@ -128,6 +130,7 @@ class TestGenerateImageAndVideoTool:
             tool._run(image_prompt="test", video_prompt="test")
 
 
+@pytest.mark.asyncio
 class TestMediaGenerationToolsIntegration:
     """Integration tests for complete media generation workflows."""
 

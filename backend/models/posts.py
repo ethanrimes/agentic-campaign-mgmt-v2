@@ -5,9 +5,9 @@ Completed post entity.
 Created by the content creation agent, published by the publishers.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, List, Literal
-from pydantic import BaseModel, Field, HttpUrl
+from pydantic import BaseModel, Field, HttpUrl, ConfigDict
 from uuid import UUID, uuid4
 
 
@@ -47,9 +47,9 @@ class CompletedPost(BaseModel):
 
     # Content
     text: str = Field(..., description="Post caption/text (may include embedded links)")
-    media_urls: List[HttpUrl] = Field(
+    media_ids: List[UUID] = Field(
         default_factory=list,
-        description="List of Supabase URLs for images/videos (empty for text-only posts)",
+        description="List of media IDs referencing the media table (empty for text-only posts)",
     )
 
     # Optional metadata
@@ -82,12 +82,12 @@ class CompletedPost(BaseModel):
 
     # Timestamps
     created_at: datetime = Field(
-        default_factory=datetime.utcnow,
+        default_factory=lambda: datetime.now(timezone.utc),
         description="When the post was created by content creation agent",
     )
 
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "id": "c9d0e1f2-a3b4-1c2d-6e7f-8a9b0c1d2e3f",
                 "task_id": "b8c9d0e1-f2a3-0b1c-5d6e-7f8a9b0c1d2e",
@@ -96,8 +96,8 @@ class CompletedPost(BaseModel):
                 "platform": "instagram",
                 "post_type": "instagram_image",
                 "text": "SEPTA fare increase coming in March 🚊💰 What does this mean for Penn students? Check out our breakdown. #SEPTA #UPenn #Philadelphia #Transit",
-                "media_urls": [
-                    "https://your-project.supabase.co/storage/v1/object/public/generated-media/task_abc/img_001.png"
+                "media_ids": [
+                    "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d"
                 ],
                 "location": "Philadelphia, Pennsylvania",
                 "music": None,
@@ -110,3 +110,4 @@ class CompletedPost(BaseModel):
                 "created_at": "2025-01-18T18:30:00Z",
             }
         }
+    )

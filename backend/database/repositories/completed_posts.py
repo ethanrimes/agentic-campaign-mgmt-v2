@@ -49,10 +49,10 @@ class CompletedPostRepository(BaseRepository[CompletedPost]):
         self, post_id: UUID, platform_post_id: str, platform_post_url: str | None = None
     ) -> CompletedPost | None:
         """Mark a post as published."""
-        from datetime import datetime
+        from datetime import datetime, timezone
         updates = {
             "status": "published",
-            "published_at": datetime.utcnow().isoformat(),
+            "published_at": datetime.now(timezone.utc).isoformat(),
             "platform_post_id": platform_post_id,
         }
         if platform_post_url:
