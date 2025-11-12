@@ -16,8 +16,10 @@ class InsightsRepository(BaseRepository[InsightReport]):
     async def get_recent(self, limit: int = 5) -> List[InsightReport]:
         """Get most recent insight reports."""
         try:
+            from backend.database import get_supabase_client
+            client = await get_supabase_client()
             result = (
-                await self.client.table(self.table_name)
+                await client.table(self.table_name)
                 .select("*")
                 .order("created_at", desc=True)
                 .limit(limit)
@@ -25,6 +27,12 @@ class InsightsRepository(BaseRepository[InsightReport]):
             )
             return [self.model_class(**item) for item in result.data]
         except Exception as e:
+            from backend.utils import get_logger
+            logger = get_logger(__name__)
+            logger.error(
+                "Failed to get recent insight reports",
+                error=str(e),
+            )
             return []
 
     async def get_latest(self) -> InsightReport | None:
