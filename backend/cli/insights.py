@@ -34,10 +34,14 @@ def analyze(days: int):
 @click.option("--limit", default=5, help="Number of reports to display")
 def list(limit: int):
     """List recent insight reports"""
+    import asyncio
     from backend.database.repositories import InsightsRepository
 
-    repo = InsightsRepository()
-    reports = repo.get_recent(limit=limit)
+    async def _list_reports():
+        repo = InsightsRepository()
+        return await repo.get_recent(limit=limit)
+
+    reports = asyncio.run(_list_reports())
 
     click.echo(f"\n📈 Recent Insight Reports ({len(reports)}):\n")
     for report in reports:
@@ -49,10 +53,14 @@ def list(limit: int):
 @insights.command()
 def latest():
     """Show the latest insight report"""
+    import asyncio
     from backend.database.repositories import InsightsRepository
 
-    repo = InsightsRepository()
-    report = repo.get_latest()
+    async def _get_latest():
+        repo = InsightsRepository()
+        return await repo.get_latest()
+
+    report = asyncio.run(_get_latest())
 
     if not report:
         click.echo("No insight reports found")

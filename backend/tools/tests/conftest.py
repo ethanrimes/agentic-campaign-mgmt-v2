@@ -227,4 +227,4 @@ def test_page_id():
 @pytest.fixture(scope="session")
 def test_instagram_id():
     """Provide Instagram Business Account ID for testing."""
-    return settings.instagram_business_account_id
+    return settings.app_users_instagram_account_id
