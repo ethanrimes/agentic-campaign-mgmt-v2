@@ -106,3 +106,37 @@ class CompletedPostRepository(BaseRepository[CompletedPost]):
                 error=str(e),
             )
             return []
+
+    async def get_posts_since(self, cutoff_date) -> List[CompletedPost]:
+        """Get all posts created since a specific datetime (for insights analysis)."""
+        try:
+            from backend.database import get_supabase_client
+            client = await get_supabase_client()
+
+            # Convert datetime to ISO format for Supabase
+            cutoff_iso = cutoff_date.isoformat()
+
+            result = (
+                await client.table(self.table_name)
+                .select("*")
+                .gte("created_at", cutoff_iso)
+                .eq("status", "published")
+                .order("created_at", desc=True)
+                .execute()
+            )
+
+            # Convert to CompletedPost models
+            posts = [self.model_class(**item) for item in result.data]
+
+            # Return as list of dicts for agent compatibility
+            return [post.model_dump(mode="json") for post in posts]
+
+        except Exception as e:
+            from backend.utils import get_logger
+            logger = get_logger(__name__)
+            logger.error(
+                "Failed to get posts since cutoff",
+                cutoff_date=str(cutoff_date),
+                error=str(e),
+            )
+            return []
