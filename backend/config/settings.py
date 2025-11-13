@@ -44,7 +44,7 @@ class Settings(BaseSettings):
     meta_app_id: str
     meta_app_secret: str
     facebook_page_id: str
-    instagram_business_account_id: str
+    app_users_instagram_account_id: str
     facebook_page_access_token: str
     instagram_page_access_token: str
 

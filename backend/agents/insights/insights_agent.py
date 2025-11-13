@@ -95,17 +95,23 @@ Recent Posts Context:
 {posts_context}
 
 Instructions:
-1. Use your tools to gather engagement metrics for these posts
-2. Fetch and analyze comments to understand audience sentiment
-3. Identify patterns in high-performing vs. low-performing content
-4. Generate comprehensive insights about:
-   - What content types drive engagement
-   - What visual styles work best
-   - What the audience wants more of
-   - What isn't working
-5. Provide specific, actionable recommendations
+1. Use your Meta Graph API tools to gather comprehensive engagement metrics:
+   - Page-level and account-level insights for the time period
+   - Post-specific metrics for individual content (use platform_post_id from context)
+   - Video/reel insights for visual content (check if posts have media_ids)
+2. Analyze the data to identify patterns in performance:
+   - Compare different content types, formats, and platforms
+   - Look at engagement quality (saves/shares vs. just likes)
+   - Examine reach and view metrics alongside interactions
+3. Generate comprehensive insights about:
+   - What content types and formats drive the best engagement
+   - Which metrics indicate high-quality audience engagement
+   - Patterns in underperforming content
+   - Platform-specific trends (Facebook vs. Instagram)
+4. Provide specific, data-driven, actionable recommendations
 
-Your analysis should be thorough, data-driven, and honest about what's working and what isn't.
+Your analysis should be thorough, metrics-based, and honest about what's working and what isn't.
+Include specific numbers from your tool calls to support your conclusions.
 """
             config = {"verbose": True, "max_iterations": 20}
             result = await self.agent_executor.ainvoke(
@@ -160,13 +166,16 @@ Your analysis should be thorough, data-driven, and honest about what's working a
 
         for i, post in enumerate(posts[:20], 1):  # Limit to 20 for context size
             platform = post.get("platform", "unknown")
-            post_id = post.get("external_id", post.get("id", "unknown"))
+            platform_post_id = post.get("platform_post_id")
+            post_type = post.get("post_type", "unknown")
             text = post.get("text", "[No text]")[:100]
-            posted_at = post.get("posted_at", "Unknown")
+            published_at = post.get("published_at", "Unknown")
 
             context += f"{i}. Platform: {platform}\n"
-            context += f"   Post ID: {post_id}\n"
-            context += f"   Posted: {posted_at}\n"
+            context += f"   Post Type: {post_type}\n"
+            if platform_post_id:
+                context += f"   Platform Post ID: {platform_post_id}\n"
+            context += f"   Published: {published_at}\n"
             context += f"   Text: {text}...\n\n"
 
         if len(posts) > 20:

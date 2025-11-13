@@ -1,250 +1,468 @@
 # backend/tools/engagement_tools.py
 
-"""Langchain tools for accessing Meta engagement metrics."""
+"""
+Langchain tools for accessing Meta (Facebook & Instagram) engagement metrics.
+Integrates with Graph API v24.0 to fetch real-time insights data.
+"""
 
-from typing import Type, Optional
+import aiohttp
+from typing import Type, List, Optional
+from datetime import datetime, timedelta
 from pydantic import BaseModel, Field
 from langchain.tools import BaseTool
-from backend.services.meta.engagement_api import EngagementAPI
+
+from backend.config.settings import settings
+from backend.models.insights import (
+    FacebookPageInsight,
+    FacebookPostInsight,
+    FacebookVideoInsight,
+    InstagramMediaInsight,
+    InstagramAccountInsight,
+)
 from backend.utils import get_logger
 
 logger = get_logger(__name__)
 
+# ============================================================================
+# FACEBOOK PAGE INSIGHTS TOOLS
+# ============================================================================
 
-class GetPageInsightsInput(BaseModel):
-    """Input for GetPageInsights tool."""
-    page_id: str = Field(..., description="Facebook Page ID")
-    metric_names: str = Field(
-        ...,
-        description="Comma-separated metric names (e.g., 'page_impressions,page_engaged_users')"
+class GetFacebookPageInsightsInput(BaseModel):
+    """Input for Facebook Page insights."""
+    metrics: str = Field(
+        "page_post_engagements,page_media_view",
+        description="Comma-separated metrics (e.g., 'page_post_engagements,page_media_view,page_follows')"
     )
-    period: str = Field("day", description="Time period: 'day', 'week', or 'lifetime'")
+    period: str = Field("day", description="Period: day, week, or days_28")
+    days_back: int = Field(7, description="Number of days to look back (max 90)")
 
 
-class GetPageInsightsTool(BaseTool):
-    """Tool to get Facebook Page insights/metrics."""
+class GetFacebookPageInsightsTool(BaseTool):
+    """Get Facebook Page-level insights."""
 
-    name: str = "get_page_insights"
+    name: str = "get_facebook_page_insights"
     description: str = """
-    Get engagement metrics for a Facebook Page.
-    Use this to understand page performance, impressions, reach, and engagement.
-    Useful for analyzing what content is performing well.
+    Get page-level engagement metrics for your Facebook Page.
+    Returns metrics like engagements, media views, follows, etc.
+    Use this to understand overall page performance.
     """
-    args_schema: Type[BaseModel] = GetPageInsightsInput
+    args_schema: Type[BaseModel] = GetFacebookPageInsightsInput
 
-    def _run(self, page_id: str, metric_names: str, period: str = "day") -> str:
+    def _run(self, query: str) -> str:
         """Sync version - not used by async agents."""
         raise NotImplementedError("Use async version (_arun) instead")
 
-    async def _arun(self, page_id: str, metric_names: str, period: str = "day") -> str:
-        """Execute the tool asynchronously."""
+    async def _arun(self, metrics: str, period: str = "day", days_back: int = 7) -> List[FacebookPageInsight]:
+        """Fetch page insights from Facebook Graph API."""
         try:
-            metrics = [m.strip() for m in metric_names.split(",")]
-            api = EngagementAPI()
+            page_id = settings.facebook_page_id
+            access_token = settings.facebook_page_access_token
 
-            result = await api.get_page_insights(page_id, metrics, period)
+            # Calculate date range
+            until = datetime.utcnow()
+            since = until - timedelta(days=min(days_back, 90))
 
-            if not result:
-                return "No insights data available for the specified metrics."
+            url = f"https://graph.facebook.com/v24.0/{page_id}/insights"
+            params = {
+                "metric": metrics,
+                "period": period,
+                "since": int(since.timestamp()),
+                "until": int(until.timestamp()),
+                "access_token": access_token,
+            }
 
-            # Format results as readable text
-            output = f"Page Insights for {page_id} (period: {period}):\n\n"
-            for metric in result:
-                name = metric.get("name", "unknown")
-                values = metric.get("values", [])
-                if values:
-                    latest_value = values[0].get("value", "N/A")
-                    output += f"- {name}: {latest_value}\n"
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url, params=params) as response:
+                    if response.status != 200:
+                        error_text = await response.text()
+                        logger.error("Facebook Page insights error", status=response.status, error=error_text)
+                        return []
 
-            return output
+                    data = await response.json()
+                    insights = []
+
+                    for metric_data in data.get("data", []):
+                        name = metric_data.get("name")
+                        period_val = metric_data.get("period")
+                        title = metric_data.get("title", "")
+                        description = metric_data.get("description", "")
+                        values = metric_data.get("values", [])
+
+                        for value_entry in values:
+                            insights.append(FacebookPageInsight(
+                                name=name,
+                                period=period_val,
+                                title=title,
+                                description=description,
+                                value=value_entry.get("value", 0),
+                                end_time=datetime.fromisoformat(value_entry["end_time"].replace("Z", "+00:00"))
+                            ))
+
+                    logger.info("Fetched Facebook page insights", count=len(insights))
+                    return insights
+
         except Exception as e:
-            logger.error("Error getting page insights", error=str(e))
-            return f"Error retrieving page insights: {str(e)}"
+            logger.error("Error fetching Facebook page insights", error=str(e), exc_info=True)
+            return []
 
 
-class GetPostEngagementInput(BaseModel):
-    """Input for GetPostEngagement tool."""
-    post_id: str = Field(..., description="Facebook post ID (format: {page_id}_{post_id})")
+# ============================================================================
+# FACEBOOK POST INSIGHTS TOOLS
+# ============================================================================
+
+class GetFacebookPostInsightsInput(BaseModel):
+    """Input for Facebook Post insights."""
+    post_id: str = Field(..., description="Facebook post ID (format: page_id_post_id)")
 
 
-class GetPostEngagementTool(BaseTool):
-    """Tool to get engagement metrics for a specific post."""
+class GetFacebookPostInsightsTool(BaseTool):
+    """Get insights for a specific Facebook post."""
 
-    name: str = "get_post_engagement"
+    name: str = "get_facebook_post_insights"
     description: str = """
     Get detailed engagement metrics for a specific Facebook post.
-    Returns likes, comments, shares, and reach data.
-    Use this to analyze performance of individual posts.
+    Returns reactions (likes, loves, wows, etc.) and media views.
+    Use this to analyze individual post performance.
     """
-    args_schema: Type[BaseModel] = GetPostEngagementInput
+    args_schema: Type[BaseModel] = GetFacebookPostInsightsInput
 
-    def _run(self, post_id: str) -> str:
+    def _run(self, query: str) -> str:
         """Sync version - not used by async agents."""
         raise NotImplementedError("Use async version (_arun) instead")
-
-    async def _arun(self, post_id: str) -> str:
-        """Execute the tool asynchronously."""
+    
+    async def _arun(self, post_id: str) -> Optional[FacebookPostInsight]:
+        """Fetch post insights from Facebook Graph API."""
         try:
-            api = EngagementAPI()
-            result = await api.get_post_engagement(post_id)
+            access_token = settings.facebook_page_access_token
 
-            if not result:
-                return f"No engagement data found for post {post_id}"
+            # Fetch reaction metrics
+            url = f"https://graph.facebook.com/v24.0/{post_id}/insights"
+            params = {
+                "metric": "post_reactions_like_total,post_reactions_love_total,post_reactions_wow_total,post_reactions_haha_total,post_reactions_sorry_total,post_reactions_anger_total,post_reactions_by_type_total,post_media_view",
+                "access_token": access_token,
+            }
 
-            output = f"Post Engagement for {post_id}:\n\n"
-            output += f"- Likes: {result.get('likes', {}).get('summary', {}).get('total_count', 0)}\n"
-            output += f"- Comments: {result.get('comments', {}).get('summary', {}).get('total_count', 0)}\n"
-            output += f"- Shares: {result.get('shares', {}).get('count', 0)}\n"
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url, params=params) as response:
+                    if response.status != 200:
+                        error_text = await response.text()
+                        logger.error("Facebook post insights error", status=response.status, error=error_text)
+                        return None
 
-            return output
+                    data = await response.json()
+
+                    # Parse metrics
+                    insight = FacebookPostInsight(post_id=post_id)
+
+                    for metric in data.get("data", []):
+                        name = metric.get("name")
+                        values = metric.get("values", [])
+                        if not values:
+                            continue
+
+                        value = values[0].get("value", 0)
+
+                        if name == "post_reactions_like_total":
+                            insight.reactions_like = value
+                        elif name == "post_reactions_love_total":
+                            insight.reactions_love = value
+                        elif name == "post_reactions_wow_total":
+                            insight.reactions_wow = value
+                        elif name == "post_reactions_haha_total":
+                            insight.reactions_haha = value
+                        elif name == "post_reactions_sorry_total":
+                            insight.reactions_sorry = value
+                        elif name == "post_reactions_anger_total":
+                            insight.reactions_anger = value
+                        elif name == "post_reactions_by_type_total":
+                            if isinstance(value, dict):
+                                insight.reactions_by_type = value
+                        elif name == "post_media_view":
+                            insight.media_views = value
+
+                    logger.info("Fetched Facebook post insights", post_id=post_id)
+                    return insight
+
         except Exception as e:
-            logger.error("Error getting post engagement", error=str(e))
-            return f"Error retrieving post engagement: {str(e)}"
+            logger.error("Error fetching Facebook post insights", error=str(e), exc_info=True)
+            return None
 
 
-class GetPostCommentsInput(BaseModel):
-    """Input for GetPostComments tool."""
-    post_id: str = Field(..., description="Facebook post ID")
-    limit: int = Field(25, description="Maximum number of comments to retrieve (default: 25)")
+# ============================================================================
+# FACEBOOK VIDEO INSIGHTS TOOLS
+# ============================================================================
+
+class GetFacebookVideoInsightsInput(BaseModel):
+    """Input for Facebook Video insights."""
+    video_id: str = Field(..., description="Facebook video ID")
 
 
-class GetPostCommentsTool(BaseTool):
-    """Tool to get comments on a Facebook post."""
+class GetFacebookVideoInsightsTool(BaseTool):
+    """Get insights for a Facebook video or reel."""
 
-    name: str = "get_post_comments"
+    name: str = "get_facebook_video_insights"
     description: str = """
-    Retrieve comments from a specific Facebook post.
-    Use this to understand audience sentiment and feedback on content.
-    Returns comment text, author info, and engagement on comments.
+    Get detailed video metrics for a Facebook video or reel.
+    Returns views, watch time, completions, and reel-specific metrics.
+    Use this to analyze video performance.
     """
-    args_schema: Type[BaseModel] = GetPostCommentsInput
+    args_schema: Type[BaseModel] = GetFacebookVideoInsightsInput
 
-    def _run(self, post_id: str, limit: int = 25) -> str:
+    def _run(self, query: str) -> str:
         """Sync version - not used by async agents."""
         raise NotImplementedError("Use async version (_arun) instead")
-
-    async def _arun(self, post_id: str, limit: int = 25) -> str:
-        """Execute the tool asynchronously."""
+    
+    async def _arun(self, video_id: str) -> Optional[FacebookVideoInsight]:
+        """Fetch video insights from Facebook Graph API."""
         try:
-            api = EngagementAPI()
-            result = await api.get_post_comments(post_id, limit)
+            access_token = settings.facebook_page_access_token
 
-            comments = result.get("data", [])
-            if not comments:
-                return f"No comments found for post {post_id}"
+            url = f"https://graph.facebook.com/v24.0/{video_id}/video_insights"
+            params = {
+                "metric": "total_video_views,total_video_views_unique,total_video_views_autoplayed,total_video_views_clicked_to_play,total_video_views_organic,total_video_views_paid,total_video_complete_views,total_video_complete_views_unique,total_video_avg_time_watched,total_video_view_total_time,fb_reels_total_plays,fb_reels_replay_count",
+                "period": "lifetime",
+                "access_token": access_token,
+            }
 
-            output = f"Comments for post {post_id} (showing {len(comments)}):\n\n"
-            for i, comment in enumerate(comments[:limit], 1):
-                text = comment.get("message", "[No text]")
-                from_user = comment.get("from", {}).get("name", "Unknown")
-                like_count = comment.get("like_count", 0)
-                output += f"{i}. {from_user}: {text}\n"
-                output += f"   Likes: {like_count}\n\n"
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url, params=params) as response:
+                    if response.status != 200:
+                        error_text = await response.text()
+                        logger.error("Facebook video insights error", status=response.status, error=error_text)
+                        return None
 
-            return output
+                    data = await response.json()
+
+                    # Parse metrics
+                    insight = FacebookVideoInsight(video_id=video_id)
+
+                    for metric in data.get("data", []):
+                        name = metric.get("name")
+                        values = metric.get("values", [])
+                        if not values:
+                            continue
+
+                        value = values[0].get("value", 0)
+
+                        if name == "total_video_views":
+                            insight.total_views = value
+                        elif name == "total_video_views_unique":
+                            insight.unique_views = value
+                        elif name == "total_video_views_autoplayed":
+                            insight.autoplayed_views = value
+                        elif name == "total_video_views_clicked_to_play":
+                            insight.clicked_to_play_views = value
+                        elif name == "total_video_views_organic":
+                            insight.organic_views = value
+                        elif name == "total_video_views_paid":
+                            insight.paid_views = value
+                        elif name == "total_video_complete_views":
+                            insight.complete_views = value
+                        elif name == "total_video_complete_views_unique":
+                            insight.complete_views_unique = value
+                        elif name == "total_video_avg_time_watched":
+                            insight.avg_time_watched_ms = int(value * 1000) if isinstance(value, (int, float)) else 0
+                        elif name == "total_video_view_total_time":
+                            insight.total_time_watched_ms = int(value * 1000) if isinstance(value, (int, float)) else 0
+                        elif name == "fb_reels_total_plays":
+                            insight.reels_total_plays = value
+                        elif name == "fb_reels_replay_count":
+                            insight.reels_replay_count = value
+
+                    logger.info("Fetched Facebook video insights", video_id=video_id)
+                    return insight
+
         except Exception as e:
-            logger.error("Error getting post comments", error=str(e))
-            return f"Error retrieving comments: {str(e)}"
+            logger.error("Error fetching Facebook video insights", error=str(e), exc_info=True)
+            return None
 
 
-class GetInstagramInsightsInput(BaseModel):
-    """Input for GetInstagramInsights tool."""
-    ig_user_id: str = Field(..., description="Instagram Business Account ID")
-    metric_names: str = Field(
-        ...,
-        description="Comma-separated metric names (e.g., 'impressions,reach,profile_views')"
-    )
-    period: str = Field("day", description="Time period: 'day', 'week', or 'days_28'")
-
-
-class GetInstagramInsightsTool(BaseTool):
-    """Tool to get Instagram account insights."""
-
-    name: str = "get_instagram_insights"
-    description: str = """
-    Get engagement metrics for an Instagram Business Account.
-    Returns impressions, reach, profile views, and other account-level metrics.
-    Use this to understand overall Instagram performance.
-    """
-    args_schema: Type[BaseModel] = GetInstagramInsightsInput
-
-    def _run(self, ig_user_id: str, metric_names: str, period: str = "day") -> str:
-        """Sync version - not used by async agents."""
-        raise NotImplementedError("Use async version (_arun) instead")
-
-    async def _arun(self, ig_user_id: str, metric_names: str, period: str = "day") -> str:
-        """Execute the tool asynchronously."""
-        try:
-            metrics = [m.strip() for m in metric_names.split(",")]
-            api = EngagementAPI()
-            result = await api.get_instagram_insights(ig_user_id, metrics, period)
-
-            if not result:
-                return "No Instagram insights data available."
-
-            output = f"Instagram Insights for {ig_user_id} (period: {period}):\n\n"
-            for metric in result:
-                name = metric.get("name", "unknown")
-                values = metric.get("values", [])
-                if values:
-                    latest_value = values[0].get("value", "N/A")
-                    output += f"- {name}: {latest_value}\n"
-
-            return output
-        except Exception as e:
-            logger.error("Error getting Instagram insights", error=str(e))
-            return f"Error retrieving Instagram insights: {str(e)}"
-
+# ============================================================================
+# INSTAGRAM MEDIA INSIGHTS TOOLS
+# ============================================================================
 
 class GetInstagramMediaInsightsInput(BaseModel):
-    """Input for GetInstagramMediaInsights tool."""
+    """Input for Instagram media insights."""
     media_id: str = Field(..., description="Instagram media ID")
+    media_type: str = Field("image", description="Media type: image, video, carousel, reel, story")
 
 
 class GetInstagramMediaInsightsTool(BaseTool):
-    """Tool to get insights for specific Instagram media."""
+    """Get insights for Instagram media."""
 
     name: str = "get_instagram_media_insights"
     description: str = """
-    Get engagement metrics for a specific Instagram post or reel.
-    Returns impressions, reach, likes, comments, saves, and shares.
-    Use this to analyze performance of individual Instagram content.
+    Get engagement metrics for a specific Instagram post, reel, or story.
+    Returns reach, views, interactions, likes, comments, saves, shares, and watch time.
+    Use this to analyze individual content performance on Instagram.
     """
     args_schema: Type[BaseModel] = GetInstagramMediaInsightsInput
 
-    def _run(self, media_id: str) -> str:
+    def _run(self, query: str) -> str:
         """Sync version - not used by async agents."""
         raise NotImplementedError("Use async version (_arun) instead")
-
-    async def _arun(self, media_id: str) -> str:
-        """Execute the tool asynchronously."""
+    
+    async def _arun(self, media_id: str, media_type: str = "image") -> Optional[InstagramMediaInsight]:
+        """Fetch media insights from Instagram Graph API."""
         try:
-            api = EngagementAPI()
-            result = await api.get_instagram_media_insights(media_id)
+            access_token = settings.instagram_page_access_token
 
-            if not result:
-                return f"No insights found for media {media_id}"
+            # Build metric list based on media type
+            if media_type == "reel":
+                metrics = "reach,views,total_interactions,likes,comments,saved,shares,profile_activity,ig_reels_avg_watch_time,ig_reels_video_view_total_time"
+            else:
+                metrics = "reach,views,total_interactions,likes,comments,saved,shares,profile_activity"
 
-            output = f"Media Insights for {media_id}:\n\n"
-            for metric in result:
-                name = metric.get("name", "unknown")
-                values = metric.get("values", [])
-                if values:
-                    value = values[0].get("value", "N/A")
-                    output += f"- {name}: {value}\n"
+            url = f"https://graph.instagram.com/v24.0/{media_id}/insights"
+            params = {
+                "metric": metrics,
+                "access_token": access_token,
+            }
 
-            return output
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url, params=params) as response:
+                    if response.status != 200:
+                        error_text = await response.text()
+                        logger.error("Instagram media insights error", status=response.status, error=error_text)
+                        return None
+
+                    data = await response.json()
+
+                    # Parse metrics
+                    insight = InstagramMediaInsight(media_id=media_id, media_type=media_type)
+
+                    for metric in data.get("data", []):
+                        name = metric.get("name")
+                        values = metric.get("values", [])
+                        if not values:
+                            continue
+
+                        value = values[0].get("value", 0)
+
+                        if name == "reach":
+                            insight.reach = value
+                        elif name == "views":
+                            insight.views = value
+                        elif name == "total_interactions":
+                            insight.total_interactions = value
+                        elif name == "likes":
+                            insight.likes = value
+                        elif name == "comments":
+                            insight.comments = value
+                        elif name == "saved":
+                            insight.saves = value
+                        elif name == "shares":
+                            insight.shares = value
+                        elif name == "profile_activity":
+                            insight.profile_activity = value
+                        elif name == "ig_reels_avg_watch_time":
+                            insight.avg_watch_time_ms = value
+                        elif name == "ig_reels_video_view_total_time":
+                            insight.total_watch_time_ms = value
+
+                    logger.info("Fetched Instagram media insights", media_id=media_id)
+                    return insight
+
         except Exception as e:
-            logger.error("Error getting media insights", error=str(e))
-            return f"Error retrieving media insights: {str(e)}"
+            logger.error("Error fetching Instagram media insights", error=str(e), exc_info=True)
+            return None
 
+
+# ============================================================================
+# INSTAGRAM ACCOUNT INSIGHTS TOOLS
+# ============================================================================
+
+class GetInstagramAccountInsightsInput(BaseModel):
+    """Input for Instagram account insights."""
+    period: str = Field("day", description="Period: day, week, or days_28")
+    days_back: int = Field(7, description="Number of days to look back")
+
+
+class GetInstagramAccountInsightsTool(BaseTool):
+    """Get Instagram account-level insights."""
+
+    name: str = "get_instagram_account_insights"
+    description: str = """
+    Get account-level engagement metrics for your Instagram Business Account.
+    Returns reach, views, engaged accounts, interactions, and profile metrics.
+    Use this to understand overall Instagram performance.
+    """
+    args_schema: Type[BaseModel] = GetInstagramAccountInsightsInput
+
+    def _run(self, query: str) -> str:
+        """Sync version - not used by async agents."""
+        raise NotImplementedError("Use async version (_arun) instead")
+    
+    async def _arun(self, period: str = "day", days_back: int = 7) -> Optional[InstagramAccountInsight]:
+        """Fetch account insights from Instagram Graph API."""
+        try:
+            ig_account_id = settings.app_users_instagram_account_id
+            access_token = settings.instagram_page_access_token
+
+            # Calculate date range
+            until = int(datetime.utcnow().timestamp())
+            since = int((datetime.utcnow() - timedelta(days=days_back)).timestamp())
+
+            url = f"https://graph.instagram.com/v24.0/{ig_account_id}/insights"
+            params = {
+                "metric": "accounts_engaged,total_interactions,reach,views,profile_links_taps",
+                "period": period,
+                "metric_type": "total_value",
+                "since": since,
+                "until": until,
+                "access_token": access_token,
+            }
+
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url, params=params) as response:
+                    if response.status != 200:
+                        error_text = await response.text()
+                        logger.error("Instagram account insights error", status=response.status, error=error_text)
+                        return None
+
+                    data = await response.json()
+
+                    # Parse metrics
+                    insight = InstagramAccountInsight()
+
+                    for metric in data.get("data", []):
+                        name = metric.get("name")
+                        values = metric.get("values", [])
+                        if not values:
+                            continue
+
+                        # Sum up values across the period
+                        total = sum(v.get("value", 0) for v in values)
+
+                        if name == "accounts_engaged":
+                            insight.accounts_engaged = total
+                        elif name == "total_interactions":
+                            insight.total_interactions = total
+                        elif name == "reach":
+                            insight.reach = total
+                        elif name == "views":
+                            insight.views = total
+                        elif name == "profile_links_taps":
+                            insight.profile_link_taps = total
+
+                    logger.info("Fetched Instagram account insights")
+                    return insight
+
+        except Exception as e:
+            logger.error("Error fetching Instagram account insights", error=str(e), exc_info=True)
+            return None
+
+
+# ============================================================================
+# TOOL FACTORY
+# ============================================================================
 
 def create_engagement_tools():
     """Create all engagement tools for use with Langchain agents."""
     return [
-        GetPageInsightsTool(),
-        GetPostEngagementTool(),
-        GetPostCommentsTool(),
-        GetInstagramInsightsTool(),
+        GetFacebookPageInsightsTool(),
+        GetFacebookPostInsightsTool(),
+        GetFacebookVideoInsightsTool(),
         GetInstagramMediaInsightsTool(),
+        GetInstagramAccountInsightsTool(),
     ]
