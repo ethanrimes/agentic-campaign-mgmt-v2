@@ -94,7 +94,6 @@ class PerplexitySonarAgent:
                         "items": {
                             "type": "object",
                             "properties": {
-                                # FIXED: Added 'id' property
                                 "id": {
                                     "type": "string",
                                     "description": "A unique summary identifier or key sentence"
@@ -126,19 +125,16 @@ class PerplexitySonarAgent:
                                         "properties": {
                                             "url": {"type": "string", "format": "uri"},
                                             "key_findings": {"type": "string"},
-                                            # FIXED: Added 'found_by' property
                                             "found_by": {
                                                 "type": "string",
                                                 "description": "Agent or source that discovered this link"
                                             },
                                             "created_at": {"type": "string"}
                                         },
-                                        # FIXED: Added 'found_by' to required list
                                         "required": ["url", "key_findings", "found_by", "created_at"],
                                         "additionalProperties": False
                                     }
                                 },
-                                # FIXED: Added 'created_at' property
                                 "created_at": {
                                     "type": "string",
                                     "description": "Timestamp for when the event object was created"
