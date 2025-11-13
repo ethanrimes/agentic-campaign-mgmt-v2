@@ -378,7 +378,7 @@ class HashtagInfo(BaseModel):
 
 class HashtagMediaResponse(BaseModel):
     """Media by hashtag response."""
-    hashtag_info: HashtagInfo = Field(..., description="Hashtag details")
+    hashtag_info: Optional[HashtagInfo] = Field(None, description="Hashtag details")
     media_data: List[TimelineMedia] = Field(default_factory=list)
 
 

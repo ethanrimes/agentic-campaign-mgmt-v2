@@ -486,7 +486,10 @@ class GetHashtagMediaTool(BaseTool):
                 return f"No media found for #{hashtag}"
 
             output = f"Posts with #{hashtag}:\n"
-            output += f"Total posts: {result.hashtag_info.media_count:,}\n\n"
+            if result.hashtag_info:
+                output += f"Total posts: {result.hashtag_info.media_count:,}\n\n"
+            else:
+                output += "\n"
 
             for i, media in enumerate(result.media_data[:10], 1):
                 username = media.user.username if media.user else "unknown"
