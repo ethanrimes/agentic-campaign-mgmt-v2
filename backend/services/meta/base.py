@@ -19,7 +19,7 @@ class MetaBaseClient:
 
     def __init__(self):
         self.page_id = settings.facebook_page_id
-        self.ig_user_id = settings.instagram_business_account_id
+        self.ig_user_id = settings.app_users_instagram_account_id
         self.page_token = settings.facebook_page_access_token
         self.ig_token = settings.instagram_page_access_token
 

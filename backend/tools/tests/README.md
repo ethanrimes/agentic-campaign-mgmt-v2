@@ -126,7 +126,7 @@ META_APP_ID=your_app_id
 META_APP_SECRET=your_app_secret
 FACEBOOK_PAGE_ID=your_page_id
 FACEBOOK_PAGE_ACCESS_TOKEN=your_token
-INSTAGRAM_BUSINESS_ACCOUNT_ID=your_ig_id
+app_users_instagram_account_id=your_ig_id
 
 # RapidAPI (required for scraper tests)
 RAPIDAPI_KEY=your_key

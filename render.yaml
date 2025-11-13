@@ -29,7 +29,7 @@ services:
         sync: false
       - key: FACEBOOK_PAGE_ID
         sync: false
-      - key: INSTAGRAM_BUSINESS_ACCOUNT_ID
+      - key: app_users_instagram_account_id
         sync: false
       - key: FACEBOOK_PAGE_ACCESS_TOKEN
         sync: false

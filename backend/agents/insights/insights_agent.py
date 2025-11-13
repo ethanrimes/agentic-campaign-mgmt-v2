@@ -185,16 +185,28 @@ Include specific numbers from your tool calls to support your conclusions.
 
     def _extract_tool_calls(self, messages: List) -> List[Dict[str, Any]]:
         """Extract tool calls from agent execution for logging."""
-        tool_calls = []
+        from langchain_core.messages import ToolMessage
 
+        tool_calls = []
+        tool_results = {}
+
+        # First pass: collect tool results by tool_call_id
         for message in messages:
-            # Check if the message is an AIMessage with tool_calls
+            if isinstance(message, ToolMessage):
+                tool_results[message.tool_call_id] = message.content
+
+        # Second pass: extract tool calls and match with results
+        for message in messages:
             if isinstance(message, AIMessage) and message.tool_calls:
                 for tool_call in message.tool_calls:
+                    tool_call_id = tool_call.get("id")
+                    result = tool_results.get(tool_call_id, "No result captured")
+
                     tool_calls.append({
-                        "tool": tool_call.get("name"),
-                        "input": str(tool_call.get("args"))[:200],  # Truncate
-                        "timestamp": datetime.utcnow().isoformat()
+                        "tool_name": tool_call.get("name", "unknown"),
+                        "arguments": tool_call.get("args", {}),
+                        "result": result,
+                        "timestamp": datetime.utcnow()
                     })
 
         return tool_calls
