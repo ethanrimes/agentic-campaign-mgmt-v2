@@ -204,8 +204,11 @@ class PerplexitySonarAgent:
                 ingested_by="Perplexity Sonar"
             )
 
+            # Convert to dict for repository (repository expects Dict[str, Any])
+            event_dict = ingested_event.model_dump(mode="json", exclude={"id"})
+
             # Save to database
-            created_event = await self.repo.create(ingested_event)
+            created_event = await self.repo.create(event_dict)
 
             logger.info("Ingested event saved", event_id=str(created_event.id), name=event_data["name"])
 
