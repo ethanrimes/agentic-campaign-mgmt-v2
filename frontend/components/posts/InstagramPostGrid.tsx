@@ -103,15 +103,17 @@ export default function InstagramPostGrid({ posts }: InstagramPostGridProps) {
                 </div>
               )}
 
-              {/* Status indicator */}
+              {/* Status badge */}
               <div className="absolute bottom-2 left-2">
-                <div className={`w-2 h-2 rounded-full ${
+                <div className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                   post.status === 'published'
-                    ? 'bg-green-500'
+                    ? 'bg-green-500 text-white'
                     : post.status === 'pending'
-                    ? 'bg-amber-500'
-                    : 'bg-red-500'
-                }`} />
+                    ? 'bg-amber-500 text-white'
+                    : 'bg-red-500 text-white'
+                }`}>
+                  {post.status}
+                </div>
               </div>
             </div>
           )

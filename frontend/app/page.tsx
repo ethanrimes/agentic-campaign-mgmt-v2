@@ -83,7 +83,7 @@ export default function Home() {
             </div>
           </div>
           <h1 className="text-6xl md:text-7xl font-bold mb-6 text-slate-900">
-            Socially Automated
+            BuzzFactory
           </h1>
           <p className="text-2xl font-semibold text-slate-700 mb-4">
             An Agentic Engagement Engine
