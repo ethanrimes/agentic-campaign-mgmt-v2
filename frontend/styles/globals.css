@@ -9,7 +9,7 @@
 
 body {
   color: rgb(var(--foreground-rgb));
-  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 50%, #f0f9ff 100%);
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #f1f5f9 100%);
   background-attachment: fixed;
   min-height: 100vh;
 }
@@ -26,19 +26,19 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #0ea5e9, #0284c7);
+  background: linear-gradient(180deg, #06b6d4, #0891b2);
   border-radius: 10px;
   border: 2px solid #f1f5f9;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, #0284c7, #0369a1);
+  background: linear-gradient(180deg, #0891b2, #0e7490);
 }
 
 /* Selection */
 ::selection {
-  background-color: #bae6fd;
-  color: #0c4a6e;
+  background-color: #a5f3fc;
+  color: #164e63;
 }
 
 @layer base {

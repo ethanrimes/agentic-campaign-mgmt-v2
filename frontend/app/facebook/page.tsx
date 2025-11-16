@@ -1,8 +1,8 @@
 // frontend/app/facebook/page.tsx
 
 import { getCompletedPosts } from '@/lib/api'
-import PostCard from '@/components/posts/PostCard'
 import { Facebook } from 'lucide-react'
+import FacebookPostGrid from '@/components/posts/FacebookPostGrid'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,10 +16,10 @@ export default async function FacebookPage() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto animate-fade-in">
+    <div className="max-w-7xl mx-auto animate-fade-in">
       <div className="relative mb-10 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-100/50 via-blue-200/30 to-blue-100/50 rounded-3xl blur-3xl"></div>
-        <div className="relative glass rounded-2xl p-8 border border-white/50 shadow-soft">
+        <div className="absolute inset-0 bg-gradient-to-br from-cyan-100/30 via-blue-100/20 to-slate-100/30 rounded-3xl blur-3xl"></div>
+        <div className="relative bg-white rounded-2xl p-8 border border-slate-200 shadow-xl">
           <div className="flex items-center gap-4 mb-3">
             <div className="relative">
               <div className="w-14 h-14 bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl flex items-center justify-center shadow-lg">
@@ -28,31 +28,31 @@ export default async function FacebookPage() {
               <div className="absolute inset-0 bg-blue-600 rounded-2xl blur-xl opacity-30"></div>
             </div>
             <div>
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent">
+              <h1 className="text-4xl font-bold text-slate-900">
                 Facebook Posts
               </h1>
-              <p className="text-gray-600 mt-1">
-                All Facebook content sorted by most recent first
+              <p className="text-slate-600 mt-1">
+                Published and scheduled Facebook content
               </p>
             </div>
           </div>
           <div className="mt-6 flex flex-wrap items-center gap-3">
-            <div className="glass px-4 py-2 rounded-full border border-white/30">
-              <span className="text-sm font-bold text-gray-900">{posts.length}</span>
-              <span className="text-sm text-gray-600 ml-1">total posts</span>
+            <div className="bg-slate-100 px-4 py-2 rounded-full border border-slate-200">
+              <span className="text-sm font-bold text-slate-900">{posts.length}</span>
+              <span className="text-sm text-slate-600 ml-1">total posts</span>
             </div>
-            <div className="glass px-3 py-2 rounded-full border border-white/30 text-sm">
-              <span className="text-green-600 font-medium">✓ {statusCounts.published}</span>
-              <span className="text-gray-500 ml-1">published</span>
+            <div className="bg-green-50 px-3 py-2 rounded-full border border-green-200 text-sm">
+              <span className="text-green-700 font-medium">{statusCounts.published}</span>
+              <span className="text-green-600 ml-1">published</span>
             </div>
-            <div className="glass px-3 py-2 rounded-full border border-white/30 text-sm">
-              <span className="text-amber-600 font-medium">⏳ {statusCounts.pending}</span>
-              <span className="text-gray-500 ml-1">pending</span>
+            <div className="bg-amber-50 px-3 py-2 rounded-full border border-amber-200 text-sm">
+              <span className="text-amber-700 font-medium">{statusCounts.pending}</span>
+              <span className="text-amber-600 ml-1">pending</span>
             </div>
             {statusCounts.failed > 0 && (
-              <div className="glass px-3 py-2 rounded-full border border-red-200 text-sm">
-                <span className="text-red-600 font-medium">✗ {statusCounts.failed}</span>
-                <span className="text-gray-500 ml-1">failed</span>
+              <div className="bg-red-50 px-3 py-2 rounded-full border border-red-200 text-sm">
+                <span className="text-red-700 font-medium">{statusCounts.failed}</span>
+                <span className="text-red-600 ml-1">failed</span>
               </div>
             )}
           </div>
@@ -60,24 +60,18 @@ export default async function FacebookPage() {
       </div>
 
       {posts.length === 0 ? (
-        <div className="text-center py-16 glass rounded-2xl border border-white/50 shadow-soft">
+        <div className="text-center py-16 bg-white rounded-2xl border border-slate-200 shadow-xl">
           <div className="relative inline-block mb-6">
-            <Facebook className="w-16 h-16 text-blue-400 mx-auto" />
-            <div className="absolute inset-0 bg-blue-500 blur-2xl opacity-20"></div>
+            <Facebook className="w-16 h-16 text-slate-400 mx-auto" />
+            <div className="absolute inset-0 bg-slate-500 blur-2xl opacity-20"></div>
           </div>
-          <p className="text-lg font-semibold text-gray-900 mb-2">No Facebook posts found</p>
-          <p className="text-sm text-gray-600 max-w-md mx-auto">
+          <p className="text-lg font-semibold text-slate-900 mb-2">No Facebook posts found</p>
+          <p className="text-sm text-slate-600 max-w-md mx-auto">
             Content will appear here after the content creation agent runs
           </p>
         </div>
       ) : (
-        <div className="space-y-4">
-          {posts.map((post, index) => (
-            <div key={post.id} className="animate-slide-up" style={{ animationDelay: `${index * 50}ms` }}>
-              <PostCard post={post} />
-            </div>
-          ))}
-        </div>
+        <FacebookPostGrid posts={posts} />
       )}
     </div>
   )
