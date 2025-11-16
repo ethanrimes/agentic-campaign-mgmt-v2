@@ -26,22 +26,35 @@ class NewsEventSeedRepository(BaseRepository[NewsEventSeed]):
         Handles the sources separately using the SourceRepository.
         """
         from .sources import SourceRepository
+        from backend.models import Source
 
         try:
-            # Extract sources from data
-            sources = data.pop("sources", [])
+            # Extract sources from data (make a copy to avoid mutating original)
+            data_copy = data.copy()
+            sources_data = data_copy.pop("sources", [])
+
+            # Create NewsEventSeed model from dict
+            seed_model = NewsEventSeed(**data_copy)
 
             # Create the news event seed without sources
-            seed = await super().create(data)
+            seed = await super().create(seed_model)
 
             if not seed:
                 return None
 
             # Create and link sources
-            if sources:
+            if sources_data:
+                # Convert source dicts to Source objects if needed
+                source_objects = []
+                for src in sources_data:
+                    if isinstance(src, dict):
+                        source_objects.append(Source(**src))
+                    else:
+                        source_objects.append(src)
+
                 source_repo = SourceRepository()
                 await source_repo.create_and_link_sources_for_news_event_seed(
-                    seed.id, sources
+                    seed.id, source_objects
                 )
 
             return seed
@@ -223,22 +236,35 @@ class IngestedEventRepository(BaseRepository[IngestedEvent]):
         Handles the sources separately using the SourceRepository.
         """
         from .sources import SourceRepository
+        from backend.models import Source
 
         try:
-            # Extract sources from data
-            sources = data.pop("sources", [])
+            # Extract sources from data (make a copy to avoid mutating original)
+            data_copy = data.copy()
+            sources_data = data_copy.pop("sources", [])
+
+            # Create IngestedEvent model from dict
+            event_model = IngestedEvent(**data_copy)
 
             # Create the ingested event without sources
-            event = await super().create(data)
+            event = await super().create(event_model)
 
             if not event:
                 return None
 
             # Create and link sources
-            if sources:
+            if sources_data:
+                # Convert source dicts to Source objects if needed
+                source_objects = []
+                for src in sources_data:
+                    if isinstance(src, dict):
+                        source_objects.append(Source(**src))
+                    else:
+                        source_objects.append(src)
+
                 source_repo = SourceRepository()
                 await source_repo.create_and_link_sources_for_ingested_event(
-                    event.id, sources
+                    event.id, source_objects
                 )
 
             return event

@@ -245,8 +245,10 @@ Is this a duplicate? Which event does it match (if any)?""")
             sources=ingested.sources
         )
 
-        # Save to database
-        created_event = await self.canonical_repo.create(canonical_event)
+        # Save to database - convert model to dict
+        created_event = await self.canonical_repo.create(
+            canonical_event.model_dump(mode="json", exclude={"id"})
+        )
 
         logger.info("Created new canonical event", canonical_id=str(created_event.id), name=name)
 

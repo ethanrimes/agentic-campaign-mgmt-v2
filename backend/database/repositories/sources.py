@@ -187,8 +187,7 @@ class SourceRepository(BaseRepository[Source]):
                     source_to_link = existing_source
                 else:
                     # Create new source
-                    source_data = source.model_dump(mode="json", exclude={"id"})
-                    source_to_link = await self.create(source_data)
+                    source_to_link = await super().create(source)
 
                 if source_to_link:
                     # Link to ingested event
@@ -224,8 +223,7 @@ class SourceRepository(BaseRepository[Source]):
                     source_to_link = existing_source
                 else:
                     # Create new source
-                    source_data = source.model_dump(mode="json", exclude={"id"})
-                    source_to_link = await self.create(source_data)
+                    source_to_link = await super().create(source)
 
                 if source_to_link:
                     # Link to news event seed
