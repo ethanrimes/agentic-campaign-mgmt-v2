@@ -1,9 +1,10 @@
 // frontend/app/scheduled-posts/page.tsx
 
 import { getCompletedPosts } from '@/lib/api'
-import { Calendar, Facebook as FacebookIcon, Instagram as InstagramIcon } from 'lucide-react'
-import PostCard from '@/components/posts/PostCard'
+import { Calendar } from 'lucide-react'
 import ScheduledPostsCalendar from '@/components/posts/ScheduledPostsCalendar'
+import ExpandableFacebookPosts from '@/components/posts/ExpandableFacebookPosts'
+import InstagramPostGrid from '@/components/posts/InstagramPostGrid'
 
 export const dynamic = 'force-dynamic'
 
@@ -79,47 +80,15 @@ export default async function ScheduledPostsPage() {
             <ScheduledPostsCalendar posts={posts} />
           </section>
 
-          {/* Facebook Posts */}
+          {/* Facebook Posts - Expandable */}
           {facebookPosts.length > 0 && (
-            <section>
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl flex items-center justify-center shadow-lg">
-                  <FacebookIcon className="w-5 h-5 text-white" />
-                </div>
-                <h2 className="text-2xl font-bold text-slate-900">Facebook Posts</h2>
-                <span className="text-sm bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-medium">
-                  {facebookPosts.length}
-                </span>
-              </div>
-              <div className="grid grid-cols-1 gap-4">
-                {facebookPosts.map((post, index) => (
-                  <div key={post.id} className="animate-slide-up" style={{ animationDelay: `${index * 30}ms` }}>
-                    <PostCard post={post} />
-                  </div>
-                ))}
-              </div>
-            </section>
+            <ExpandableFacebookPosts posts={facebookPosts} />
           )}
 
-          {/* Instagram Posts */}
+          {/* Instagram Posts - Grid */}
           {instagramPosts.length > 0 && (
             <section>
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 bg-gradient-to-br from-pink-600 to-rose-600 rounded-xl flex items-center justify-center shadow-lg">
-                  <InstagramIcon className="w-5 h-5 text-white" />
-                </div>
-                <h2 className="text-2xl font-bold text-slate-900">Instagram Posts</h2>
-                <span className="text-sm bg-pink-100 text-pink-700 px-3 py-1 rounded-full font-medium">
-                  {instagramPosts.length}
-                </span>
-              </div>
-              <div className="grid grid-cols-1 gap-4">
-                {instagramPosts.map((post, index) => (
-                  <div key={post.id} className="animate-slide-up" style={{ animationDelay: `${index * 30}ms` }}>
-                    <PostCard post={post} />
-                  </div>
-                ))}
-              </div>
+              <InstagramPostGrid posts={instagramPosts} />
             </section>
           )}
         </div>

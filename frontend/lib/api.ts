@@ -90,7 +90,28 @@ export async function getCompletedPosts(platform?: 'facebook' | 'instagram'): Pr
   const { data, error } = await query
 
   if (error) throw error
-  return data || []
+
+  // Fetch media URLs for posts with media_ids
+  const postsWithMedia = await Promise.all(
+    (data || []).map(async (post) => {
+      if (post.media_ids && Array.isArray(post.media_ids) && post.media_ids.length > 0) {
+        const { data: mediaData, error: mediaError } = await supabase
+          .from('media')
+          .select('public_url')
+          .in('id', post.media_ids)
+
+        if (!mediaError && mediaData) {
+          return {
+            ...post,
+            media_urls: mediaData.map(m => m.public_url)
+          }
+        }
+      }
+      return post
+    })
+  )
+
+  return postsWithMedia
 }
 
 export async function getCompletedPost(id: string): Promise<CompletedPost | null> {
@@ -101,6 +122,22 @@ export async function getCompletedPost(id: string): Promise<CompletedPost | null
     .single()
 
   if (error) throw error
+
+  // Fetch media URLs if media_ids exist
+  if (data && data.media_ids && Array.isArray(data.media_ids) && data.media_ids.length > 0) {
+    const { data: mediaData, error: mediaError } = await supabase
+      .from('media')
+      .select('public_url')
+      .in('id', data.media_ids)
+
+    if (!mediaError && mediaData) {
+      return {
+        ...data,
+        media_urls: mediaData.map(m => m.public_url)
+      }
+    }
+  }
+
   return data
 }
 
@@ -124,7 +161,28 @@ export async function getCompletedPostsBySeed(seedId: string): Promise<Completed
     .order('created_at', { ascending: false })
 
   if (error) throw error
-  return data || []
+
+  // Fetch media URLs for posts with media_ids
+  const postsWithMedia = await Promise.all(
+    (data || []).map(async (post) => {
+      if (post.media_ids && Array.isArray(post.media_ids) && post.media_ids.length > 0) {
+        const { data: mediaData, error: mediaError } = await supabase
+          .from('media')
+          .select('public_url')
+          .in('id', post.media_ids)
+
+        if (!mediaError && mediaData) {
+          return {
+            ...post,
+            media_urls: mediaData.map(m => m.public_url)
+          }
+        }
+      }
+      return post
+    })
+  )
+
+  return postsWithMedia
 }
 
 // Insight Reports

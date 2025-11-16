@@ -2,9 +2,7 @@
 
 import { getNewsEventSeeds, getTrendSeeds, getUngroundedSeeds } from '@/lib/api'
 import { Database, TrendingUp, Lightbulb, Sparkles } from 'lucide-react'
-import NewsEventCard from '@/components/seeds/NewsEventCard'
-import TrendSeedCard from '@/components/seeds/TrendSeedCard'
-import UngroundedSeedCard from '@/components/seeds/UngroundedSeedCard'
+import ContentSeedsGrid from '@/components/seeds/ContentSeedsGrid'
 
 export const dynamic = 'force-dynamic'
 
@@ -72,73 +70,11 @@ export default async function ContentSeedsPage() {
           </p>
         </div>
       ) : (
-        <div className="space-y-12">
-          {/* News Events Section */}
-          {newsSeeds.length > 0 && (
-            <section>
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-cyan-600 rounded-xl flex items-center justify-center shadow-lg">
-                  <Database className="w-5 h-5 text-white" />
-                </div>
-                <h2 className="text-2xl font-bold text-slate-900">News Events</h2>
-                <span className="text-sm bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-medium">
-                  {newsSeeds.length}
-                </span>
-              </div>
-              <div className="grid grid-cols-1 gap-4">
-                {newsSeeds.map((seed, index) => (
-                  <div key={seed.id} className="animate-slide-up" style={{ animationDelay: `${index * 30}ms` }}>
-                    <NewsEventCard seed={seed} />
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
-
-          {/* Trends Section */}
-          {trendSeeds.length > 0 && (
-            <section>
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-pink-600 rounded-xl flex items-center justify-center shadow-lg">
-                  <TrendingUp className="w-5 h-5 text-white" />
-                </div>
-                <h2 className="text-2xl font-bold text-slate-900">Social Media Trends</h2>
-                <span className="text-sm bg-purple-100 text-purple-700 px-3 py-1 rounded-full font-medium">
-                  {trendSeeds.length}
-                </span>
-              </div>
-              <div className="grid grid-cols-1 gap-4">
-                {trendSeeds.map((seed, index) => (
-                  <div key={seed.id} className="animate-slide-up" style={{ animationDelay: `${index * 30}ms` }}>
-                    <TrendSeedCard seed={seed} />
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
-
-          {/* Ungrounded Section */}
-          {ungroundedSeeds.length > 0 && (
-            <section>
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 bg-gradient-to-br from-amber-600 to-orange-600 rounded-xl flex items-center justify-center shadow-lg">
-                  <Lightbulb className="w-5 h-5 text-white" />
-                </div>
-                <h2 className="text-2xl font-bold text-slate-900">Creative Ideas</h2>
-                <span className="text-sm bg-amber-100 text-amber-700 px-3 py-1 rounded-full font-medium">
-                  {ungroundedSeeds.length}
-                </span>
-              </div>
-              <div className="grid grid-cols-1 gap-4">
-                {ungroundedSeeds.map((seed, index) => (
-                  <div key={seed.id} className="animate-slide-up" style={{ animationDelay: `${index * 30}ms` }}>
-                    <UngroundedSeedCard seed={seed} />
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
-        </div>
+        <ContentSeedsGrid
+          newsSeeds={newsSeeds}
+          trendSeeds={trendSeeds}
+          ungroundedSeeds={ungroundedSeeds}
+        />
       )}
     </div>
   )
