@@ -5,6 +5,7 @@
 from pathlib import Path
 from typing import Dict, Any, List, Literal, Optional
 from uuid import UUID
+from datetime import datetime, timezone, timedelta
 from pydantic import BaseModel, Field
 from langchain.agents import create_agent
 from langchain.agents.structured_output import ToolStrategy
@@ -81,6 +82,48 @@ class ContentCreationAgent:
             response_format=ToolStrategy(AgentResponse)
         )
 
+    async def _calculate_scheduled_time(self, platform: Literal["facebook", "instagram"]) -> datetime:
+        """
+        Calculate the next scheduled posting time for a platform.
+
+        Based on the scheduling config and existing pending posts.
+        """
+        from backend.scheduler import SCHEDULING_CONFIG
+
+        # Get all pending posts for this platform, ordered by scheduled_posting_time
+        all_pending = await self.posts_repo.get_all_pending_posts(platform)
+
+        # Filter for posts with scheduled times
+        scheduled_posts = [p for p in all_pending if p.scheduled_posting_time is not None]
+
+        # Get the interval for this platform
+        if platform == "facebook":
+            interval_hours = SCHEDULING_CONFIG.FACEBOOK_POST_INTERVAL_HOURS
+            initial_delay_hours = SCHEDULING_CONFIG.FACEBOOK_INITIAL_DELAY_HOURS
+        else:  # instagram
+            interval_hours = SCHEDULING_CONFIG.INSTAGRAM_POST_INTERVAL_HOURS
+            initial_delay_hours = SCHEDULING_CONFIG.INSTAGRAM_INITIAL_DELAY_HOURS
+
+        now = datetime.now(timezone.utc)
+
+        if not scheduled_posts:
+            # No scheduled posts yet, schedule first post with initial delay
+            return now + timedelta(hours=initial_delay_hours)
+
+        # Find the latest scheduled time
+        latest_scheduled = max(
+            scheduled_posts,
+            key=lambda p: p.scheduled_posting_time
+        ).scheduled_posting_time
+
+        # Schedule this post at interval after the latest
+        next_time = latest_scheduled + timedelta(hours=interval_hours)
+
+        # If the calculated time is in the past, use initial delay from now
+        if next_time < now:
+            return now + timedelta(hours=initial_delay_hours)
+
+        return next_time
 
     async def create_content_for_task(self, task_id: str) -> List[Dict[str, Any]]:
         """
@@ -130,6 +173,9 @@ class ContentCreationAgent:
                     # Convert media_ids from strings to UUIDs
                     media_uuids = [UUID(media_id) for media_id in post_data.media_ids] if post_data.media_ids else []
 
+                    # Calculate scheduled posting time
+                    scheduled_time = await self._calculate_scheduled_time(post_data.platform)
+
                     completed_post = CompletedPost(
                         task_id=task.id,
                         content_seed_id=task.content_seed_id,
@@ -139,13 +185,19 @@ class ContentCreationAgent:
                         text=post_data.text,
                         media_ids=media_uuids,
                         location=post_data.location,
-                        hashtags=post_data.hashtags
+                        hashtags=post_data.hashtags,
+                        scheduled_posting_time=scheduled_time
                     )
 
                     # Save to database
                     created_post = await self.posts_repo.create(completed_post)
                     posts.append(created_post.model_dump(mode="json"))
-                    logger.info("Completed post saved", post_id=str(created_post.id))
+                    logger.info(
+                        "Completed post saved",
+                        post_id=str(created_post.id),
+                        platform=post_data.platform,
+                        scheduled_time=scheduled_time.isoformat()
+                    )
                 except Exception as e:
                     logger.error("Error saving post", error=str(e))
 

@@ -117,31 +117,32 @@ async def publish_instagram_post(post: CompletedPost, publisher: InstagramPublis
 @publish.command()
 @click.option("--limit", default=10, help="Maximum number of posts to publish")
 def facebook(limit: int):
-    """Publish pending Facebook posts"""
+    """Publish scheduled Facebook posts that are ready"""
     async def _publish():
-        logger.info("Publishing Facebook posts")
-        click.echo("📘 Publishing to Facebook...")
+        logger.info("Checking for scheduled Facebook posts")
+        click.echo("📘 Checking for Facebook posts to publish...")
 
         repo = CompletedPostRepository()
         publisher = FacebookPublisher()
 
-        # Get pending posts
-        pending_posts = await repo.get_pending_for_platform("facebook", limit)
+        # Get posts ready to publish (scheduled time has arrived)
+        ready_posts = await repo.get_posts_ready_to_publish("facebook", limit)
 
-        if not pending_posts:
-            click.echo("   No pending Facebook posts")
+        if not ready_posts:
+            click.echo("   No Facebook posts ready to publish")
             return
 
-        click.echo(f"   Found {len(pending_posts)} pending posts")
+        click.echo(f"   Found {len(ready_posts)} posts ready to publish")
 
         # Publish each post
         success_count = 0
-        for i, post in enumerate(pending_posts, 1):
-            click.echo(f"   Publishing post {i}/{len(pending_posts)}...")
+        for i, post in enumerate(ready_posts, 1):
+            scheduled_time = post.scheduled_posting_time.strftime("%Y-%m-%d %H:%M:%S") if post.scheduled_posting_time else "immediately"
+            click.echo(f"   Publishing post {i}/{len(ready_posts)} (scheduled: {scheduled_time})...")
             if await publish_facebook_post(post, publisher, repo):
                 success_count += 1
 
-        click.echo(f"✅ Published {success_count}/{len(pending_posts)} Facebook posts")
+        click.echo(f"✅ Published {success_count}/{len(ready_posts)} Facebook posts")
 
     asyncio.run(_publish())
 
@@ -149,31 +150,32 @@ def facebook(limit: int):
 @publish.command()
 @click.option("--limit", default=10, help="Maximum number of posts to publish")
 def instagram(limit: int):
-    """Publish pending Instagram posts"""
+    """Publish scheduled Instagram posts that are ready"""
     async def _publish():
-        logger.info("Publishing Instagram posts")
-        click.echo("📷 Publishing to Instagram...")
+        logger.info("Checking for scheduled Instagram posts")
+        click.echo("📷 Checking for Instagram posts to publish...")
 
         repo = CompletedPostRepository()
         publisher = InstagramPublisher()
 
-        # Get pending posts
-        pending_posts = await repo.get_pending_for_platform("instagram", limit)
+        # Get posts ready to publish (scheduled time has arrived)
+        ready_posts = await repo.get_posts_ready_to_publish("instagram", limit)
 
-        if not pending_posts:
-            click.echo("   No pending Instagram posts")
+        if not ready_posts:
+            click.echo("   No Instagram posts ready to publish")
             return
 
-        click.echo(f"   Found {len(pending_posts)} pending posts")
+        click.echo(f"   Found {len(ready_posts)} posts ready to publish")
 
         # Publish each post
         success_count = 0
-        for i, post in enumerate(pending_posts, 1):
-            click.echo(f"   Publishing post {i}/{len(pending_posts)}...")
+        for i, post in enumerate(ready_posts, 1):
+            scheduled_time = post.scheduled_posting_time.strftime("%Y-%m-%d %H:%M:%S") if post.scheduled_posting_time else "immediately"
+            click.echo(f"   Publishing post {i}/{len(ready_posts)} (scheduled: {scheduled_time})...")
             if await publish_instagram_post(post, publisher, repo):
                 success_count += 1
 
-        click.echo(f"✅ Published {success_count}/{len(pending_posts)} Instagram posts")
+        click.echo(f"✅ Published {success_count}/{len(ready_posts)} Instagram posts")
 
     asyncio.run(_publish())
 
@@ -181,10 +183,10 @@ def instagram(limit: int):
 @publish.command()
 @click.option("--limit", default=10, help="Maximum posts per platform")
 def all(limit: int):
-    """Publish all pending posts"""
+    """Publish all scheduled posts that are ready"""
     async def _publish():
-        logger.info("Publishing all posts")
-        click.echo("📱 Publishing to all platforms...")
+        logger.info("Checking for scheduled posts on all platforms")
+        click.echo("📱 Checking for posts to publish on all platforms...")
 
         repo = CompletedPostRepository()
         fb_publisher = FacebookPublisher()
@@ -195,29 +197,31 @@ def all(limit: int):
 
         # Publish Facebook posts
         click.echo("\n📘 Facebook:")
-        fb_posts = await repo.get_pending_for_platform("facebook", limit)
+        fb_posts = await repo.get_posts_ready_to_publish("facebook", limit)
         if fb_posts:
-            click.echo(f"   Found {len(fb_posts)} pending posts")
+            click.echo(f"   Found {len(fb_posts)} posts ready to publish")
             for i, post in enumerate(fb_posts, 1):
-                click.echo(f"   Publishing post {i}/{len(fb_posts)}...")
+                scheduled_time = post.scheduled_posting_time.strftime("%Y-%m-%d %H:%M:%S") if post.scheduled_posting_time else "immediately"
+                click.echo(f"   Publishing post {i}/{len(fb_posts)} (scheduled: {scheduled_time})...")
                 total_attempted += 1
                 if await publish_facebook_post(post, fb_publisher, repo):
                     total_success += 1
         else:
-            click.echo("   No pending posts")
+            click.echo("   No posts ready to publish")
 
         # Publish Instagram posts
         click.echo("\n📷 Instagram:")
-        ig_posts = await repo.get_pending_for_platform("instagram", limit)
+        ig_posts = await repo.get_posts_ready_to_publish("instagram", limit)
         if ig_posts:
-            click.echo(f"   Found {len(ig_posts)} pending posts")
+            click.echo(f"   Found {len(ig_posts)} posts ready to publish")
             for i, post in enumerate(ig_posts, 1):
-                click.echo(f"   Publishing post {i}/{len(ig_posts)}...")
+                scheduled_time = post.scheduled_posting_time.strftime("%Y-%m-%d %H:%M:%S") if post.scheduled_posting_time else "immediately"
+                click.echo(f"   Publishing post {i}/{len(ig_posts)} (scheduled: {scheduled_time})...")
                 total_attempted += 1
                 if await publish_instagram_post(post, ig_publisher, repo):
                     total_success += 1
         else:
-            click.echo("   No pending posts")
+            click.echo("   No posts ready to publish")
 
         click.echo(f"\n✅ Published {total_success}/{total_attempted} total posts")
 

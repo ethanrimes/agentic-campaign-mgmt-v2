@@ -2,11 +2,11 @@
 
 """Repository for completed posts."""
 
-from typing import List, Literal
+from typing import List, Literal, Optional
 from uuid import UUID
 from backend.models import CompletedPost
 from .base import BaseRepository
-
+from datetime import datetime, timezone
 
 class CompletedPostRepository(BaseRepository[CompletedPost]):
     """Repository for managing completed posts."""
@@ -17,7 +17,12 @@ class CompletedPostRepository(BaseRepository[CompletedPost]):
     async def get_pending_for_platform(
         self, platform: Literal["facebook", "instagram"], limit: int = 10
     ) -> List[CompletedPost]:
-        """Get pending posts for a specific platform."""
+        """
+        Get pending posts for a specific platform.
+
+        DEPRECATED: Use get_posts_ready_to_publish() instead for scheduled posting.
+        This method is kept for backward compatibility.
+        """
         try:
             from backend.database import get_supabase_client
             client = await get_supabase_client()
@@ -40,6 +45,90 @@ class CompletedPostRepository(BaseRepository[CompletedPost]):
                 error=str(e),
             )
             return []
+
+    async def get_posts_ready_to_publish(
+        self, platform: Literal["facebook", "instagram"], limit: int = 10
+    ) -> List[CompletedPost]:
+        """
+        Get posts that are ready to be published based on scheduled_posting_time.
+
+        Returns posts where:
+        - status = 'pending'
+        - platform matches
+        - scheduled_posting_time <= NOW() (or is NULL for immediate publishing)
+
+        Ordered by scheduled_posting_time (earliest first).
+        """
+        try:
+            from backend.database import get_supabase_client
+            client = await get_supabase_client()
+
+            now = datetime.now(timezone.utc).isoformat()
+
+            # Get posts where scheduled_posting_time is NULL or <= now
+            result = (
+                await client.table(self.table_name)
+                .select("*")
+                .eq("platform", platform)
+                .eq("status", "pending")
+                .or_(f"scheduled_posting_time.is.null,scheduled_posting_time.lte.{now}")
+                .order("scheduled_posting_time", desc=False)
+                .limit(limit)
+                .execute()
+            )
+            return [self.model_class(**item) for item in result.data]
+        except Exception as e:
+            from backend.utils import get_logger
+            logger = get_logger(__name__)
+            logger.error(
+                "Failed to get posts ready to publish",
+                platform=platform,
+                error=str(e),
+            )
+            return []
+
+    async def get_all_pending_posts(
+        self, platform: Optional[Literal["facebook", "instagram"]] = None
+    ) -> List[CompletedPost]:
+        """
+        Get all pending posts, optionally filtered by platform.
+
+        Useful for the schedule update script.
+        """
+        try:
+            from backend.database import get_supabase_client
+            client = await get_supabase_client()
+
+            query = (
+                client.table(self.table_name)
+                .select("*")
+                .eq("status", "pending")
+                .order("created_at", desc=False)
+            )
+
+            if platform:
+                query = query.eq("platform", platform)
+
+            result = await query.execute()
+            return [self.model_class(**item) for item in result.data]
+        except Exception as e:
+            from backend.utils import get_logger
+            logger = get_logger(__name__)
+            logger.error(
+                "Failed to get all pending posts",
+                platform=platform,
+                error=str(e),
+            )
+            return []
+
+    async def update_scheduled_time(
+        self, post_id: UUID, scheduled_posting_time: datetime
+    ) -> CompletedPost | None:
+        """Update the scheduled posting time for a post."""
+        return await self.update(
+            post_id,
+            {"scheduled_posting_time": scheduled_posting_time.isoformat()}
+        )
 
     async def get_by_task_id(self, task_id: UUID) -> List[CompletedPost]:
         """Get all posts for a specific task."""
