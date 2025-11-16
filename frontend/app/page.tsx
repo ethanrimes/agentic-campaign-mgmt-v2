@@ -1,27 +1,27 @@
 // frontend/app/page.tsx
 
-import { Brain, Zap, TrendingUp, Target, Users, RefreshCw } from 'lucide-react'
+import { Brain, Network, TrendingUp, Target, Users, RefreshCw } from 'lucide-react'
 import ArchitectureDiagram from '@/components/home/ArchitectureDiagram'
 
 export default function Home() {
-  const keyTerms = [
-    {
-      term: 'Content Seeds',
-      definition: 'Ideas for posts derived from news events, social media trends, or creative brainstorming that form the foundation for all content.',
-    },
-    {
-      term: 'Living Knowledge Base',
-      definition: 'A centralized, interactive repository storing all campaign data, enabling human oversight and deep understanding of agent decision-making.',
-    },
-    {
-      term: 'Insights Agent',
-      definition: 'An AI agent that analyzes campaign performance and synthesizes reports to inform future strategic decisions.',
-    },
-    {
-      term: 'Guardrails',
-      definition: 'Validation mechanisms that ensure content plans comply with budget constraints, posting frequency, and brand guidelines.',
-    },
-  ]
+  const highLevelOverview = `
+    This system represents a fully autonomous, end-to-end agentic framework for managing cross-platform social media campaigns.
+    At its core lies the Living Knowledge Base, a centralized repository that stores all campaign data including content seeds,
+    posts, and insights, enabling transparent human oversight of agent decision-making.
+
+    The workflow begins with multi-source ideation: news events are discovered via Perplexity and ChatGPT research agents,
+    social media trends are identified through specialized trend analysis, and creative ideas are generated through ungrounded
+    brainstorming. These diverse inputs feed into the Living Knowledge Base as "content seeds."
+
+    The Insights Agent continuously analyzes campaign performance, learning from engagement metrics to refine strategy over time.
+    This learning element informs the Planner Agent, which selects content seeds for each posting period and determines the optimal
+    mix of posts across platforms. Before execution, all plans pass through Guardrails that validate budget compliance and brand
+    guidelines.
+
+    The Content Creator agent then generates media (images and videos) and copy according to the approved plan, leveraging
+    multiple AI tools. Finally, completed content is automatically published to Facebook and Instagram via the Meta Graph API,
+    with all results feeding back into the knowledge base for continuous improvement.
+  `
 
   const contributions = [
     {
@@ -64,7 +64,7 @@ export default function Home() {
         <div className="relative text-center py-16 px-6">
           <div className="flex items-center justify-center gap-3 mb-6">
             <div className="relative">
-              <Zap className="w-16 h-16 text-cyan-600" />
+              <Network className="w-16 h-16 text-cyan-600" />
               <div className="absolute inset-0 blur-xl bg-cyan-400 opacity-40 animate-pulse-slow"></div>
             </div>
           </div>
@@ -86,19 +86,13 @@ export default function Home() {
         <ArchitectureDiagram />
       </section>
 
-      {/* Key Terms & Definitions */}
+      {/* High Level Overview */}
       <section className="bg-white rounded-2xl shadow-xl p-8 border border-slate-200">
-        <h2 className="text-3xl font-bold text-slate-900 mb-8 text-center">Key Terms & Definitions</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {keyTerms.map((item, index) => (
-            <div
-              key={index}
-              className="p-6 bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl border border-slate-200 hover:shadow-lg transition-all duration-300"
-            >
-              <h3 className="text-xl font-bold text-slate-900 mb-3">{item.term}</h3>
-              <p className="text-slate-700 leading-relaxed">{item.definition}</p>
-            </div>
-          ))}
+        <h2 className="text-3xl font-bold text-slate-900 mb-6 text-center">High Level Overview</h2>
+        <div className="prose prose-slate max-w-none">
+          <p className="text-slate-700 leading-relaxed whitespace-pre-line">
+            {highLevelOverview}
+          </p>
         </div>
       </section>
 
