@@ -18,11 +18,24 @@ export default function ScheduledPostsCalendar({ posts }: ScheduledPostsCalendar
   const [selectedPost, setSelectedPost] = useState<CompletedPost | null>(null)
   const [currentMediaIndex, setCurrentMediaIndex] = useState(0)
 
+  // Helper function to get the relevant date for a post
+  const getPostDate = (post: CompletedPost): Date => {
+    // If published, use published_at. If scheduled but not posted, use scheduled_posting_time
+    if (post.published_at) {
+      return new Date(post.published_at)
+    }
+    if (post.scheduled_posting_time) {
+      return new Date(post.scheduled_posting_time)
+    }
+    // Fallback to created_at if neither are set
+    return new Date(post.created_at)
+  }
+
   // Group posts by date
   const postsByDate = useMemo(() => {
     const grouped: Record<string, CompletedPost[]> = {}
     posts.forEach(post => {
-      const date = format(new Date(post.published_at || post.created_at), 'yyyy-MM-dd')
+      const date = format(getPostDate(post), 'yyyy-MM-dd')
       if (!grouped[date]) {
         grouped[date] = []
       }
@@ -297,16 +310,39 @@ export default function ScheduledPostsCalendar({ posts }: ScheduledPostsCalendar
                   </div>
                 )}
 
-                {/* Published Info */}
+                {/* Timing Info */}
                 <div className="pt-4 border-t border-slate-200 space-y-3">
-                  <div className="flex items-center gap-2 text-sm">
-                    <CalendarIcon className="w-4 h-4 text-slate-400" />
-                    <span className="text-slate-600">
-                      {selectedPost.published_at
-                        ? formatDateTime(selectedPost.published_at)
-                        : formatDateTime(selectedPost.created_at)}
-                    </span>
-                  </div>
+                  {selectedPost.published_at ? (
+                    <div className="flex items-center gap-2 text-sm">
+                      <CalendarIcon className="w-4 h-4 text-green-500" />
+                      <div>
+                        <p className="text-xs text-slate-500">Published</p>
+                        <span className="text-slate-900 font-medium">
+                          {formatDateTime(selectedPost.published_at)}
+                        </span>
+                      </div>
+                    </div>
+                  ) : selectedPost.scheduled_posting_time ? (
+                    <div className="flex items-center gap-2 text-sm">
+                      <CalendarIcon className="w-4 h-4 text-amber-500" />
+                      <div>
+                        <p className="text-xs text-slate-500">Scheduled for</p>
+                        <span className="text-slate-900 font-medium">
+                          {formatDateTime(selectedPost.scheduled_posting_time)}
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 text-sm">
+                      <CalendarIcon className="w-4 h-4 text-slate-400" />
+                      <div>
+                        <p className="text-xs text-slate-500">Created</p>
+                        <span className="text-slate-600">
+                          {formatDateTime(selectedPost.created_at)}
+                        </span>
+                      </div>
+                    </div>
+                  )}
                   {selectedPost.platform_post_url && (
                     <a
                       href={selectedPost.platform_post_url}

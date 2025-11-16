@@ -52,6 +52,7 @@ export interface CompletedPost {
   music: string | null
   hashtags: string[] | null
   status: 'pending' | 'published' | 'failed'
+  scheduled_posting_time: string | null
   published_at: string | null
   platform_post_id: string | null
   platform_post_url: string | null

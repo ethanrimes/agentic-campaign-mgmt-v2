@@ -36,7 +36,7 @@ export default function Navigation() {
               <div className="absolute inset-0 blur-md bg-cyan-400 opacity-40 group-hover:opacity-60 transition-opacity"></div>
             </div>
             <span className="bg-gradient-to-r from-cyan-400 via-blue-400 to-cyan-400 bg-clip-text text-transparent">
-              Socially Automated
+              BuzzFactory
             </span>
           </Link>
 
