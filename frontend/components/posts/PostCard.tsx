@@ -13,6 +13,9 @@ interface PostCardProps {
 }
 
 export default function PostCard({ post }: PostCardProps) {
+  const mediaUrls = post.media_urls || []
+  const hashtags = post.hashtags || []
+
   const preview = (
     <div className="space-y-3">
       <p className="text-sm line-clamp-3 text-gray-700 leading-relaxed">{post.text}</p>
@@ -20,19 +23,19 @@ export default function PostCard({ post }: PostCardProps) {
         <span className="bg-gradient-to-r from-blue-50 to-purple-50 text-blue-700 px-3 py-1.5 rounded-full font-medium border border-blue-100">
           {post.post_type.replace(/_/g, ' ')}
         </span>
-        {post.media_urls.length > 0 && (
+        {mediaUrls.length > 0 && (
           <span className="flex items-center gap-1.5 bg-purple-50 text-purple-700 px-3 py-1.5 rounded-full font-medium border border-purple-100">
-            {post.media_urls[0].includes('video') ? (
+            {mediaUrls[0].includes('video') ? (
               <Film className="w-3.5 h-3.5" />
             ) : (
               <ImageIcon className="w-3.5 h-3.5" />
             )}
-            {post.media_urls.length} media
+            {mediaUrls.length} media
           </span>
         )}
-        {post.hashtags.length > 0 && (
+        {hashtags.length > 0 && (
           <span className="bg-pink-50 text-pink-700 px-3 py-1.5 rounded-full font-medium border border-pink-100">
-            {post.hashtags.length} hashtags
+            {hashtags.length} hashtags
           </span>
         )}
       </div>
@@ -67,19 +70,19 @@ export default function PostCard({ post }: PostCardProps) {
         </div>
 
         {/* Media */}
-        {post.media_urls.length > 0 && (
+        {mediaUrls.length > 0 && (
           <div>
             <h4 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
               <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center text-white text-xs font-bold">
-                {post.media_urls.length}
+                {mediaUrls.length}
               </div>
               Media Gallery
             </h4>
             <div className={cn(
               "grid gap-4",
-              post.media_urls.length === 1 ? "grid-cols-1" : "grid-cols-2"
+              mediaUrls.length === 1 ? "grid-cols-1" : "grid-cols-2"
             )}>
-              {post.media_urls.map((url, i) => (
+              {mediaUrls.map((url, i) => (
                 <a
                   key={i}
                   href={url}
@@ -112,16 +115,16 @@ export default function PostCard({ post }: PostCardProps) {
         )}
 
         {/* Hashtags */}
-        {post.hashtags.length > 0 && (
+        {hashtags.length > 0 && (
           <div>
             <h4 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
               <div className="w-8 h-8 bg-gradient-to-br from-pink-500 to-rose-500 rounded-lg flex items-center justify-center text-white text-xs">
                 #
               </div>
-              Hashtags ({post.hashtags.length})
+              Hashtags ({hashtags.length})
             </h4>
             <div className="flex flex-wrap gap-2">
-              {post.hashtags.map((tag, i) => (
+              {hashtags.map((tag, i) => (
                 <span key={i} className="text-sm bg-gradient-to-r from-pink-50 to-rose-50 text-pink-700 px-4 py-2 rounded-full border border-pink-100 hover:shadow-lg hover:scale-105 transition-all cursor-default font-medium">
                   #{tag}
                 </span>

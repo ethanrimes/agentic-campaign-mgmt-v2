@@ -67,6 +67,9 @@ class CompletedPost(BaseModel):
     status: Literal["pending", "published", "failed"] = Field(
         default="pending", description="Publishing status"
     )
+    scheduled_posting_time: Optional[datetime] = Field(
+        None, description="When this post should be published (NULL means publish immediately)"
+    )
     published_at: Optional[datetime] = Field(
         None, description="When the post was published to the platform"
     )
@@ -103,6 +106,7 @@ class CompletedPost(BaseModel):
                 "music": None,
                 "hashtags": ["SEPTA", "UPenn", "Philadelphia", "Transit"],
                 "status": "pending",
+                "scheduled_posting_time": "2025-01-19T10:00:00Z",
                 "published_at": None,
                 "platform_post_id": None,
                 "platform_post_url": None,

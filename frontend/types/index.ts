@@ -47,10 +47,10 @@ export interface CompletedPost {
   platform: 'facebook' | 'instagram'
   post_type: string
   text: string
-  media_urls: string[]
+  media_urls: string[] | null
   location: string | null
   music: string | null
-  hashtags: string[]
+  hashtags: string[] | null
   status: 'pending' | 'published' | 'failed'
   published_at: string | null
   platform_post_id: string | null

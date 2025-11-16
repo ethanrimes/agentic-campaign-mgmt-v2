@@ -29,6 +29,42 @@ logger = get_logger(__name__)
 BASE_CMD = [sys.executable, "-m", "backend.cli.main"]
 
 
+# ============================================================================
+# SCHEDULING CONFIGURATION
+# ============================================================================
+
+class SchedulingConfig:
+    """
+    Configuration for post scheduling.
+
+    Defines when and how often posts should be published to each platform.
+    All times are in hours unless otherwise specified.
+    """
+
+    # Publishing frequency (hours between posts)
+    FACEBOOK_POST_INTERVAL_HOURS = 24  # Post to Facebook once per day
+    INSTAGRAM_POST_INTERVAL_HOURS = 12  # Post to Instagram twice per day
+
+    # Initial delay before first post (hours from content creation)
+    FACEBOOK_INITIAL_DELAY_HOURS = 2  # Wait 2 hours before first Facebook post
+    INSTAGRAM_INITIAL_DELAY_HOURS = 1  # Wait 1 hour before first Instagram post
+
+    # Publishing check frequency (minutes)
+    # How often the publisher scripts should check for posts to publish
+    PUBLISH_CHECK_INTERVAL_MINUTES = 5
+
+    # Content pipeline scheduling (hours)
+    NEWS_PIPELINE_INTERVAL_HOURS = 3  # News ingestion + deduplication
+    TREND_DISCOVERY_INTERVAL_HOURS = 3  # Trend discovery
+    UNGROUNDED_GENERATION_INTERVAL_HOURS = 6  # Ungrounded idea generation
+
+    # Analysis and planning (cron)
+    PLANNING_PIPELINE_HOUR = 2  # Daily at 2 AM
+
+
+SCHEDULING_CONFIG = SchedulingConfig()
+
+
 def run_command(cmd_args: list, description: str):
     """
     Execute a CLI command and log the result.
@@ -156,17 +192,17 @@ def run_planning_pipeline():
 # ============================================================================
 
 def run_facebook_publishing():
-    """Publish content to Facebook."""
+    """Check for and publish scheduled Facebook posts."""
     run_command(
-        ["publish", "facebook", "--limit", "1"],
+        ["publish", "facebook"],
         "Facebook Publishing"
     )
 
 
 def run_instagram_publishing():
-    """Publish content to Instagram."""
+    """Check for and publish scheduled Instagram posts."""
     run_command(
-        ["publish", "instagram", "--limit", "1"],
+        ["publish", "instagram"],
         "Instagram Publishing"
     )
 
@@ -202,14 +238,14 @@ def create_scheduler():
     scheduler.add_listener(job_listener, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
 
     # ========================================================================
-    # CONTENT SEED CREATION (every 3-6 hours)
+    # CONTENT SEED CREATION
     # ========================================================================
 
-    # News ingestion + deduplication pipeline - every 3 hours
+    # News ingestion + deduplication pipeline
     scheduler.add_job(
         run_news_pipeline,
         'interval',
-        hours=3,
+        hours=SCHEDULING_CONFIG.NEWS_PIPELINE_INTERVAL_HOURS,
         id='news_pipeline',
         name='News Ingestion Pipeline',
         max_instances=1,
@@ -217,22 +253,22 @@ def create_scheduler():
         next_run_time=datetime.now()  # Run immediately on startup
     )
 
-    # Trend discovery - every 3 hours (offset by 1 hour)
+    # Trend discovery
     scheduler.add_job(
         run_trend_discovery,
         'interval',
-        hours=3,
+        hours=SCHEDULING_CONFIG.TREND_DISCOVERY_INTERVAL_HOURS,
         id='trend_discovery',
         name='Trend Discovery',
         max_instances=1,
         coalesce=True
     )
 
-    # Ungrounded generation - every 6 hours
+    # Ungrounded generation
     scheduler.add_job(
         run_ungrounded_generation,
         'interval',
-        hours=6,
+        hours=SCHEDULING_CONFIG.UNGROUNDED_GENERATION_INTERVAL_HOURS,
         id='ungrounded_generation',
         name='Ungrounded Idea Generation',
         max_instances=1,
@@ -240,14 +276,14 @@ def create_scheduler():
     )
 
     # ========================================================================
-    # ANALYSIS & PLANNING (daily at 2 AM)
+    # ANALYSIS & PLANNING
     # ========================================================================
 
-    # Planning pipeline (insights + planner + content creation) - daily at 2 AM
+    # Planning pipeline (insights + planner + content creation)
     scheduler.add_job(
         run_planning_pipeline,
         'cron',
-        hour=2,
+        hour=SCHEDULING_CONFIG.PLANNING_PIPELINE_HOUR,
         minute=0,
         id='planning_pipeline',
         name='Planning Pipeline (Insights + Planner + Content Creation)',
@@ -256,31 +292,29 @@ def create_scheduler():
     )
 
     # ========================================================================
-    # PUBLISHING (every 2 hours)
+    # PUBLISHING
     # ========================================================================
 
-    # Facebook publishing - every 2 hours
+    # Facebook publishing - check for scheduled posts at configured interval
     scheduler.add_job(
         run_facebook_publishing,
         'interval',
-        hours=2,
+        minutes=SCHEDULING_CONFIG.PUBLISH_CHECK_INTERVAL_MINUTES,
         id='facebook_publishing',
         name='Facebook Publishing',
         max_instances=1,
         coalesce=True
     )
 
-    # Instagram publishing - every 2 hours (offset by 1 hour)
+    # Instagram publishing - check for scheduled posts at configured interval
     scheduler.add_job(
         run_instagram_publishing,
         'interval',
-        hours=2,
+        minutes=SCHEDULING_CONFIG.PUBLISH_CHECK_INTERVAL_MINUTES,
         id='instagram_publishing',
         name='Instagram Publishing',
         max_instances=1,
-        coalesce=True,
-        # Start 1 hour after scheduler starts to alternate with Facebook
-        minutes=60
+        coalesce=True
     )
 
     return scheduler
