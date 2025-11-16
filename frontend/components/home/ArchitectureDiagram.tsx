@@ -22,143 +22,157 @@ import '@xyflow/react/dist/style.css'
 
 // Node descriptions for modal
 const nodeDescriptions: Record<string, { title: string; description: string; details: string[] }> = {
-  'perplexity': {
-    title: 'Perplexity Sonar Search',
-    description: 'Advanced AI-powered search engine that discovers trending topics and breaking news across the internet.',
+  perplexity: {
+    title: 'Perplexity Sonar (News Research Ingestion)',
+    description:
+      'Runs structured, high-depth internet scans to discover emerging news events and produce machine-parseable event objects that feed the News Event Seed pipeline.',
     details: [
-      'Real-time web search with AI summarization',
-      'Identifies emerging trends and viral content',
-      'Provides source citations and context',
-      'Feeds deduplicated events to the knowledge base'
-    ]
+      'Executes wide-coverage internet discovery with rich source citations',
+      'Captures breaking events, ongoing narratives, and emerging topics',
+      'Outputs structured event objects ready for downstream ingestion',
+      'Forms one half of the news ingestion pipeline',
+    ],
   },
-  'chatgpt': {
+  chatgpt: {
     title: 'ChatGPT o4-mini Deep Research',
-    description: 'Leverages OpenAI\'s latest model for comprehensive research and analysis of complex topics.',
+    description:
+      'Performs multi-step deep research on targeted topics using OpenAI’s Deep Research capabilities, generating high-context reports that are parsed into structured news events.',
     details: [
-      'Deep dive analysis on specific subjects',
-      'Multi-step reasoning and research',
-      'Contextual understanding and synthesis',
-      'Generates comprehensive research reports'
-    ]
+      'Conducts multi-hop reasoning over complex, multi-source topics',
+      'Produces rich explanatory research with supporting sources',
+      'Parsed by a secondary model into standardized event objects',
+      'Completes the second half of the news ingestion pipeline',
+    ],
   },
   'trend-researcher': {
-    title: 'Social Media Trend Researcher',
-    description: 'Analyzes social media data from multiple platforms to identify trending topics and content patterns.',
+    title: 'Trend Research Agent',
+    description:
+      'Synthesizes real-time social media data using Instagram and Facebook scraping tools to produce Trend Seeds representing high-performing formats, hashtags, and behaviors.',
     details: [
-      'Aggregates data from Instagram and Facebook',
-      'Identifies viral content and trending hashtags',
-      'Analyzes engagement patterns and metrics',
-      'Updates knowledge base with current trends'
-    ]
+      'Integrates multiple high-volume social scraper utilities',
+      'Identifies trending hashtags, viral formats, and content patterns',
+      'Surfaces influential users and content archetypes',
+      'Writes structured Trend Seeds into the Living Knowledge Base',
+    ],
   },
   'creative-ideator': {
-    title: 'Creative Ideation',
-    description: 'Generates original, creative content ideas that aren\'t necessarily grounded in recent news or events.',
+    title: 'Ungrounded Creative Seed Generator',
+    description:
+      'A creativity-focused agent that generates unbounded content concepts not tied to news or social signals, expanding the system’s creative search space.',
     details: [
-      'Brainstorms unique content concepts',
-      'Creates thematic content series',
-      'Develops creative storytelling angles',
-      'Explores conceptual and artistic directions'
-    ]
+      'Produces open-ended content ideas with explicit formats (image, video, reel, carousel, text, etc.)',
+      'Leverages the knowledge base and insight reports as optional context',
+      'Explores highly diverse and experimental content directions',
+      'Prevents overfitting to short-lived trends by injecting novel ideas',
+    ],
   },
   'event-deduplicator': {
-    title: 'Event Deduplicator',
-    description: 'Intelligently processes incoming events from multiple sources to eliminate duplicates and consolidate information.',
+    title: 'Event Deduplication & Consolidation',
+    description:
+      'Compares newly ingested events from Perplexity and ChatGPT with existing News Event Seeds to detect duplicates, merge sources, and maintain canonical records.',
     details: [
-      'Identifies duplicate events across sources',
-      'Merges related information',
-      'Maintains source attribution',
-      'Ensures data quality and consistency'
-    ]
+      'Uses LLM-based semantic comparison to detect overlapping events',
+      'Merges descriptions and consolidates source lists for the same event',
+      'Maintains a clean, canonical set of News Event Seeds',
+      'Reduces noise and prevents knowledge base fragmentation',
+    ],
   },
   'instagram-api': {
-    title: 'Instagram Data API',
-    description: 'Meta\'s official API for accessing Instagram business account data and metrics.',
+    title: 'Instagram Metrics & Data Tools',
+    description:
+      'Provides structured access to Instagram account data and engagement metrics, primarily used by the Insights Agent to compute performance and audience understanding.',
     details: [
-      'Retrieves posts and engagement metrics',
-      'Accesses audience insights',
-      'Monitors content performance',
-      'Provides trend data for analysis'
-    ]
+      'Retrieves post-level metrics such as likes, comments, shares, and reach',
+      'Exposes audience insights and behavior over time',
+      'Supports reels, carousels, and feed post analysis',
+      'Supplies raw data into the closed-loop learning pipeline',
+    ],
   },
   'facebook-api': {
-    title: 'Facebook Data API',
-    description: 'Meta\'s Graph API for accessing Facebook page data and analytics.',
+    title: 'Facebook Metrics & Data Tools',
+    description:
+      'Supplies Facebook page and post analytics, enabling the Insights Agent to analyze performance across another major distribution channel.',
     details: [
-      'Fetches page posts and interactions',
-      'Retrieves audience demographics',
-      'Monitors engagement metrics',
-      'Provides performance analytics'
-    ]
+      'Fetches engagement metrics such as reactions, comments, and shares',
+      'Retrieves page-level analytics and audience trends',
+      'Supports video and feed post performance tracking',
+      'Complements Instagram data for cross-platform insight generation',
+    ],
   },
   'knowledge-base': {
     title: 'Living Knowledge Base',
-    description: 'Central repository that stores and organizes all content seeds, trends, insights, and campaign data. This is the heart of the system.',
+    description:
+      'Central, continuously updated repository for all content seeds, insight reports, content tasks, completed posts, and their relationships. This is the system’s memory and inspection surface.',
     details: [
-      'Stores content ideas and trends',
-      'Maintains campaign history',
-      'Tracks performance insights',
-      'Provides context for content generation',
-      'Continuously updated with new information'
-    ]
+      'Stores News, Trend, and Ungrounded Seeds in a unified schema',
+      'Tracks the full lifecycle from idea → plan → post → performance',
+      'Continuously updated by ingestion, planning, creation, and insights agents',
+      'Backed by a Next.js UI for full human-in-the-loop visibility',
+      'Provides rich context to every agent via shared tools and APIs',
+    ],
   },
   'insights-agent': {
     title: 'Insights Agent',
-    description: 'Analyzes campaign performance data to generate actionable insights and recommendations.',
+    description:
+      'Analyzes cross-platform engagement metrics to generate timestamped insight reports that directly inform future planning and ideation.',
     details: [
-      'Processes campaign metrics',
-      'Identifies successful content patterns',
-      'Generates performance reports',
-      'Provides optimization recommendations',
-      'Feeds insights back to knowledge base'
-    ]
+      'Calls Facebook and Instagram metric tools to gather performance data',
+      'Identifies patterns in what worked, what failed, and why',
+      'Summarizes audience behavior, content archetype performance, and timing effects',
+      'Writes structured insight reports back into the knowledge base',
+      'Closes the feedback loop for continuous strategic refinement',
+    ],
   },
   'planner-agent': {
     title: 'Planner Agent',
-    description: 'Strategic planning agent that allocates content across time periods and platforms based on trends and insights.',
+    description:
+      'Transforms content seeds and insights into a weekly content plan, allocating posts and media types while respecting global guardrails.',
     details: [
-      'Creates content calendars',
-      'Allocates posts to optimal time slots',
-      'Balances content types and themes',
-      'Considers platform-specific strategies',
-      'Validates plans through guardrails'
-    ]
+      'Selects which seeds to activate in the upcoming period',
+      'Allocates counts for posts, images, and videos per seed and platform',
+      'Balances news-driven, trend-driven, and ungrounded creative content',
+      'Produces structured Content Creation Tasks for downstream agents',
+      'Runs under strict min/max constraints enforced by guardrails',
+    ],
   },
   'content-creator': {
-    title: 'Content Creator',
-    description: 'AI-powered content generation engine that creates posts, captions, and media based on content seeds.',
+    title: 'Content Creation Agent',
+    description:
+      'Executes the approved content plan by generating all required media and copy, pulling contextual grounding directly from the Living Knowledge Base.',
     details: [
-      'Generates post copy and captions',
-      'Creates platform-optimized content',
-      'Incorporates trending topics',
-      'Maintains brand voice consistency',
-      'Schedules content for publication'
-    ]
+      'Consumes Content Creation Tasks created by the planner',
+      'Generates images and videos via connected media generation services',
+      'Writes captions and post text that reference the appropriate seed and sources',
+      'Stores generated media in Supabase and records Completed Post objects',
+      'Prepares platform-ready assets for automated publishing',
+    ],
   },
-  'guardrails': {
-    title: 'Guardrails',
-    description: 'Safety and validation system that ensures content meets quality standards and budget constraints.',
+  guardrails: {
+    title: 'Guardrail Validation System',
+    description:
+      'Validates planner outputs against global constraints and budgets, ensuring the system stays within strategic and operational limits.',
     details: [
-      'Validates content appropriateness',
-      'Checks media generation budgets',
-      'Ensures post frequency limits',
-      'Verifies platform requirements',
-      'Prevents policy violations'
-    ]
+      'Enforces min/max posts per week',
+      'Enforces min/max content seeds per week',
+      'Enforces image and video generation budgets',
+      'Rejects invalid plans and triggers planner retries when needed',
+      'Helps maintain predictable cost and content cadence',
+    ],
   },
   'meta-graph-api': {
-    title: 'Meta Graph API',
-    description: 'Meta\'s unified API for publishing content and retrieving analytics across Facebook and Instagram.',
+    title: 'Meta Graph API (Publishing Layer)',
+    description:
+      'Responsible for publishing completed content to Facebook and Instagram and returning early-stage performance data.',
     details: [
-      'Publishes scheduled posts',
-      'Retrieves campaign metrics',
-      'Manages media uploads',
-      'Provides real-time performance data',
-      'Handles platform-specific features'
-    ]
+      'Uploads media and publishes posts to Facebook and Instagram',
+      'Supports reels, videos, carousels, and standard feed posts',
+      'Returns initial performance metrics post-publish',
+      'Connects the Content Creation Agent to real-world distribution',
+      'Feeds data back into the Insights Agent to close the loop',
+    ],
   },
 }
+
 
 // Category colors
 const categoryColors = {
