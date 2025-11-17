@@ -16,8 +16,8 @@ class TrendSeedsRepository(BaseRepository[TrendSeed]):
     async def get_recent(self, limit: int = 10) -> List[TrendSeed]:
         """Get most recent trend seeds."""
         try:
-            from backend.database import get_supabase_client
-            client = await get_supabase_client()
+            from backend.database import get_supabase_admin_client
+            client = await get_supabase_admin_client()
             result = (
                 await client.table(self.table_name)
                 .select("*")

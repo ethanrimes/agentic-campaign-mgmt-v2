@@ -24,8 +24,8 @@ class CompletedPostRepository(BaseRepository[CompletedPost]):
         This method is kept for backward compatibility.
         """
         try:
-            from backend.database import get_supabase_client
-            client = await get_supabase_client()
+            from backend.database import get_supabase_admin_client
+            client = await get_supabase_admin_client()
             result = (
                 await client.table(self.table_name)
                 .select("*")
@@ -60,8 +60,8 @@ class CompletedPostRepository(BaseRepository[CompletedPost]):
         Ordered by scheduled_posting_time (earliest first).
         """
         try:
-            from backend.database import get_supabase_client
-            client = await get_supabase_client()
+            from backend.database import get_supabase_admin_client
+            client = await get_supabase_admin_client()
 
             now = datetime.now(timezone.utc).isoformat()
 
@@ -96,8 +96,8 @@ class CompletedPostRepository(BaseRepository[CompletedPost]):
         Useful for the schedule update script.
         """
         try:
-            from backend.database import get_supabase_client
-            client = await get_supabase_client()
+            from backend.database import get_supabase_admin_client
+            client = await get_supabase_admin_client()
 
             query = (
                 client.table(self.table_name)
@@ -133,8 +133,8 @@ class CompletedPostRepository(BaseRepository[CompletedPost]):
     async def get_by_task_id(self, task_id: UUID) -> List[CompletedPost]:
         """Get all posts for a specific task."""
         try:
-            from backend.database import get_supabase_client
-            client = await get_supabase_client()
+            from backend.database import get_supabase_admin_client
+            client = await get_supabase_admin_client()
             result = (
                 await client.table(self.table_name)
                 .select("*")
@@ -175,8 +175,8 @@ class CompletedPostRepository(BaseRepository[CompletedPost]):
     ) -> List[CompletedPost]:
         """Get recent posts for a platform (for UI)."""
         try:
-            from backend.database import get_supabase_client
-            client = await get_supabase_client()
+            from backend.database import get_supabase_admin_client
+            client = await get_supabase_admin_client()
             result = (
                 await client.table(self.table_name)
                 .select("*")
@@ -199,8 +199,8 @@ class CompletedPostRepository(BaseRepository[CompletedPost]):
     async def get_posts_since(self, cutoff_date) -> List[CompletedPost]:
         """Get all posts created since a specific datetime (for insights analysis)."""
         try:
-            from backend.database import get_supabase_client
-            client = await get_supabase_client()
+            from backend.database import get_supabase_admin_client
+            client = await get_supabase_admin_client()
 
             # Convert datetime to ISO format for Supabase
             cutoff_iso = cutoff_date.isoformat()

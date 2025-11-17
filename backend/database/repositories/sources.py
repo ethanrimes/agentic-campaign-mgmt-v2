@@ -6,7 +6,7 @@ from typing import List, Optional
 from uuid import UUID
 from backend.models import Source
 from backend.utils import get_logger
-from backend.database import get_supabase_client
+from backend.database import get_supabase_admin_client
 from .base import BaseRepository
 
 logger = get_logger(__name__)
@@ -21,7 +21,7 @@ class SourceRepository(BaseRepository[Source]):
     async def get_by_url(self, url: str) -> Optional[Source]:
         """Get a source by its URL."""
         try:
-            client = await get_supabase_client()
+            client = await get_supabase_admin_client()
             result = (
                 await client.table(self.table_name)
                 .select("*")
@@ -45,7 +45,7 @@ class SourceRepository(BaseRepository[Source]):
     ) -> List[Source]:
         """Get all sources associated with an ingested event."""
         try:
-            client = await get_supabase_client()
+            client = await get_supabase_admin_client()
 
             # Query junction table to get source IDs
             junction_result = (
@@ -83,7 +83,7 @@ class SourceRepository(BaseRepository[Source]):
     ) -> List[Source]:
         """Get all sources associated with a news event seed."""
         try:
-            client = await get_supabase_client()
+            client = await get_supabase_admin_client()
 
             # Query junction table to get source IDs
             junction_result = (
@@ -121,7 +121,7 @@ class SourceRepository(BaseRepository[Source]):
     ) -> bool:
         """Create a link between a source and an ingested event."""
         try:
-            client = await get_supabase_client()
+            client = await get_supabase_admin_client()
             await client.table("ingested_event_sources").insert({
                 "source_id": str(source_id),
                 "ingested_event_id": str(ingested_event_id)
@@ -147,7 +147,7 @@ class SourceRepository(BaseRepository[Source]):
     ) -> bool:
         """Create a link between a source and a news event seed."""
         try:
-            client = await get_supabase_client()
+            client = await get_supabase_admin_client()
             await client.table("news_event_seed_sources").insert({
                 "source_id": str(source_id),
                 "news_event_seed_id": str(news_event_seed_id)

@@ -16,8 +16,8 @@ class UngroundedSeedRepository(BaseRepository[UngroundedSeed]):
     async def get_recent(self, limit: int = 10) -> List[UngroundedSeed]:
         """Get most recent ungrounded seeds."""
         try:
-            from backend.database import get_supabase_client
-            client = await get_supabase_client()
+            from backend.database import get_supabase_admin_client
+            client = await get_supabase_admin_client()
             result = (
                 await client.table(self.table_name)
                 .select("*")
