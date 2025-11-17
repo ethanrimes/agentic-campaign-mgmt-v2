@@ -2,7 +2,7 @@
 
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Database, TrendingUp, Lightbulb, ChevronDown } from 'lucide-react'
 import NewsEventCard from './NewsEventCard'
 import TrendSeedCard from './TrendSeedCard'
@@ -13,12 +13,38 @@ interface ContentSeedsGridProps {
   newsSeeds: NewsEventSeed[]
   trendSeeds: TrendSeed[]
   ungroundedSeeds: UngroundedSeed[]
+  postCounts: Record<string, number>
+  initialSeedId?: string
+  initialSeedType?: 'news_event' | 'trend' | 'ungrounded'
 }
 
 type SectionType = 'news' | 'trends' | 'creative' | null
 
-export default function ContentSeedsGrid({ newsSeeds, trendSeeds, ungroundedSeeds }: ContentSeedsGridProps) {
-  const [expandedSection, setExpandedSection] = useState<SectionType>('news')
+export default function ContentSeedsGrid({ newsSeeds, trendSeeds, ungroundedSeeds, postCounts, initialSeedId, initialSeedType }: ContentSeedsGridProps) {
+  // Determine initial section based on initialSeedType
+  const getInitialSection = (): SectionType => {
+    if (initialSeedType === 'news_event') return 'news'
+    if (initialSeedType === 'trend') return 'trends'
+    if (initialSeedType === 'ungrounded') return 'creative'
+    return 'news'
+  }
+
+  const [expandedSection, setExpandedSection] = useState<SectionType>(getInitialSection())
+
+  // Scroll to seed card when initialSeedId is provided
+  useEffect(() => {
+    if (initialSeedId) {
+      // Wait for DOM to render
+      setTimeout(() => {
+        const element = document.getElementById(`seed-${initialSeedId}`)
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+          // Trigger click to expand the card
+          element.click()
+        }
+      }, 500)
+    }
+  }, [initialSeedId])
 
   const toggleSection = (section: SectionType) => {
     setExpandedSection(expandedSection === section ? null : section)
@@ -135,11 +161,24 @@ export default function ContentSeedsGrid({ newsSeeds, trendSeeds, ungroundedSeed
 
             {/* Grid Layout */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {section.seeds.map((seed: any, index: number) => (
-                <div key={seed.id} className="animate-slide-up" style={{ animationDelay: `${index * 30}ms` }}>
-                  <CardComponent seed={seed} />
-                </div>
-              ))}
+              {section.seeds.map((seed: any, index: number) => {
+                const postCount = postCounts[seed.id] || 0
+                return (
+                  <div
+                    key={seed.id}
+                    id={`seed-${seed.id}`}
+                    className="animate-slide-up relative"
+                    style={{ animationDelay: `${index * 30}ms` }}
+                  >
+                    {postCount > 0 && (
+                      <div className="absolute -top-2 -right-2 z-10 bg-gradient-to-br from-green-500 to-emerald-600 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg border-2 border-white">
+                        {postCount} {postCount === 1 ? 'post' : 'posts'}
+                      </div>
+                    )}
+                    <CardComponent seed={seed} />
+                  </div>
+                )
+              })}
             </div>
           </section>
         )

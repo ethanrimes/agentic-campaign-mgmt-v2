@@ -4,9 +4,10 @@
 
 import ExpandableCard from '@/components/common/ExpandableCard'
 import { formatDateTime, formatRelativeTime, getStatusColor, getPlatformIcon, cn } from '@/lib/utils'
-import { ExternalLink, Image as ImageIcon, Film } from 'lucide-react'
+import { ExternalLink, Image as ImageIcon, Film, Sparkles } from 'lucide-react'
 import type { CompletedPost } from '@/types'
 import Image from 'next/image'
+import Link from 'next/link'
 
 interface PostCardProps {
   post: CompletedPost
@@ -181,15 +182,28 @@ export default function PostCard({ post }: PostCardProps) {
         )}
 
         {/* Content Seed Info */}
-        <div className="p-4 bg-gradient-to-br from-gray-50 to-slate-50 rounded-xl border border-gray-200">
-          <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Content Seed</h4>
-          <div className="flex items-center gap-3">
-            <span className="text-xs bg-white text-gray-700 px-3 py-2 rounded-lg border border-gray-200 font-medium">
-              {post.content_seed_type.replace(/_/g, ' ')}
-            </span>
-            <span className="text-xs text-gray-500 font-mono">ID: {post.content_seed_id.slice(0, 8)}...</span>
+        <Link
+          href={`/content-seeds?seed=${(post as any).content_seed_id}&type=${(post as any).content_seed_type}`}
+          className="block p-4 bg-gradient-to-br from-cyan-50 to-blue-50 rounded-xl border border-cyan-200 hover:border-cyan-300 hover:shadow-lg transition-all group"
+        >
+          <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-2">
+            <Sparkles className="w-3.5 h-3.5 text-cyan-600" />
+            Content Seed
+          </h4>
+          <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-2">
+              <span className="text-xs bg-white text-cyan-700 px-3 py-2 rounded-lg border border-cyan-200 font-medium inline-block">
+                {(post as any).content_seed_type?.replace(/_/g, ' ') || 'Unknown'}
+              </span>
+              {(post as any).seed_name && (
+                <span className="text-sm text-gray-900 font-medium line-clamp-1">
+                  {(post as any).seed_name}
+                </span>
+              )}
+            </div>
+            <ExternalLink className="w-4 h-4 text-cyan-600 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
           </div>
-        </div>
+        </Link>
       </div>
     </ExpandableCard>
   )

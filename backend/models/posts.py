@@ -25,11 +25,16 @@ class CompletedPost(BaseModel):
     task_id: UUID = Field(
         ..., description="ID of the content creation task that produced this post"
     )
-    content_seed_id: UUID = Field(
-        ..., description="ID of the content seed this post is based on"
+
+    # Content seed references (exactly one must be set)
+    news_event_seed_id: Optional[UUID] = Field(
+        None, description="Foreign key to news_event_seeds table (mutually exclusive)"
     )
-    content_seed_type: Literal["news_event", "trend", "ungrounded"] = Field(
-        ..., description="Type of content seed"
+    trend_seed_id: Optional[UUID] = Field(
+        None, description="Foreign key to trend_seeds table (mutually exclusive)"
+    )
+    ungrounded_seed_id: Optional[UUID] = Field(
+        None, description="Foreign key to ungrounded_seeds table (mutually exclusive)"
     )
 
     # Platform and type
@@ -89,13 +94,38 @@ class CompletedPost(BaseModel):
         description="When the post was created by content creation agent",
     )
 
+    @property
+    def content_seed_id(self) -> UUID:
+        """Get the content seed ID (for backwards compatibility)."""
+        if self.news_event_seed_id:
+            return self.news_event_seed_id
+        elif self.trend_seed_id:
+            return self.trend_seed_id
+        elif self.ungrounded_seed_id:
+            return self.ungrounded_seed_id
+        else:
+            raise ValueError("No content seed ID set")
+
+    @property
+    def content_seed_type(self) -> Literal["news_event", "trend", "ungrounded"]:
+        """Get the content seed type (for backwards compatibility)."""
+        if self.news_event_seed_id:
+            return "news_event"
+        elif self.trend_seed_id:
+            return "trend"
+        elif self.ungrounded_seed_id:
+            return "ungrounded"
+        else:
+            raise ValueError("No content seed type set")
+
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
                 "id": "c9d0e1f2-a3b4-1c2d-6e7f-8a9b0c1d2e3f",
                 "task_id": "b8c9d0e1-f2a3-0b1c-5d6e-7f8a9b0c1d2e",
-                "content_seed_id": "b2c3d4e5-f6a7-5b6c-9d0e-1f2a3b4c5d6e",
-                "content_seed_type": "news_event",
+                "news_event_seed_id": "b2c3d4e5-f6a7-5b6c-9d0e-1f2a3b4c5d6e",
+                "trend_seed_id": None,
+                "ungrounded_seed_id": None,
                 "platform": "instagram",
                 "post_type": "instagram_image",
                 "text": "SEPTA fare increase coming in March 🚊💰 What does this mean for Penn students? Check out our breakdown. #SEPTA #UPenn #Philadelphia #Transit",

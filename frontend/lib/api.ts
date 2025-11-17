@@ -76,6 +76,49 @@ export async function getUngroundedSeed(id: string): Promise<UngroundedSeed | nu
   return data
 }
 
+// Helper function to get seed info from a post
+async function enrichPostWithSeedInfo(post: any) {
+  let seedName = ''
+  let seedId = ''
+  let seedType: 'news_event' | 'trend' | 'ungrounded' | null = null
+
+  if (post.news_event_seed_id) {
+    seedId = post.news_event_seed_id
+    seedType = 'news_event'
+    const { data } = await supabase
+      .from('news_event_seeds')
+      .select('name')
+      .eq('id', post.news_event_seed_id)
+      .single()
+    seedName = data?.name || 'Unknown'
+  } else if (post.trend_seed_id) {
+    seedId = post.trend_seed_id
+    seedType = 'trend'
+    const { data } = await supabase
+      .from('trend_seeds')
+      .select('name')
+      .eq('id', post.trend_seed_id)
+      .single()
+    seedName = data?.name || 'Unknown'
+  } else if (post.ungrounded_seed_id) {
+    seedId = post.ungrounded_seed_id
+    seedType = 'ungrounded'
+    const { data } = await supabase
+      .from('ungrounded_seeds')
+      .select('idea')
+      .eq('id', post.ungrounded_seed_id)
+      .single()
+    seedName = data?.idea || 'Unknown'
+  }
+
+  return {
+    ...post,
+    content_seed_id: seedId,
+    content_seed_type: seedType,
+    seed_name: seedName,
+  }
+}
+
 // Completed Posts
 export async function getCompletedPosts(platform?: 'facebook' | 'instagram'): Promise<CompletedPost[]> {
   let query = supabase
@@ -91,9 +134,11 @@ export async function getCompletedPosts(platform?: 'facebook' | 'instagram'): Pr
 
   if (error) throw error
 
-  // Fetch media URLs for posts with media_ids
+  // Fetch media URLs and seed info for posts
   const postsWithMedia = await Promise.all(
     (data || []).map(async (post) => {
+      let enrichedPost = await enrichPostWithSeedInfo(post)
+
       if (post.media_ids && Array.isArray(post.media_ids) && post.media_ids.length > 0) {
         const { data: mediaData, error: mediaError } = await supabase
           .from('media')
@@ -101,13 +146,13 @@ export async function getCompletedPosts(platform?: 'facebook' | 'instagram'): Pr
           .in('id', post.media_ids)
 
         if (!mediaError && mediaData) {
-          return {
-            ...post,
+          enrichedPost = {
+            ...enrichedPost,
             media_urls: mediaData.map(m => m.public_url)
           }
         }
       }
-      return post
+      return enrichedPost
     })
   )
 
@@ -153,11 +198,18 @@ export async function getContentCreationTasksBySeed(seedId: string): Promise<Con
   return data || []
 }
 
-export async function getCompletedPostsBySeed(seedId: string): Promise<CompletedPost[]> {
+export async function getCompletedPostsBySeed(seedId: string, seedType: 'news_event' | 'trend' | 'ungrounded'): Promise<CompletedPost[]> {
+  // Determine which column to query based on seed type
+  const seedColumn = seedType === 'news_event'
+    ? 'news_event_seed_id'
+    : seedType === 'trend'
+    ? 'trend_seed_id'
+    : 'ungrounded_seed_id'
+
   const { data, error } = await supabase
     .from('completed_posts')
     .select('*')
-    .eq('content_seed_id', seedId)
+    .eq(seedColumn, seedId)
     .order('created_at', { ascending: false })
 
   if (error) throw error
@@ -165,6 +217,8 @@ export async function getCompletedPostsBySeed(seedId: string): Promise<Completed
   // Fetch media URLs for posts with media_ids
   const postsWithMedia = await Promise.all(
     (data || []).map(async (post) => {
+      let enrichedPost = await enrichPostWithSeedInfo(post)
+
       if (post.media_ids && Array.isArray(post.media_ids) && post.media_ids.length > 0) {
         const { data: mediaData, error: mediaError } = await supabase
           .from('media')
@@ -172,17 +226,60 @@ export async function getCompletedPostsBySeed(seedId: string): Promise<Completed
           .in('id', post.media_ids)
 
         if (!mediaError && mediaData) {
-          return {
-            ...post,
+          enrichedPost = {
+            ...enrichedPost,
             media_urls: mediaData.map(m => m.public_url)
           }
         }
       }
-      return post
+      return enrichedPost
     })
   )
 
   return postsWithMedia
+}
+
+// Get post counts by seed
+export async function getPostCountsBySeed(): Promise<Record<string, number>> {
+  const { data: newsEventCounts, error: newsError } = await supabase
+    .from('completed_posts')
+    .select('news_event_seed_id')
+    .not('news_event_seed_id', 'is', null)
+
+  const { data: trendCounts, error: trendError } = await supabase
+    .from('completed_posts')
+    .select('trend_seed_id')
+    .not('trend_seed_id', 'is', null)
+
+  const { data: ungroundedCounts, error: ungroundedError } = await supabase
+    .from('completed_posts')
+    .select('ungrounded_seed_id')
+    .not('ungrounded_seed_id', 'is', null)
+
+  const counts: Record<string, number> = {}
+
+  // Count news event posts
+  newsEventCounts?.forEach(post => {
+    if (post.news_event_seed_id) {
+      counts[post.news_event_seed_id] = (counts[post.news_event_seed_id] || 0) + 1
+    }
+  })
+
+  // Count trend posts
+  trendCounts?.forEach(post => {
+    if (post.trend_seed_id) {
+      counts[post.trend_seed_id] = (counts[post.trend_seed_id] || 0) + 1
+    }
+  })
+
+  // Count ungrounded posts
+  ungroundedCounts?.forEach(post => {
+    if (post.ungrounded_seed_id) {
+      counts[post.ungrounded_seed_id] = (counts[post.ungrounded_seed_id] || 0) + 1
+    }
+  })
+
+  return counts
 }
 
 // Insight Reports

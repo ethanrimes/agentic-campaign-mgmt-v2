@@ -25,7 +25,7 @@ export default function UngroundedSeedCard({ seed }: UngroundedSeedCardProps) {
       try {
         const [tasksData, postsData] = await Promise.all([
           getContentCreationTasksBySeed(seed.id),
-          getCompletedPostsBySeed(seed.id),
+          getCompletedPostsBySeed(seed.id, 'ungrounded'),
         ])
         setTasks(tasksData)
         setPosts(postsData)
