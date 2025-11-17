@@ -42,8 +42,10 @@ export interface UngroundedSeed {
 export interface CompletedPost {
   id: string
   task_id: string
-  content_seed_id: string
-  content_seed_type: 'news_event' | 'trend' | 'ungrounded'
+  // Content seed references (exactly one will be set)
+  news_event_seed_id: string | null
+  trend_seed_id: string | null
+  ungrounded_seed_id: string | null
   platform: 'facebook' | 'instagram'
   post_type: string
   text: string
@@ -58,6 +60,13 @@ export interface CompletedPost {
   platform_post_url: string | null
   error_message: string | null
   created_at: string
+}
+
+// Helper types for posts with seed data
+export interface CompletedPostWithSeed extends CompletedPost {
+  content_seed_id: string
+  content_seed_type: 'news_event' | 'trend' | 'ungrounded'
+  seed_name: string
 }
 
 export interface ContentCreationTask {

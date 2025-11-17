@@ -25,7 +25,7 @@ export default function NewsEventCard({ seed }: NewsEventCardProps) {
       try {
         const [tasksData, postsData] = await Promise.all([
           getContentCreationTasksBySeed(seed.id),
-          getCompletedPostsBySeed(seed.id),
+          getCompletedPostsBySeed(seed.id, 'news_event'),
         ])
         setTasks(tasksData)
         setPosts(postsData)

@@ -1,16 +1,17 @@
 // frontend/app/content-seeds/page.tsx
 
-import { getNewsEventSeeds, getTrendSeeds, getUngroundedSeeds } from '@/lib/api'
+import { getNewsEventSeeds, getTrendSeeds, getUngroundedSeeds, getPostCountsBySeed } from '@/lib/api'
 import { Database, TrendingUp, Lightbulb, Sparkles } from 'lucide-react'
 import ContentSeedsGrid from '@/components/seeds/ContentSeedsGrid'
 
 export const dynamic = 'force-dynamic'
 
-export default async function ContentSeedsPage() {
-  const [newsSeeds, trendSeeds, ungroundedSeeds] = await Promise.all([
+export default async function ContentSeedsPage({ searchParams }: { searchParams: { seed?: string; type?: string } }) {
+  const [newsSeeds, trendSeeds, ungroundedSeeds, postCounts] = await Promise.all([
     getNewsEventSeeds(),
     getTrendSeeds(),
     getUngroundedSeeds(),
+    getPostCountsBySeed(),
   ])
 
   const totalSeeds = newsSeeds.length + trendSeeds.length + ungroundedSeeds.length
@@ -74,6 +75,9 @@ export default async function ContentSeedsPage() {
           newsSeeds={newsSeeds}
           trendSeeds={trendSeeds}
           ungroundedSeeds={ungroundedSeeds}
+          postCounts={postCounts}
+          initialSeedId={searchParams.seed}
+          initialSeedType={searchParams.type as 'news_event' | 'trend' | 'ungrounded' | undefined}
         />
       )}
     </div>
