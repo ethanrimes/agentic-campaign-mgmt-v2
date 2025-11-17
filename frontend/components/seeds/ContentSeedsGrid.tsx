@@ -3,10 +3,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Database, TrendingUp, Lightbulb, ChevronDown } from 'lucide-react'
-import NewsEventCard from './NewsEventCard'
-import TrendSeedCard from './TrendSeedCard'
-import UngroundedSeedCard from './UngroundedSeedCard'
+import { Database, TrendingUp, Lightbulb } from 'lucide-react'
+import SeedModal from './SeedModal'
 import type { NewsEventSeed, TrendSeed, UngroundedSeed } from '@/types'
 
 interface ContentSeedsGridProps {
@@ -19,6 +17,7 @@ interface ContentSeedsGridProps {
 }
 
 type SectionType = 'news' | 'trends' | 'creative' | null
+type SelectedSeed = { seed: NewsEventSeed | TrendSeed | UngroundedSeed; type: 'news_event' | 'trend' | 'ungrounded' } | null
 
 export default function ContentSeedsGrid({ newsSeeds, trendSeeds, ungroundedSeeds, postCounts, initialSeedId, initialSeedType }: ContentSeedsGridProps) {
   // Determine initial section based on initialSeedType
@@ -30,21 +29,30 @@ export default function ContentSeedsGrid({ newsSeeds, trendSeeds, ungroundedSeed
   }
 
   const [expandedSection, setExpandedSection] = useState<SectionType>(getInitialSection())
+  const [selectedSeed, setSelectedSeed] = useState<SelectedSeed>(null)
 
-  // Scroll to seed card when initialSeedId is provided
+  // Auto-open modal when initialSeedId is provided
   useEffect(() => {
-    if (initialSeedId) {
-      // Wait for DOM to render
-      setTimeout(() => {
-        const element = document.getElementById(`seed-${initialSeedId}`)
-        if (element) {
-          element.scrollIntoView({ behavior: 'smooth', block: 'center' })
-          // Trigger click to expand the card
-          element.click()
-        }
-      }, 500)
+    if (initialSeedId && initialSeedType) {
+      // Find the seed
+      let seed: any = null
+      if (initialSeedType === 'news_event') {
+        seed = newsSeeds.find(s => s.id === initialSeedId)
+      } else if (initialSeedType === 'trend') {
+        seed = trendSeeds.find(s => s.id === initialSeedId)
+      } else if (initialSeedType === 'ungrounded') {
+        seed = ungroundedSeeds.find(s => s.id === initialSeedId)
+      }
+
+      if (seed) {
+        setSelectedSeed({ seed, type: initialSeedType })
+      }
     }
-  }, [initialSeedId])
+  }, [initialSeedId, initialSeedType, newsSeeds, trendSeeds, ungroundedSeeds])
+
+  const handleSeedClick = (seed: any, type: 'news_event' | 'trend' | 'ungrounded') => {
+    setSelectedSeed({ seed, type })
+  }
 
   const toggleSection = (section: SectionType) => {
     setExpandedSection(expandedSection === section ? null : section)
@@ -58,7 +66,7 @@ export default function ContentSeedsGrid({ newsSeeds, trendSeeds, ungroundedSeed
       color: 'blue',
       count: newsSeeds.length,
       seeds: newsSeeds,
-      CardComponent: NewsEventCard,
+      seedType: 'news_event' as const,
     },
     {
       id: 'trends' as SectionType,
@@ -67,7 +75,7 @@ export default function ContentSeedsGrid({ newsSeeds, trendSeeds, ungroundedSeed
       color: 'purple',
       count: trendSeeds.length,
       seeds: trendSeeds,
-      CardComponent: TrendSeedCard,
+      seedType: 'trend' as const,
     },
     {
       id: 'creative' as SectionType,
@@ -76,7 +84,7 @@ export default function ContentSeedsGrid({ newsSeeds, trendSeeds, ungroundedSeed
       color: 'amber',
       count: ungroundedSeeds.length,
       seeds: ungroundedSeeds,
-      CardComponent: UngroundedSeedCard,
+      seedType: 'ungrounded' as const,
     },
   ]
 
@@ -108,91 +116,118 @@ export default function ContentSeedsGrid({ newsSeeds, trendSeeds, ungroundedSeed
   }
 
   return (
-    <div className="space-y-6">
-      {/* Filter Buttons */}
-      <div className="flex flex-wrap gap-3 justify-center">
+    <>
+      <div className="space-y-6">
+        {/* Filter Buttons */}
+        <div className="flex flex-wrap gap-3 justify-center">
+          {sections.map((section) => {
+            const colors = getColorClasses(section.color)
+            const isActive = expandedSection === section.id
+            const Icon = section.icon
+
+            return (
+              <button
+                key={section.id}
+                onClick={() => toggleSection(section.id)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-full border-2 transition-all ${
+                  isActive
+                    ? `${colors.bg} text-white ${colors.border}`
+                    : `${colors.bgLight} ${colors.text} ${colors.border} ${colors.hover}`
+                }`}
+              >
+                <Icon className="w-4 h-4" />
+                <span className="font-medium">{section.title}</span>
+                <span className={`text-xs px-2 py-0.5 rounded-full ${
+                  isActive ? 'bg-white/20' : 'bg-white'
+                }`}>
+                  {section.count}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+
+        {/* Sections */}
         {sections.map((section) => {
+          const isExpanded = expandedSection === section.id
           const colors = getColorClasses(section.color)
-          const isActive = expandedSection === section.id
           const Icon = section.icon
 
+          if (!isExpanded || section.seeds.length === 0) return null
+
           return (
-            <button
-              key={section.id}
-              onClick={() => toggleSection(section.id)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-full border-2 transition-all ${
-                isActive
-                  ? `${colors.bg} text-white ${colors.border}`
-                  : `${colors.bgLight} ${colors.text} ${colors.border} ${colors.hover}`
-              }`}
-            >
-              <Icon className="w-4 h-4" />
-              <span className="font-medium">{section.title}</span>
-              <span className={`text-xs px-2 py-0.5 rounded-full ${
-                isActive ? 'bg-white/20' : 'bg-white'
-              }`}>
-                {section.count}
-              </span>
-            </button>
+            <section key={section.id} className="animate-fade-in">
+              <div className="flex items-center gap-3 mb-6">
+                <div className={`w-10 h-10 ${colors.bg} rounded-xl flex items-center justify-center shadow-lg`}>
+                  <Icon className="w-5 h-5 text-white" />
+                </div>
+                <h2 className="text-2xl font-bold text-slate-900">{section.title}</h2>
+                <span className={`text-sm ${colors.bgLight} ${colors.text} px-3 py-1 rounded-full font-medium ${colors.border} border`}>
+                  {section.count}
+                </span>
+              </div>
+
+              {/* Grid Layout - Clickable Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {section.seeds.map((seed: any, index: number) => {
+                  const postCount = postCounts[seed.id] || 0
+                  const seedName = seed.name || seed.idea
+                  const seedSubtitle = section.seedType === 'news_event'
+                    ? seed.location
+                    : section.seedType === 'trend'
+                    ? `${seed.hashtags?.length || 0} hashtags`
+                    : seed.format
+
+                  return (
+                    <div
+                      key={seed.id}
+                      id={`seed-${seed.id}`}
+                      onClick={() => handleSeedClick(seed, section.seedType)}
+                      className="animate-slide-up relative cursor-pointer group bg-white rounded-xl shadow-soft hover:shadow-glow border border-gray-100 overflow-hidden transition-all duration-300 p-6"
+                      style={{ animationDelay: `${index * 30}ms` }}
+                    >
+                      {postCount > 0 && (
+                        <div className="absolute -top-2 -right-2 z-10 bg-gradient-to-br from-green-500 to-emerald-600 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg border-2 border-white">
+                          {postCount} {postCount === 1 ? 'post' : 'posts'}
+                        </div>
+                      )}
+                      <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-primary-600 transition-colors">
+                        {seedName}
+                      </h3>
+                      {seedSubtitle && (
+                        <p className="text-sm text-gray-500 mb-3">{seedSubtitle}</p>
+                      )}
+                      <p className="text-sm text-gray-700 line-clamp-3">
+                        {seed.description || seed.idea || seed.details}
+                      </p>
+                    </div>
+                  )
+                })}
+              </div>
+            </section>
           )
         })}
+
+        {/* Show message if no section is expanded */}
+        {!expandedSection && (
+          <div className="text-center py-16 bg-white rounded-2xl border border-slate-200 shadow-xl">
+            <p className="text-lg font-semibold text-slate-900 mb-2">Select a category to view content seeds</p>
+            <p className="text-sm text-slate-600 max-w-md mx-auto">
+              Click on one of the buttons above to explore different types of content seeds
+            </p>
+          </div>
+        )}
       </div>
 
-      {/* Sections */}
-      {sections.map((section) => {
-        const isExpanded = expandedSection === section.id
-        const colors = getColorClasses(section.color)
-        const Icon = section.icon
-        const CardComponent = section.CardComponent
-
-        if (!isExpanded || section.seeds.length === 0) return null
-
-        return (
-          <section key={section.id} className="animate-fade-in">
-            <div className="flex items-center gap-3 mb-6">
-              <div className={`w-10 h-10 ${colors.bg} rounded-xl flex items-center justify-center shadow-lg`}>
-                <Icon className="w-5 h-5 text-white" />
-              </div>
-              <h2 className="text-2xl font-bold text-slate-900">{section.title}</h2>
-              <span className={`text-sm ${colors.bgLight} ${colors.text} px-3 py-1 rounded-full font-medium ${colors.border} border`}>
-                {section.count}
-              </span>
-            </div>
-
-            {/* Grid Layout */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {section.seeds.map((seed: any, index: number) => {
-                const postCount = postCounts[seed.id] || 0
-                return (
-                  <div
-                    key={seed.id}
-                    id={`seed-${seed.id}`}
-                    className="animate-slide-up relative"
-                    style={{ animationDelay: `${index * 30}ms` }}
-                  >
-                    {postCount > 0 && (
-                      <div className="absolute -top-2 -right-2 z-10 bg-gradient-to-br from-green-500 to-emerald-600 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg border-2 border-white">
-                        {postCount} {postCount === 1 ? 'post' : 'posts'}
-                      </div>
-                    )}
-                    <CardComponent seed={seed} />
-                  </div>
-                )
-              })}
-            </div>
-          </section>
-        )
-      })}
-
-      {/* Show message if no section is expanded */}
-      {!expandedSection && (
-        <div className="text-center py-16 bg-white rounded-2xl border border-slate-200 shadow-xl">
-          <p className="text-lg font-semibold text-slate-900 mb-2">Select a category to view content seeds</p>
-          <p className="text-sm text-slate-600 max-w-md mx-auto">
-            Click on one of the buttons above to explore different types of content seeds
-          </p>
-        </div>
+      {/* Seed Modal */}
+      {selectedSeed && (
+        <SeedModal
+          seed={selectedSeed.seed}
+          seedType={selectedSeed.type}
+          postCount={postCounts[selectedSeed.seed.id] || 0}
+          onClose={() => setSelectedSeed(null)}
+        />
       )}
-    </div>
+    </>
   )
 }
