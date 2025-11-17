@@ -17,12 +17,14 @@ interface TrendSeedCardProps {
 export default function TrendSeedCard({ seed }: TrendSeedCardProps) {
   const [tasks, setTasks] = useState<any[]>([])
   const [posts, setPosts] = useState<any[]>([])
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [isExpanded, setIsExpanded] = useState(false)
 
   useEffect(() => {
     async function loadData() {
-      if (!loading) return
+      if (!isExpanded) return
       try {
+        setLoading(true)
         const [tasksData, postsData] = await Promise.all([
           getContentCreationTasksBySeed(seed.id),
           getCompletedPostsBySeed(seed.id, 'trend'),
@@ -31,10 +33,12 @@ export default function TrendSeedCard({ seed }: TrendSeedCardProps) {
         setPosts(postsData)
       } catch (error) {
         console.error('Failed to load seed data:', error)
+      } finally {
+        setLoading(false)
       }
     }
     loadData()
-  }, [seed.id, loading])
+  }, [seed.id, isExpanded])
 
   const preview = (
     <div className="space-y-3">
@@ -59,8 +63,9 @@ export default function TrendSeedCard({ seed }: TrendSeedCardProps) {
       title={seed.name}
       subtitle={`Created ${formatRelativeTime(seed.created_at)} • ${seed.created_by}`}
       preview={preview}
+      onExpandChange={setIsExpanded}
     >
-      <div className="space-y-6" onClick={() => setLoading(true)}>
+      <div className="space-y-6">
         {/* Description */}
         <div className="p-4 bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl border border-purple-100">
           <h4 className="text-sm font-bold text-gray-900 mb-2 flex items-center gap-2">

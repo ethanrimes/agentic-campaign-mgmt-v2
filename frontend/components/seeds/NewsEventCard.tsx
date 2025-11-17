@@ -17,12 +17,14 @@ interface NewsEventCardProps {
 export default function NewsEventCard({ seed }: NewsEventCardProps) {
   const [tasks, setTasks] = useState<any[]>([])
   const [posts, setPosts] = useState<any[]>([])
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [isExpanded, setIsExpanded] = useState(false)
 
   useEffect(() => {
     async function loadData() {
-      if (!loading) return
+      if (!isExpanded) return
       try {
+        setLoading(true)
         const [tasksData, postsData] = await Promise.all([
           getContentCreationTasksBySeed(seed.id),
           getCompletedPostsBySeed(seed.id, 'news_event'),
@@ -31,10 +33,12 @@ export default function NewsEventCard({ seed }: NewsEventCardProps) {
         setPosts(postsData)
       } catch (error) {
         console.error('Failed to load seed data:', error)
+      } finally {
+        setLoading(false)
       }
     }
     loadData()
-  }, [seed.id, loading])
+  }, [seed.id, isExpanded])
 
   const preview = (
     <div className="space-y-3">
@@ -64,8 +68,9 @@ export default function NewsEventCard({ seed }: NewsEventCardProps) {
       title={seed.name}
       subtitle={formatRelativeTime(seed.created_at)}
       preview={preview}
+      onExpandChange={setIsExpanded}
     >
-      <div className="space-y-6" onClick={() => setLoading(true)}>
+      <div className="space-y-6">
         {/* Full Description */}
         <div className="p-4 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl border border-blue-100">
           <h4 className="text-sm font-bold text-gray-900 mb-2 flex items-center gap-2">

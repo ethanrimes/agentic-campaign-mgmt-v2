@@ -17,12 +17,14 @@ interface UngroundedSeedCardProps {
 export default function UngroundedSeedCard({ seed }: UngroundedSeedCardProps) {
   const [tasks, setTasks] = useState<any[]>([])
   const [posts, setPosts] = useState<any[]>([])
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [isExpanded, setIsExpanded] = useState(false)
 
   useEffect(() => {
     async function loadData() {
-      if (!loading) return
+      if (!isExpanded) return
       try {
+        setLoading(true)
         const [tasksData, postsData] = await Promise.all([
           getContentCreationTasksBySeed(seed.id),
           getCompletedPostsBySeed(seed.id, 'ungrounded'),
@@ -31,10 +33,12 @@ export default function UngroundedSeedCard({ seed }: UngroundedSeedCardProps) {
         setPosts(postsData)
       } catch (error) {
         console.error('Failed to load seed data:', error)
+      } finally {
+        setLoading(false)
       }
     }
     loadData()
-  }, [seed.id, loading])
+  }, [seed.id, isExpanded])
 
   const preview = (
     <div className="space-y-3">
@@ -57,8 +61,9 @@ export default function UngroundedSeedCard({ seed }: UngroundedSeedCardProps) {
           {seed.format}
         </span>
       }
+      onExpandChange={setIsExpanded}
     >
-      <div className="space-y-6" onClick={() => setLoading(true)}>
+      <div className="space-y-6">
         {/* Full Idea */}
         <div className="p-4 bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl border border-amber-100">
           <h4 className="text-sm font-bold text-gray-900 mb-2 flex items-center gap-2">

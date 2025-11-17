@@ -11,9 +11,10 @@ interface ExpandableCardProps {
   title: string
   subtitle?: string
   preview: ReactNode
-  children: ReactNode
+  children: ReactNode | ((isExpanded: boolean) => ReactNode)
   defaultExpanded?: boolean
   badge?: ReactNode
+  onExpandChange?: (expanded: boolean) => void
 }
 
 export default function ExpandableCard({
@@ -23,8 +24,15 @@ export default function ExpandableCard({
   children,
   defaultExpanded = false,
   badge,
+  onExpandChange,
 }: ExpandableCardProps) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded)
+
+  const handleToggle = () => {
+    const newExpanded = !isExpanded
+    setIsExpanded(newExpanded)
+    onExpandChange?.(newExpanded)
+  }
 
   return (
     <motion.div
@@ -34,7 +42,7 @@ export default function ExpandableCard({
       className="group bg-white rounded-xl shadow-soft hover:shadow-glow border border-gray-100 overflow-hidden transition-all duration-300"
     >
       <button
-        onClick={() => setIsExpanded(!isExpanded)}
+        onClick={handleToggle}
         className="w-full p-6 text-left hover:bg-gradient-to-br hover:from-primary-50/50 hover:to-secondary-50/30 transition-all duration-300"
       >
         <div className="flex items-start justify-between">
@@ -80,7 +88,7 @@ export default function ExpandableCard({
                 transition={{ duration: 0.3, delay: 0.1 }}
                 className="pt-4"
               >
-                {children}
+                {typeof children === 'function' ? children(isExpanded) : children}
               </motion.div>
             </div>
           </motion.div>

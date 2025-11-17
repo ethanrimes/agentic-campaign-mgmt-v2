@@ -4,9 +4,10 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, ChevronLeft, ChevronRight, Calendar, ExternalLink, Play } from 'lucide-react'
+import { X, ChevronLeft, ChevronRight, Calendar, ExternalLink, Play, Sparkles } from 'lucide-react'
 import type { CompletedPost } from '@/types'
 import { formatDateTime } from '@/lib/utils'
+import Link from 'next/link'
 
 interface InstagramPostGridProps {
   posts: CompletedPost[]
@@ -291,6 +292,32 @@ export default function InstagramPostGrid({ posts }: InstagramPostGridProps) {
                       <ExternalLink className="w-3.5 h-3.5" />
                       View on Instagram
                     </a>
+                  )}
+                  {/* Content Seed Link */}
+                  {(selectedPost as any).content_seed_id && (
+                    <Link
+                      href={`/content-seeds?seed=${(selectedPost as any).content_seed_id}&type=${(selectedPost as any).content_seed_type}`}
+                      className="block p-3 bg-gradient-to-br from-cyan-50 to-blue-50 rounded-lg border border-cyan-200 hover:border-cyan-300 hover:shadow-md transition-all"
+                      onClick={handleClose}
+                    >
+                      <div className="flex items-center gap-2 text-xs font-semibold text-slate-600 mb-1">
+                        <Sparkles className="w-3.5 h-3.5 text-cyan-600" />
+                        Content Seed
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <span className="text-xs bg-white text-cyan-700 px-2 py-1 rounded border border-cyan-200 inline-block mb-1">
+                            {(selectedPost as any).content_seed_type?.replace(/_/g, ' ') || 'Unknown'}
+                          </span>
+                          {(selectedPost as any).seed_name && (
+                            <p className="text-xs text-slate-700 line-clamp-1">
+                              {(selectedPost as any).seed_name}
+                            </p>
+                          )}
+                        </div>
+                        <ExternalLink className="w-3.5 h-3.5 text-cyan-600 flex-shrink-0" />
+                      </div>
+                    </Link>
                   )}
                 </div>
               </div>
