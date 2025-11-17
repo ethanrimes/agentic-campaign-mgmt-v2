@@ -4,7 +4,7 @@
 
 from typing import List, Literal
 from backend.models import Image, Video
-from backend.database import get_supabase_client
+from backend.database import get_supabase_admin_client
 from backend.utils import DatabaseError
 from .base import BaseRepository
 
@@ -19,7 +19,7 @@ class MediaRepository(BaseRepository):
     async def create_image(self, image: Image) -> Image:
         """Create image record."""
         try:
-            client = await get_supabase_client()
+            client = await get_supabase_admin_client()
             data = image.model_dump(mode="json", exclude_unset=True)
             data["media_type"] = "image"
             result = await client.table(self.table_name).insert(data).execute()
@@ -32,7 +32,7 @@ class MediaRepository(BaseRepository):
     async def create_video(self, video: Video) -> Video:
         """Create video record."""
         try:
-            client = await get_supabase_client()
+            client = await get_supabase_admin_client()
             data = video.model_dump(mode="json", exclude_unset=True)
             data["media_type"] = "video"
             result = await client.table(self.table_name).insert(data).execute()
@@ -47,7 +47,7 @@ class MediaRepository(BaseRepository):
     ) -> List:
         """Get recent media."""
         try:
-            client = await get_supabase_client()
+            client = await get_supabase_admin_client()
             query = client.table(self.table_name).select("*")
             if media_type:
                 query = query.eq("media_type", media_type)

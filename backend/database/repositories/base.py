@@ -8,7 +8,7 @@ All specific repositories inherit from this.
 from typing import List, Optional, TypeVar, Generic, Type, Dict, Any
 from uuid import UUID
 from pydantic import BaseModel
-from backend.database import get_supabase_client
+from backend.database import get_supabase_admin_client
 from backend.utils import get_logger, DatabaseError
 
 T = TypeVar("T", bound=BaseModel)
@@ -48,7 +48,7 @@ class BaseRepository(Generic[T]):
             DatabaseError: If insertion fails
         """
         try:
-            client = await get_supabase_client()
+            client = await get_supabase_admin_client()
             data = entity.model_dump(mode="json", exclude_unset=True)
             result = await client.table(self.table_name).insert(data).execute()
 
@@ -75,7 +75,7 @@ class BaseRepository(Generic[T]):
             Entity if found, None otherwise
         """
         try:
-            client = await get_supabase_client()
+            client = await get_supabase_admin_client()
             result = (
                 await client.table(self.table_name)
                 .select("*")
@@ -108,7 +108,7 @@ class BaseRepository(Generic[T]):
             List of entities
         """
         try:
-            client = await get_supabase_client()
+            client = await get_supabase_admin_client()
             query = client.table(self.table_name).select("*")
 
             if limit:
@@ -135,7 +135,7 @@ class BaseRepository(Generic[T]):
             Updated entity if successful, None if not found
         """
         try:
-            client = await get_supabase_client()
+            client = await get_supabase_admin_client()
             result = (
                 await client.table(self.table_name)
                 .update(updates)
@@ -167,7 +167,7 @@ class BaseRepository(Generic[T]):
             True if deleted, False if not found
         """
         try:
-            client = await get_supabase_client()
+            client = await get_supabase_admin_client()
             result = (
                 await client.table(self.table_name)
                 .delete()
@@ -193,7 +193,7 @@ class BaseRepository(Generic[T]):
             Number of entities
         """
         try:
-            client = await get_supabase_client()
+            client = await get_supabase_admin_client()
             result = (
                 await client.table(self.table_name)
                 .select("id", count="exact")

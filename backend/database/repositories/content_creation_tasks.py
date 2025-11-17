@@ -16,9 +16,9 @@ class ContentCreationTaskRepository(BaseRepository[ContentCreationTask]):
 
     async def get_pending_tasks(self, limit: int = 10) -> List[ContentCreationTask]:
         """Get pending tasks."""
-        from backend.database import get_supabase_client
+        from backend.database import get_supabase_admin_client
         try:
-            client = await get_supabase_client()
+            client = await get_supabase_admin_client()
             result = (
                 await client.table(self.table_name)
                 .select("*")
@@ -33,9 +33,9 @@ class ContentCreationTaskRepository(BaseRepository[ContentCreationTask]):
 
     async def get_by_seed_id(self, seed_id: UUID) -> List[ContentCreationTask]:
         """Get tasks for a specific content seed."""
-        from backend.database import get_supabase_client
+        from backend.database import get_supabase_admin_client
         try:
-            client = await get_supabase_client()
+            client = await get_supabase_admin_client()
             result = (
                 await client.table(self.table_name)
                 .select("*")

@@ -7,7 +7,7 @@ from typing import List, Optional, Dict, Any
 from uuid import UUID
 from backend.models import NewsEventSeed, IngestedEvent
 from backend.utils import get_logger
-from backend.database import get_supabase_client
+from backend.database import get_supabase_admin_client
 from .base import BaseRepository
 
 logger = get_logger(__name__)
@@ -103,8 +103,8 @@ class NewsEventSeedRepository(BaseRepository[NewsEventSeed]):
         from .sources import SourceRepository
 
         try:
-            from backend.database import get_supabase_client
-            client = await get_supabase_client()
+            from backend.database import get_supabase_admin_client
+            client = await get_supabase_admin_client()
             result = (
                 await client.table(self.table_name)
                 .select("*")
@@ -134,8 +134,8 @@ class NewsEventSeedRepository(BaseRepository[NewsEventSeed]):
         from .sources import SourceRepository
 
         try:
-            from backend.database import get_supabase_client
-            client = await get_supabase_client()
+            from backend.database import get_supabase_admin_client
+            client = await get_supabase_admin_client()
             result = (
                 await client.table(self.table_name)
                 .select("*")
@@ -313,8 +313,8 @@ class IngestedEventRepository(BaseRepository[IngestedEvent]):
         from .sources import SourceRepository
 
         try:
-            from backend.database import get_supabase_client
-            client = await get_supabase_client()
+            from backend.database import get_supabase_admin_client
+            client = await get_supabase_admin_client()
             result = (
                 await client.table(self.table_name)
                 .select("*")
@@ -352,8 +352,8 @@ class IngestedEventRepository(BaseRepository[IngestedEvent]):
         from .sources import SourceRepository
 
         try:
-            from backend.database import get_supabase_client
-            client = await get_supabase_client()
+            from backend.database import get_supabase_admin_client
+            client = await get_supabase_admin_client()
             query = (
                 client.table(self.table_name)
                 .select("*")
@@ -404,7 +404,7 @@ class IngestedEventRepository(BaseRepository[IngestedEvent]):
                 "canonical_event_id": str(canonical_event_id)
             }
 
-            client = await get_supabase_client()
+            client = await get_supabase_admin_client()
             result = (
                 await client.table(self.table_name)
                 .update(updates)

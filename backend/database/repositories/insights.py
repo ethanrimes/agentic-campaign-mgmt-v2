@@ -16,8 +16,8 @@ class InsightsRepository(BaseRepository[InsightReport]):
     async def get_recent(self, limit: int = 5) -> List[InsightReport]:
         """Get most recent insight reports."""
         try:
-            from backend.database import get_supabase_client
-            client = await get_supabase_client()
+            from backend.database import get_supabase_admin_client
+            client = await get_supabase_admin_client()
             result = (
                 await client.table(self.table_name)
                 .select("*")
