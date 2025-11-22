@@ -11,6 +11,7 @@ const app = express();
 const VERIFY_TOKEN = process.env.FACEBOOK_WEBHOOK_VERIFY_TOKEN;
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
+const FACEBOOK_PAGE_ACCESS_TOKEN = process.env.FACEBOOK_PAGE_ACCESS_TOKEN;
 const PORT = process.env.WEBHOOK_PORT || 3000;
 
 // Validate required environment variables
@@ -20,6 +21,10 @@ if (!VERIFY_TOKEN) {
 }
 if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
   console.error("ERROR: SUPABASE_URL and SUPABASE_SERVICE_KEY must be set in .env file");
+  process.exit(1);
+}
+if (!FACEBOOK_PAGE_ACCESS_TOKEN) {
+  console.error("ERROR: FACEBOOK_PAGE_ACCESS_TOKEN not set in .env file");
   process.exit(1);
 }
 
@@ -102,6 +107,28 @@ app.post("/webhook", async (req, res) => {
 });
 
 // ============================================================================
+// FETCH COMMENT DETAILS FROM FACEBOOK GRAPH API
+// ============================================================================
+
+async function fetchCommentDetails(commentId) {
+  const url = `https://graph.facebook.com/v24.0/${commentId}`;
+  const params = new URLSearchParams({
+    fields: "message,from,created_time,parent,permalink_url,comment_count,like_count,attachment",
+    access_token: FACEBOOK_PAGE_ACCESS_TOKEN
+  });
+
+  console.log(`Fetching comment details for: ${commentId}`);
+
+  const response = await fetch(`${url}?${params}`);
+
+  if (!response.ok) {
+    throw new Error(`Facebook API error: ${response.status} ${response.statusText}`);
+  }
+
+  return await response.json();
+}
+
+// ============================================================================
 // COMMENT EVENT HANDLER
 // ============================================================================
 
@@ -112,7 +139,6 @@ async function handleCommentEvent(value) {
 
     const commentId = value.comment_id;
     const postId = value.post_id;
-    const commentText = value.message || "";
     const verb = value.verb;  // "add", "edit", or "remove"
 
     // Only process new comments (verb = "add")
@@ -121,17 +147,30 @@ async function handleCommentEvent(value) {
       return;
     }
 
-    // Extract commenter info
-    const from = value.from || {};
+    // Fetch full comment details from Facebook Graph API
+    const commentDetails = await fetchCommentDetails(commentId);
+    console.log("\nFetched comment details:");
+    console.log(JSON.stringify(commentDetails, null, 2));
+
+    const commentText = commentDetails.message || "";
+
+    // Skip comments without text (reactions, media-only, stickers, etc.)
+    if (!commentText.trim()) {
+      console.log(`Skipping comment without text (comment_id: ${commentId})`);
+      return;
+    }
+
+    // Extract commenter info from API response
+    const from = commentDetails.from || {};
     const commenterName = from.name || "Unknown";
     const commenterId = from.id || "unknown";
 
     // Extract parent_id if this is a reply
-    const parentId = value.parent_id;
+    const parentId = commentDetails.parent?.id || value.parent_id || null;
 
-    // Extract timestamp
-    const createdTime = value.created_time
-      ? new Date(value.created_time * 1000).toISOString()
+    // Extract timestamp from API response
+    const createdTime = commentDetails.created_time
+      ? new Date(commentDetails.created_time).toISOString()
       : new Date().toISOString();
 
     // Prepare comment data for database
@@ -142,10 +181,10 @@ async function handleCommentEvent(value) {
       comment_text: commentText,
       commenter_username: commenterName,
       commenter_id: commenterId,
-      parent_comment_id: parentId || null,
+      parent_comment_id: parentId,
       created_time: createdTime,
-      like_count: 0,  // Not available in webhook payload
-      permalink_url: value.permalink_url || null,
+      like_count: commentDetails.like_count || 0,
+      permalink_url: commentDetails.permalink_url || null,
       status: "pending"
     };
 
