@@ -9,6 +9,7 @@ from .content_creation_tasks import ContentCreationTaskRepository
 from .completed_posts import CompletedPostRepository
 from .media import MediaRepository
 from .sources import SourceRepository
+from .platform_comments import PlatformCommentRepository
 
 __all__ = [
     "BaseRepository",
@@ -21,4 +22,5 @@ __all__ = [
     "CompletedPostRepository",
     "MediaRepository",
     "SourceRepository",
+    "PlatformCommentRepository",
 ]

@@ -42,8 +42,8 @@ class SchedulingConfig:
     """
 
     # Publishing frequency (hours between posts)
-    FACEBOOK_POST_INTERVAL_HOURS = 24  # Post to Facebook once per day
-    INSTAGRAM_POST_INTERVAL_HOURS = 12  # Post to Instagram twice per day
+    FACEBOOK_POST_INTERVAL_HOURS = 12  # Post to Facebook once per day
+    INSTAGRAM_POST_INTERVAL_HOURS = 8  # Post to Instagram twice per day
 
     # Initial delay before first post (hours from content creation)
     FACEBOOK_INITIAL_DELAY_HOURS = 2  # Wait 2 hours before first Facebook post
@@ -53,10 +53,14 @@ class SchedulingConfig:
     # How often the publisher scripts should check for posts to publish
     PUBLISH_CHECK_INTERVAL_MINUTES = 5
 
+    # Comment management (minutes)
+    INSTAGRAM_COMMENT_CHECK_INTERVAL_MINUTES = 180  # Check for new Instagram comments
+    COMMENT_RESPONDER_INTERVAL_MINUTES = 5  # Process and respond to pending comments
+
     # Content pipeline scheduling (hours)
-    NEWS_PIPELINE_INTERVAL_HOURS = 3  # News ingestion + deduplication
-    TREND_DISCOVERY_INTERVAL_HOURS = 3  # Trend discovery
-    UNGROUNDED_GENERATION_INTERVAL_HOURS = 6  # Ungrounded idea generation
+    NEWS_PIPELINE_INTERVAL_HOURS = 6  # News ingestion + deduplication
+    TREND_DISCOVERY_INTERVAL_HOURS = 6  # Trend discovery
+    UNGROUNDED_GENERATION_INTERVAL_HOURS = 12  # Ungrounded idea generation
 
     # Analysis and planning (cron)
     PLANNING_PIPELINE_HOUR = 2  # Daily at 2 AM
@@ -208,6 +212,26 @@ def run_instagram_publishing():
 
 
 # ============================================================================
+# COMMENT MANAGEMENT JOBS
+# ============================================================================
+
+def run_instagram_comment_check():
+    """Check for new comments on Instagram posts."""
+    run_command(
+        ["comments", "check-instagram"],
+        "Instagram Comment Check"
+    )
+
+
+def run_comment_responder():
+    """Process pending comments and generate responses."""
+    run_command(
+        ["comments", "respond"],
+        "Comment Responder"
+    )
+
+
+# ============================================================================
 # SCHEDULER EVENT LISTENERS
 # ============================================================================
 
@@ -313,6 +337,32 @@ def create_scheduler():
         minutes=SCHEDULING_CONFIG.PUBLISH_CHECK_INTERVAL_MINUTES,
         id='instagram_publishing',
         name='Instagram Publishing',
+        max_instances=1,
+        coalesce=True
+    )
+
+    # ========================================================================
+    # COMMENT MANAGEMENT
+    # ========================================================================
+
+    # Instagram comment checking - poll for new comments
+    scheduler.add_job(
+        run_instagram_comment_check,
+        'interval',
+        minutes=SCHEDULING_CONFIG.INSTAGRAM_COMMENT_CHECK_INTERVAL_MINUTES,
+        id='instagram_comment_check',
+        name='Instagram Comment Check',
+        max_instances=1,
+        coalesce=True
+    )
+
+    # Comment responder - process pending comments and generate responses
+    scheduler.add_job(
+        run_comment_responder,
+        'interval',
+        minutes=SCHEDULING_CONFIG.COMMENT_RESPONDER_INTERVAL_MINUTES,
+        id='comment_responder',
+        name='Comment Responder',
         max_instances=1,
         coalesce=True
     )
