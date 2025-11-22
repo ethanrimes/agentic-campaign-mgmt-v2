@@ -70,6 +70,8 @@ frontend/out/
 frontend/node_modules/
 frontend/.vercel
 frontend/.turbo
+fb-webhook/node_modules
+fb-webhook/package-lock.json
 
 # Package managers
 package-lock.json
@@ -80,3 +82,4 @@ pnpm-lock.yaml
 *.tmp
 *.temp
 .cache/
+

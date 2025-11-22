@@ -35,6 +35,7 @@ from .insights import insights
 from .planner import planner
 from .content import content
 from .publish import publish
+from .comments import comments
 
 # Register subcommands
 cli.add_command(news_events)
@@ -44,6 +45,7 @@ cli.add_command(insights)
 cli.add_command(planner)
 cli.add_command(content)
 cli.add_command(publish)
+cli.add_command(comments)
 
 
 if __name__ == "__main__":

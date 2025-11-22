@@ -13,7 +13,7 @@ logger = get_logger(__name__)
 class MetaBaseClient:
     """Base client for Meta Graph API operations."""
 
-    API_VERSION = "v23.0"
+    API_VERSION = "v24.0"
     BASE_URL = f"https://graph.facebook.com/{API_VERSION}"
     INSTAGRAM_BASE_URL = f"https://graph.instagram.com/{API_VERSION}"
 
@@ -37,7 +37,7 @@ class MetaBaseClient:
         Args:
             method: HTTP method (GET, POST, etc.)
             url: Full URL
-            data: Form data
+            data: For GET requests, these become query parameters. For POST, form data.
             json_data: JSON data
             headers: Request headers
 
@@ -47,10 +47,20 @@ class MetaBaseClient:
         Raises:
             APIError: If request fails
         """
+        # For GET requests, data should be sent as query params
+        # For POST requests, data should be sent as form data
+        params = None
+        form_data = None
+
+        if method.upper() == "GET":
+            params = data
+        else:
+            form_data = data
+
         async with aiohttp.ClientSession() as session:
             try:
                 async with session.request(
-                    method, url, data=data, json=json_data, headers=headers
+                    method, url, params=params, data=form_data, json=json_data, headers=headers
                 ) as response:
                     result = await response.json()
 

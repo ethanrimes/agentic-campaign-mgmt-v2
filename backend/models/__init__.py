@@ -4,6 +4,7 @@ from .seeds import NewsEventSeed, TrendSeed, UngroundedSeed, IngestedEvent
 from .sources import Source
 from .tasks import ContentCreationTask
 from .posts import CompletedPost
+from .comments import PlatformComment
 from .insights import InsightReport, ToolCall
 from .media import Image, Video, MediaType
 from .social_media import Post, User, ScraperPost
@@ -21,6 +22,8 @@ __all__ = [
     "ContentCreationTask",
     # Posts
     "CompletedPost",
+    # Comments
+    "PlatformComment",
     # Insights
     "InsightReport",
     "ToolCall",
