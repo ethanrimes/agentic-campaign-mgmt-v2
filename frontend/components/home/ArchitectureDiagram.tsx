@@ -171,6 +171,42 @@ const nodeDescriptions: Record<string, { title: string; description: string; det
       'Feeds data back into the Insights Agent to close the loop',
     ],
   },
+  'facebook-webhook': {
+    title: 'Facebook Webhook',
+    description:
+      'Real-time monitoring system that captures comment activity on Facebook posts as soon as they occur, enabling immediate response capabilities.',
+    details: [
+      'Receives real-time notifications when comments are posted on Facebook',
+      'Logs all comment activity with full context and metadata',
+      'Forwards comment data to the Living Knowledge Base for processing',
+      'Enables rapid response times for audience engagement',
+      'Implementation: @fb-webhook/index.js',
+    ],
+  },
+  'instagram-comment-checker': {
+    title: 'Instagram Comment Checker',
+    description:
+      'Periodic polling service that monitors Instagram posts for new comments, capturing engagement activity that is then logged and processed.',
+    details: [
+      'Polls Instagram posts at regular intervals to detect new comments',
+      'Extracts comment content, author information, and timestamps',
+      'Logs discovered comments into the Living Knowledge Base',
+      'Complements Facebook webhook with Instagram engagement tracking',
+      'Implementation: @backend/services/meta/instagram_comment_checker.py',
+    ],
+  },
+  'comment-responder': {
+    title: 'Comment Responder Agent',
+    description:
+      'AI-powered agent that generates contextually relevant, thoughtful responses to user comments on both Facebook and Instagram.',
+    details: [
+      'Analyzes incoming comments alongside post content and metadata',
+      'Reviews full thread history to maintain conversational context',
+      'Generates natural, on-brand responses tailored to each comment',
+      'Supports engagement across both Facebook and Instagram platforms',
+      'Implementation: @backend/agents/comment_responder/',
+    ],
+  },
 }
 
 
@@ -338,7 +374,7 @@ const createInitialNodes = (onNodeClick: (id: string) => void): Node[] => [
     data: { label: 'ChatGPT o4-mini Deep Research', category: 'Ideation', onClick: onNodeClick },
   },
   
-  // Rank 2: Processors
+  // Rank 2: Processors & Comment Monitoring
   {
     id: 'trend-researcher',
     type: 'custom',
@@ -356,6 +392,18 @@ const createInitialNodes = (onNodeClick: (id: string) => void): Node[] => [
     type: 'custom',
     position: { x: 0, y: 0 },
     data: { label: 'Event Deduplicator', category: 'Utilities', onClick: onNodeClick },
+  },
+  {
+    id: 'facebook-webhook',
+    type: 'custom',
+    position: { x: 0, y: 0 },
+    data: { label: 'Facebook Webhook', category: 'Utilities', onClick: onNodeClick },
+  },
+  {
+    id: 'instagram-comment-checker',
+    type: 'custom',
+    position: { x: 0, y: 0 },
+    data: { label: 'Instagram Comment Checker', category: 'Utilities', onClick: onNodeClick },
   },
   
   // Rank 3: Knowledge Base (Center)
@@ -385,14 +433,20 @@ const createInitialNodes = (onNodeClick: (id: string) => void): Node[] => [
     data: { label: 'Guardrails', category: 'Utilities', onClick: onNodeClick },
   },
   
-  // Rank 5: Content Creation
+  // Rank 5: Content Creation & Comment Response
   {
     id: 'content-creator',
     type: 'custom',
     position: { x: 0, y: 0 },
     data: { label: 'Content Creator', category: 'Generation', onClick: onNodeClick },
   },
-  
+  {
+    id: 'comment-responder',
+    type: 'custom',
+    position: { x: 0, y: 0 },
+    data: { label: 'Comment Responder', category: 'Generation', onClick: onNodeClick },
+  },
+
   // Rank 6: Output & Analytics
   {
     id: 'meta-graph-api',
@@ -570,6 +624,42 @@ const initialEdges: Edge[] = [
     source: 'insights-agent',
     target: 'knowledge-base',
     label: 'In-depth insights reports',
+    type: 'smoothstep',
+    style: EDGE_STYLE,
+    markerEnd: EDGE_MARKER,
+    ...EDGE_LABEL_STYLE,
+  },
+
+  // Facebook Webhook → Knowledge Base
+  {
+    id: 'e-fb-webhook-kb',
+    source: 'facebook-webhook',
+    target: 'knowledge-base',
+    label: 'Facebook comment activity',
+    type: 'smoothstep',
+    style: EDGE_STYLE,
+    markerEnd: EDGE_MARKER,
+    ...EDGE_LABEL_STYLE,
+  },
+
+  // Instagram Comment Checker → Knowledge Base
+  {
+    id: 'e-ig-checker-kb',
+    source: 'instagram-comment-checker',
+    target: 'knowledge-base',
+    label: 'Instagram comment activity',
+    type: 'smoothstep',
+    style: EDGE_STYLE,
+    markerEnd: EDGE_MARKER,
+    ...EDGE_LABEL_STYLE,
+  },
+
+  // Knowledge Base → Comment Responder
+  {
+    id: 'e-kb-comment-responder',
+    source: 'knowledge-base',
+    target: 'comment-responder',
+    label: 'Comment context & thread history',
     type: 'smoothstep',
     style: EDGE_STYLE,
     markerEnd: EDGE_MARKER,
