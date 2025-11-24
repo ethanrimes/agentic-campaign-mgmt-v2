@@ -176,10 +176,18 @@ class ContentCreationAgent:
                     # Calculate scheduled posting time
                     scheduled_time = await self._calculate_scheduled_time(post_data.platform)
 
+                    # Map content seed type to the correct foreign key field
+                    seed_reference = {}
+                    if task.content_seed_type == "news_event":
+                        seed_reference["news_event_seed_id"] = task.content_seed_id
+                    elif task.content_seed_type == "trend":
+                        seed_reference["trend_seed_id"] = task.content_seed_id
+                    elif task.content_seed_type == "ungrounded":
+                        seed_reference["ungrounded_seed_id"] = task.content_seed_id
+
                     completed_post = CompletedPost(
                         task_id=task.id,
-                        content_seed_id=task.content_seed_id,
-                        content_seed_type=task.content_seed_type,
+                        **seed_reference,
                         platform=post_data.platform,
                         post_type=post_data.post_type,
                         text=post_data.text,
