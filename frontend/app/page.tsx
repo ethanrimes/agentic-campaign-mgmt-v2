@@ -81,10 +81,10 @@ export default function Home() {
             <div>
               <h3 className="text-2xl font-bold text-slate-900 mb-3">Description</h3>
               <p>
-                This system is a <strong className="font-semibold text-slate-900">fully autonomous, end-to-end agentic framework</strong> that continuously ingests knowledge, learns from outcomes, and produces high-performance, cross-platform social media campaigns with minimal human intervention.
+                This system is a <strong className="font-bold text-slate-950">fully autonomous, end-to-end agentic framework</strong> that continuously ingests knowledge, learns from outcomes, and produces high-performance, cross-platform social media campaigns with minimal human intervention.
               </p>
               <p>
-                Each agent in the system optimizes for <strong className="font-semibold text-slate-900">maximum user engagement</strong> within a defined target audience and is instructed to execute its specialized task at the highest possible level to support this overall goal.
+                Each agent in the system optimizes for <strong className="font-bold text-slate-950">maximum user engagement</strong> within a defined target audience and is instructed to execute its specialized task at the highest possible level to support this overall goal.
               </p>
             </div>
 
@@ -92,7 +92,7 @@ export default function Home() {
             <div>
               <h3 className="text-2xl font-bold text-slate-900 mb-3">Living Knowledge Base</h3>
               <p>
-                At the center of the system is the <strong className="font-semibold text-slate-900">Living Knowledge Base</strong> — a continuously updated, fully inspectable record of every content seed, data source, insight, post, and decision made by the framework. It provides complete transparency into agent reasoning, supports human-in-the-loop collaboration, and serves as the core intelligence source powering all downstream decision-making.
+                At the center of the system is the <strong className="font-bold text-slate-950">Living Knowledge Base</strong> — a continuously updated, fully inspectable record of every content seed, data source, insight, post, and decision made by the framework. It provides complete transparency into agent reasoning, supports human-in-the-loop collaboration, and serves as the core intelligence source powering all downstream decision-making.
               </p>
             </div>
 
@@ -102,19 +102,19 @@ export default function Home() {
               <p>
                 All posts produced by the system originate from "content seeds." These seeds exist in three categories, each with its own ingestion pipeline.
               </p>
-              <ul className="list-disc pl-6 space-y-3 text-slate-700">
-                <li>
-                  <strong className="font-semibold text-slate-900">News Event Seeds</strong> are derived from contemporary events relevant to the target audience. They originate from deep internet research performed by <strong className="font-semibold text-slate-900">Perplexity Sonar</strong> and <strong className="font-semibold text-slate-900">ChatGPT Deep Research</strong> agents, which surface emerging stories, consolidate sources, and generate high-quality structured event objects.
+              <ul className="list-disc pl-6 space-y-3 text-slate-950">
+                <li className="text-slate-950">
+                  <strong className="font-bold text-slate-950">News Event Seeds</strong> are derived from contemporary events relevant to the target audience. They originate from deep internet research performed by <strong className="font-bold text-slate-950">Perplexity Sonar</strong> and <strong className="font-bold text-slate-950">ChatGPT Deep Research</strong> agents, which surface emerging stories, consolidate sources, and generate high-quality structured event objects.
                 </li>
-                <li>
-                  <strong className="font-semibold text-slate-900">Trend Seeds</strong> capture viral formats, hashtags, patterns, and content archetypes from Facebook and Instagram. The <strong className="font-semibold text-slate-900">Trend Research Agent</strong>, equipped with high-volume scraping and exploration tools, analyzes real-time social data to identify platform-native trends and opportunities.
+                <li className="text-slate-950">
+                  <strong className="font-bold text-slate-950">Trend Seeds</strong> capture viral formats, hashtags, patterns, and content archetypes from Facebook and Instagram. The <strong className="font-bold text-slate-950">Trend Research Agent</strong>, equipped with high-volume scraping and exploration tools, analyzes real-time social data to identify platform-native trends and opportunities.
                 </li>
-                <li>
-                  <strong className="font-semibold text-slate-900">Ungrounded Seeds</strong> are creative, non-news, non-trend conceptual prompts generated by a dedicated ideation agent. These seeds broaden the creative landscape and enable content that is not dependent on external events.
+                <li className="text-slate-950">
+                  <strong className="font-bold text-slate-950">Ungrounded Seeds</strong> are creative, non-news, non-trend conceptual prompts generated by a dedicated ideation agent. These seeds broaden the creative landscape and enable content that is not dependent on external events.
                 </li>
               </ul>
               <p>
-                All seeds undergo <strong className="font-semibold text-slate-900">deduplication, consolidation, and validation</strong> before entering the knowledge base.
+                All seeds undergo <strong className="font-bold text-slate-950">deduplication, consolidation, and validation</strong> before entering the knowledge base.
               </p>
             </div>
 
@@ -122,7 +122,7 @@ export default function Home() {
             <div>
               <h3 className="text-2xl font-bold text-slate-900 mb-3">Adaptive Learning</h3>
               <p>
-                The <strong className="font-semibold text-slate-900">Insights Agent</strong> periodically analyzes engagement metrics and audience behavior from live posts. It reviews comments, performance data, and platform interactions to produce structured, timestamped insight reports. These insights directly shape future strategy, ensuring the system continuously adapts and improves.
+                The <strong className="font-bold text-slate-950">Insights Agent</strong> periodically analyzes engagement metrics and audience behavior from live posts. It reviews comments, performance data, and platform interactions to produce structured, timestamped insight reports. These insights directly shape future strategy, ensuring the system continuously adapts and improves.
               </p>
             </div>
 
@@ -130,19 +130,19 @@ export default function Home() {
             <div>
               <h3 className="text-2xl font-bold text-slate-900 mb-3">Planning & Publishing Pipeline</h3>
               <p>
-                The <strong className="font-semibold text-slate-900">Planner Agent</strong> synthesizes seeds, insights, and budget constraints to generate a weekly content plan. It determines:
+                The <strong className="font-bold text-slate-950">Planner Agent</strong> synthesizes seeds, insights, and budget constraints to generate a weekly content plan. It determines:
               </p>
-              <ul className="list-disc pl-6 space-y-2 text-slate-700">
-                <li>which seeds to activate</li>
-                <li>how many posts to produce per seed</li>
-                <li>media distribution across videos, images, reels, carousels, and text posts</li>
-                <li>whether the plan meets global constraints and platform requirements</li>
+              <ul className="list-disc pl-6 space-y-2 text-primary-950">
+                <li className="text-slate-700">which seeds to activate</li>
+                <li className="text-slate-700">how many posts to produce per seed</li>
+                <li className="text-slate-700">media distribution across videos, images, reels, carousels, and text posts</li>
+                <li className="text-slate-700">whether the plan meets global constraints and platform requirements</li>
               </ul>
               <p>
-                Once the plan is finalized, multiple <strong className="font-semibold text-slate-900">Content Creation Agents</strong> collaboratively produce all required media and copy, drawing context directly from the Living Knowledge Base. Media is generated through image/video production services, stored in Supabase, and prepared in platform-specific formats.
+                Once the plan is finalized, multiple <strong className="font-bold text-slate-950">Content Creation Agents</strong> collaboratively produce all required media and copy, drawing context directly from the Living Knowledge Base. Media is generated through image/video production services, stored in Supabase, and prepared in platform-specific formats.
               </p>
               <p>
-                Finally, <strong className="font-semibold text-slate-900">automated publishers</strong> for Instagram and Facebook post the completed content according to schedule. All resulting performance data is fed back into the knowledge base, enabling <strong className="font-semibold text-slate-900">continuous closed-loop strategic refinement</strong>.
+                Finally, <strong className="font-bold text-slate-950">automated publishers</strong> for Instagram and Facebook post the completed content according to schedule. All resulting performance data is fed back into the knowledge base, enabling <strong className="font-bold text-slate-950">continuous closed-loop strategic refinement</strong>.
               </p>
             </div>
 
@@ -150,13 +150,13 @@ export default function Home() {
             <div>
               <h3 className="text-2xl font-bold text-slate-900 mb-3">Interactive Comment Responding</h3>
               <p>
-                A <strong className="font-semibold text-slate-900">Facebook Webhook</strong> monitors comment activity on the page's feed. When a comment is posted, it is logged and forwarded to the <strong className="font-semibold text-slate-900">Comment Responder Agent</strong>.
+                A <strong className="font-bold text-slate-950">Facebook Webhook</strong> monitors comment activity on the page's feed. When a comment is posted, it is logged and forwarded to the <strong className="font-bold text-slate-950">Comment Responder Agent</strong>.
               </p>
               <p>
                 Instagram, rather than a webhook, uses periodic polling to detect new comments, which are similarly logged and routed.
               </p>
               <p>
-                The <strong className="font-semibold text-slate-900">Comment Responder Agent</strong> considers the comment, the corresponding post's content and metadata, and any prior discussion on the thread, then generates a thoughtful and contextually relevant response for the user.
+                The <strong className="font-bold text-slate-950">Comment Responder Agent</strong> considers the comment, the corresponding post's content and metadata, and any prior discussion on the thread, then generates a thoughtful and contextually relevant response for the user.
               </p>
             </div>
           </div>
