@@ -665,6 +665,18 @@ const initialEdges: Edge[] = [
     markerEnd: EDGE_MARKER,
     ...EDGE_LABEL_STYLE,
   },
+
+  // Comment Responder → Meta Graph API
+  {
+    id: 'e-comment-responder-meta',
+    source: 'comment-responder',
+    target: 'meta-graph-api',
+    label: 'Generated comment replies',
+    type: 'smoothstep',
+    style: EDGE_STYLE,
+    markerEnd: EDGE_MARKER,
+    ...EDGE_LABEL_STYLE,
+  },
 ]
 
 // Layout with spatial grouping and reduced edge overlapping
