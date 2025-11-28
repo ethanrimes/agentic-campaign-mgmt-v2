@@ -25,8 +25,15 @@ class InstagramCommentChecker:
     periodically to discover new comments.
     """
 
-    def __init__(self):
-        self.comment_ops = CommentOperations()
+    def __init__(self, business_asset_id: str):
+        """
+        Initialize Instagram comment checker for a specific business asset.
+
+        Args:
+            business_asset_id: The unique identifier for the business asset
+        """
+        self.business_asset_id = business_asset_id
+        self.comment_ops = CommentOperations(business_asset_id)
         self.comment_repo = PlatformCommentRepository()
 
     async def check_for_new_comments(
@@ -221,7 +228,8 @@ class InstagramCommentChecker:
                 created_time=created_time,
                 like_count=like_count,
                 permalink_url=None,  # Instagram doesn't provide this in API
-                status="pending"
+                status="pending",
+                business_asset_id=self.business_asset_id
             )
 
             # Insert into database
@@ -245,15 +253,19 @@ class InstagramCommentChecker:
             raise
 
 
-async def check_instagram_comments(max_media: int = 20) -> Dict[str, Any]:
+async def check_instagram_comments(
+    business_asset_id: str,
+    max_media: int = 20
+) -> Dict[str, Any]:
     """
     CLI/Scheduler entry point for checking Instagram comments.
 
     Args:
+        business_asset_id: The unique identifier for the business asset
         max_media: Maximum number of recent media to check
 
     Returns:
         Dictionary with results
     """
-    checker = InstagramCommentChecker()
+    checker = InstagramCommentChecker(business_asset_id)
     return await checker.check_for_new_comments(max_media_to_check=max_media)

@@ -17,8 +17,9 @@ class ContentCreationRunner:
     Can process all pending tasks or a specific task by ID.
     """
 
-    def __init__(self):
-        self.agent = ContentCreationAgent()
+    def __init__(self, business_asset_id: str):
+        self.business_asset_id = business_asset_id
+        self.agent = ContentCreationAgent(business_asset_id)
         self.tasks_repo = ContentCreationTaskRepository()
 
     async def run_all(self) -> Dict[str, Any]:
@@ -32,7 +33,7 @@ class ContentCreationRunner:
 
         try:
             # Get all pending tasks
-            pending_tasks = await self.tasks_repo.get_pending_tasks()
+            pending_tasks = await self.tasks_repo.get_pending_tasks(self.business_asset_id)
 
             if not pending_tasks:
                 logger.info("No pending tasks found")
@@ -113,7 +114,7 @@ class ContentCreationRunner:
 
         try:
             # Verify task exists and is pending
-            task = await self.tasks_repo.get_by_id(task_id)
+            task = await self.tasks_repo.get_by_id(self.business_asset_id, task_id)
 
             if not task:
                 raise Exception(f"Task {task_id} not found")
@@ -156,26 +157,30 @@ class ContentCreationRunner:
             }
 
 
-async def run_content_creation_all() -> Dict[str, Any]:
+async def run_content_creation_all(business_asset_id: str) -> Dict[str, Any]:
     """
     CLI entry point for processing all pending tasks.
+
+    Args:
+        business_asset_id: Business asset ID for multi-tenancy
 
     Returns:
         Summary of results
     """
-    runner = ContentCreationRunner()
+    runner = ContentCreationRunner(business_asset_id)
     return await runner.run_all()
 
 
-async def run_content_creation_single(task_id: str) -> Dict[str, Any]:
+async def run_content_creation_single(business_asset_id: str, task_id: str) -> Dict[str, Any]:
     """
     CLI entry point for processing a specific task.
 
     Args:
+        business_asset_id: Business asset ID for multi-tenancy
         task_id: ID of the task to process
 
     Returns:
         Task results
     """
-    runner = ContentCreationRunner()
+    runner = ContentCreationRunner(business_asset_id)
     return await runner.run_single(task_id)

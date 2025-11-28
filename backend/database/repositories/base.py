@@ -64,11 +64,12 @@ class BaseRepository(Generic[T]):
             )
             raise DatabaseError(f"Failed to create entity: {e}")
 
-    async def get_by_id(self, entity_id: UUID) -> Optional[T]:
+    async def get_by_id(self, business_asset_id: str, entity_id: UUID) -> Optional[T]:
         """
         Get entity by ID.
 
         Args:
+            business_asset_id: Business asset ID to filter by
             entity_id: UUID of the entity
 
         Returns:
@@ -79,6 +80,7 @@ class BaseRepository(Generic[T]):
             result = (
                 await client.table(self.table_name)
                 .select("*")
+                .eq("business_asset_id", business_asset_id)
                 .eq("id", str(entity_id))
                 .execute()
             )
@@ -91,16 +93,18 @@ class BaseRepository(Generic[T]):
             logger.error(
                 "Failed to get entity by ID",
                 table=self.table_name,
+                business_asset_id=business_asset_id,
                 id=str(entity_id),
                 error=str(e),
             )
             raise DatabaseError(f"Failed to get entity: {e}")
 
-    async def get_all(self, limit: Optional[int] = None, offset: int = 0) -> List[T]:
+    async def get_all(self, business_asset_id: str, limit: Optional[int] = None, offset: int = 0) -> List[T]:
         """
         Get all entities with optional pagination.
 
         Args:
+            business_asset_id: Business asset ID to filter by
             limit: Maximum number of entities to return
             offset: Number of entities to skip
 
@@ -109,7 +113,11 @@ class BaseRepository(Generic[T]):
         """
         try:
             client = await get_supabase_admin_client()
-            query = client.table(self.table_name).select("*")
+            query = (
+                client.table(self.table_name)
+                .select("*")
+                .eq("business_asset_id", business_asset_id)
+            )
 
             if limit:
                 query = query.limit(limit)
@@ -120,14 +128,20 @@ class BaseRepository(Generic[T]):
             result = await query.execute()
             return [self.model_class(**item) for item in result.data]
         except Exception as e:
-            logger.error("Failed to get all entities", table=self.table_name, error=str(e))
+            logger.error(
+                "Failed to get all entities",
+                table=self.table_name,
+                business_asset_id=business_asset_id,
+                error=str(e)
+            )
             raise DatabaseError(f"Failed to get entities: {e}")
 
-    async def update(self, entity_id: UUID, updates: Dict[str, Any]) -> Optional[T]:
+    async def update(self, business_asset_id: str, entity_id: UUID, updates: Dict[str, Any]) -> Optional[T]:
         """
         Update entity by ID.
 
         Args:
+            business_asset_id: Business asset ID to filter by
             entity_id: UUID of the entity
             updates: Dictionary of fields to update
 
@@ -139,6 +153,7 @@ class BaseRepository(Generic[T]):
             result = (
                 await client.table(self.table_name)
                 .update(updates)
+                .eq("business_asset_id", business_asset_id)
                 .eq("id", str(entity_id))
                 .execute()
             )
@@ -151,16 +166,18 @@ class BaseRepository(Generic[T]):
             logger.error(
                 "Failed to update entity",
                 table=self.table_name,
+                business_asset_id=business_asset_id,
                 id=str(entity_id),
                 error=str(e),
             )
             raise DatabaseError(f"Failed to update entity: {e}")
 
-    async def delete(self, entity_id: UUID) -> bool:
+    async def delete(self, business_asset_id: str, entity_id: UUID) -> bool:
         """
         Delete entity by ID.
 
         Args:
+            business_asset_id: Business asset ID to filter by
             entity_id: UUID of the entity
 
         Returns:
@@ -171,6 +188,7 @@ class BaseRepository(Generic[T]):
             result = (
                 await client.table(self.table_name)
                 .delete()
+                .eq("business_asset_id", business_asset_id)
                 .eq("id", str(entity_id))
                 .execute()
             )
@@ -180,14 +198,18 @@ class BaseRepository(Generic[T]):
             logger.error(
                 "Failed to delete entity",
                 table=self.table_name,
+                business_asset_id=business_asset_id,
                 id=str(entity_id),
                 error=str(e),
             )
             raise DatabaseError(f"Failed to delete entity: {e}")
 
-    async def count(self) -> int:
+    async def count(self, business_asset_id: str) -> int:
         """
         Get total count of entities in table.
+
+        Args:
+            business_asset_id: Business asset ID to filter by
 
         Returns:
             Number of entities
@@ -197,9 +219,15 @@ class BaseRepository(Generic[T]):
             result = (
                 await client.table(self.table_name)
                 .select("id", count="exact")
+                .eq("business_asset_id", business_asset_id)
                 .execute()
             )
             return result.count if result.count else 0
         except Exception as e:
-            logger.error("Failed to count entities", table=self.table_name, error=str(e))
+            logger.error(
+                "Failed to count entities",
+                table=self.table_name,
+                business_asset_id=business_asset_id,
+                error=str(e)
+            )
             raise DatabaseError(f"Failed to count entities: {e}")

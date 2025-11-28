@@ -43,12 +43,23 @@ class MediaRepository(BaseRepository):
             raise DatabaseError(f"Failed to create video: {e}")
 
     async def get_recent_media(
-        self, media_type: Literal["image", "video"] | None = None, limit: int = 20
+        self, business_asset_id: str, media_type: Literal["image", "video"] | None = None, limit: int = 20
     ) -> List:
-        """Get recent media."""
+        """
+        Get recent media.
+
+        Args:
+            business_asset_id: Business asset ID to filter by
+            media_type: Optional media type to filter by
+            limit: Maximum number of media items to return
+        """
         try:
             client = await get_supabase_admin_client()
-            query = client.table(self.table_name).select("*")
+            query = (
+                client.table(self.table_name)
+                .select("*")
+                .eq("business_asset_id", business_asset_id)
+            )
             if media_type:
                 query = query.eq("media_type", media_type)
             result = await query.order("created_at", desc=True).limit(limit).execute()

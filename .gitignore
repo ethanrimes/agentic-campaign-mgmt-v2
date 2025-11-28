@@ -7,11 +7,13 @@
 .env.local
 .env.*.local
 frontend/.env.local
+assets.json 
 
 # docs
 docs
 IMPLEMENTATION_COMPLETE.md
 backend/database/migrations/migrations.md
+MULTI_TENANT_IMPLEMENTATION.md
 
 # Python
 __pycache__/

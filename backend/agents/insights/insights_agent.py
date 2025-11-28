@@ -38,14 +38,15 @@ class InsightsAgent:
     with the target audience.
     """
 
-    def __init__(self):
+    def __init__(self, business_asset_id: str):
+        self.business_asset_id = business_asset_id
         self.insights_repo = InsightsRepository()
         self.posts_repo = CompletedPostRepository()
 
         # Load prompts
         prompt_path = Path(__file__).parent / "prompts" / "insights.txt"
         self.agent_prompt = prompt_path.read_text()
-        self.global_prompt = get_global_system_prompt()
+        self.global_prompt = get_global_system_prompt(self.business_asset_id)
 
         # Initialize LLM
         self.llm = ChatOpenAI(
@@ -55,7 +56,7 @@ class InsightsAgent:
         )
 
         # Create tools
-        self.tools = create_engagement_tools()
+        self.tools = create_engagement_tools(business_asset_id)
 
         # Create agent
         self.agent_executor = create_agent(
@@ -129,6 +130,7 @@ Include specific numbers from your tool calls to support your conclusions.
 
             # Save insight report
             insight_report = InsightReport(
+                business_asset_id=self.business_asset_id,
                 summary=structured_output.summary,
                 findings=structured_output.findings,
                 tool_calls=tool_calls,
@@ -155,7 +157,7 @@ Include specific numbers from your tool calls to support your conclusions.
 
         # Get posts (this would need to be implemented in the repository)
         # For now, return a simplified query
-        return await self.posts_repo.get_posts_since(cutoff)
+        return await self.posts_repo.get_posts_since(self.business_asset_id, cutoff)
 
     def _format_posts_context(self, posts: List[Dict[str, Any]]) -> str:
         """Format posts information for agent context."""
@@ -214,6 +216,7 @@ Include specific numbers from your tool calls to support your conclusions.
     async def _create_empty_report(self) -> Dict[str, Any]:
         """Create a report when no posts are available."""
         insight_report = InsightReport(
+            business_asset_id=self.business_asset_id,
             summary="No posts available for analysis in the specified time period.",
             findings="Unable to generate insights as no posts have been published recently. "
                     "Run content creation and publishing workflows first.",
@@ -227,15 +230,16 @@ Include specific numbers from your tool calls to support your conclusions.
         return created_report.model_dump(mode="json")
 
 
-async def run_insights_analysis(days: int = 14) -> Dict[str, Any]:
+async def run_insights_analysis(business_asset_id: str, days: int = 14) -> Dict[str, Any]:
     """
     CLI entry point for insights analysis.
 
     Args:
+        business_asset_id: Business asset ID for multi-tenancy
         days: Number of days to analyze
 
     Returns:
         Created insight report
     """
-    agent = InsightsAgent()
+    agent = InsightsAgent(business_asset_id)
     return await agent.analyze_engagement(days)

@@ -65,13 +65,17 @@ class NewsEventSeedRepository(BaseRepository[NewsEventSeed]):
             )
             return None
 
-    async def get_by_id(self, id: UUID) -> Optional[NewsEventSeed]:
+    async def get_by_id(self, business_asset_id: str, id: UUID) -> Optional[NewsEventSeed]:
         """
         Get a news event seed by ID, including its sources.
+
+        Args:
+            business_asset_id: Business asset ID to filter by
+            id: ID of the news event seed
         """
         from .sources import SourceRepository
 
-        seed = await super().get_by_id(id)
+        seed = await super().get_by_id(business_asset_id, id)
         if not seed:
             return None
 
@@ -82,13 +86,17 @@ class NewsEventSeedRepository(BaseRepository[NewsEventSeed]):
 
         return seed
 
-    async def list_all(self, limit: Optional[int] = None) -> List[NewsEventSeed]:
+    async def list_all(self, business_asset_id: str, limit: Optional[int] = None) -> List[NewsEventSeed]:
         """
         List all news event seeds with their sources.
+
+        Args:
+            business_asset_id: Business asset ID to filter by
+            limit: Optional maximum number of seeds to return
         """
         from .sources import SourceRepository
 
-        seeds = await super().list_all(limit)
+        seeds = await super().get_all(business_asset_id, limit)
 
         # Load sources for each seed
         source_repo = SourceRepository()
@@ -98,8 +106,15 @@ class NewsEventSeedRepository(BaseRepository[NewsEventSeed]):
 
         return seeds
 
-    async def search_by_name(self, query: str, limit: int = 10) -> List[NewsEventSeed]:
-        """Search news events by name with sources."""
+    async def search_by_name(self, business_asset_id: str, query: str, limit: int = 10) -> List[NewsEventSeed]:
+        """
+        Search news events by name with sources.
+
+        Args:
+            business_asset_id: Business asset ID to filter by
+            query: Search query to match against event names
+            limit: Maximum number of results to return
+        """
         from .sources import SourceRepository
 
         try:
@@ -108,6 +123,7 @@ class NewsEventSeedRepository(BaseRepository[NewsEventSeed]):
             result = (
                 await client.table(self.table_name)
                 .select("*")
+                .eq("business_asset_id", business_asset_id)
                 .ilike("name", f"%{query}%")
                 .limit(limit)
                 .execute()
@@ -124,13 +140,20 @@ class NewsEventSeedRepository(BaseRepository[NewsEventSeed]):
         except Exception as e:
             logger.error(
                 "Failed to search news events by name",
+                business_asset_id=business_asset_id,
                 query=query,
                 error=str(e),
             )
             return []
 
-    async def get_recent(self, limit: int = 10) -> List[NewsEventSeed]:
-        """Get most recent news event seeds with sources."""
+    async def get_recent(self, business_asset_id: str, limit: int = 10) -> List[NewsEventSeed]:
+        """
+        Get most recent news event seeds with sources.
+
+        Args:
+            business_asset_id: Business asset ID to filter by
+            limit: Maximum number of seeds to return
+        """
         from .sources import SourceRepository
 
         try:
@@ -139,6 +162,7 @@ class NewsEventSeedRepository(BaseRepository[NewsEventSeed]):
             result = (
                 await client.table(self.table_name)
                 .select("*")
+                .eq("business_asset_id", business_asset_id)
                 .order("created_at", desc=True)
                 .limit(limit)
                 .execute()
@@ -155,13 +179,19 @@ class NewsEventSeedRepository(BaseRepository[NewsEventSeed]):
         except Exception as e:
             logger.error(
                 "Failed to get recent news event seeds",
+                business_asset_id=business_asset_id,
                 error=str(e),
             )
             return []
 
-    async def update(self, id: UUID, updates: Dict[str, Any]) -> Optional[NewsEventSeed]:
+    async def update(self, business_asset_id: str, id: UUID, updates: Dict[str, Any]) -> Optional[NewsEventSeed]:
         """
         Update a news event seed, handling sources separately.
+
+        Args:
+            business_asset_id: Business asset ID to filter by
+            id: ID of the news event seed to update
+            updates: Dictionary of fields to update
         """
         from .sources import SourceRepository
 
@@ -170,7 +200,7 @@ class NewsEventSeedRepository(BaseRepository[NewsEventSeed]):
             sources = updates.pop("sources", None)
 
             # Update the news event seed without sources
-            seed = await super().update(id, updates)
+            seed = await super().update(business_asset_id, id, updates)
 
             if not seed:
                 return None
@@ -213,10 +243,11 @@ class NewsEventSeedRepository(BaseRepository[NewsEventSeed]):
                                 )
 
             # Reload with sources
-            return await self.get_by_id(id)
+            return await self.get_by_id(business_asset_id, id)
         except Exception as e:
             logger.error(
                 "Failed to update news event seed with sources",
+                business_asset_id=business_asset_id,
                 id=str(id),
                 error=str(e)
             )
@@ -275,13 +306,17 @@ class IngestedEventRepository(BaseRepository[IngestedEvent]):
             )
             return None
 
-    async def get_by_id(self, id: UUID) -> Optional[IngestedEvent]:
+    async def get_by_id(self, business_asset_id: str, id: UUID) -> Optional[IngestedEvent]:
         """
         Get an ingested event by ID, including its sources.
+
+        Args:
+            business_asset_id: Business asset ID to filter by
+            id: ID of the ingested event
         """
         from .sources import SourceRepository
 
-        event = await super().get_by_id(id)
+        event = await super().get_by_id(business_asset_id, id)
         if not event:
             return None
 
@@ -292,13 +327,17 @@ class IngestedEventRepository(BaseRepository[IngestedEvent]):
 
         return event
 
-    async def list_all(self, limit: Optional[int] = None) -> List[IngestedEvent]:
+    async def list_all(self, business_asset_id: str, limit: Optional[int] = None) -> List[IngestedEvent]:
         """
         List all ingested events with their sources.
+
+        Args:
+            business_asset_id: Business asset ID to filter by
+            limit: Optional maximum number of events to return
         """
         from .sources import SourceRepository
 
-        events = await super().list_all(limit)
+        events = await super().get_all(business_asset_id, limit)
 
         # Load sources for each event
         source_repo = SourceRepository()
@@ -308,8 +347,14 @@ class IngestedEventRepository(BaseRepository[IngestedEvent]):
 
         return events
 
-    async def get_by_ingested_by(self, ingested_by: str) -> List[IngestedEvent]:
-        """Get events by the agent that ingested them, with sources."""
+    async def get_by_ingested_by(self, business_asset_id: str, ingested_by: str) -> List[IngestedEvent]:
+        """
+        Get events by the agent that ingested them, with sources.
+
+        Args:
+            business_asset_id: Business asset ID to filter by
+            ingested_by: Name of the agent that ingested the events
+        """
         from .sources import SourceRepository
 
         try:
@@ -318,6 +363,7 @@ class IngestedEventRepository(BaseRepository[IngestedEvent]):
             result = (
                 await client.table(self.table_name)
                 .select("*")
+                .eq("business_asset_id", business_asset_id)
                 .eq("ingested_by", ingested_by)
                 .order("created_at", desc=True)
                 .execute()
@@ -334,16 +380,18 @@ class IngestedEventRepository(BaseRepository[IngestedEvent]):
         except Exception as e:
             logger.error(
                 "Failed to get events by ingested_by",
+                business_asset_id=business_asset_id,
                 ingested_by=ingested_by,
                 error=str(e),
             )
             return []
 
-    async def get_unprocessed(self, limit: Optional[int] = None) -> List[IngestedEvent]:
+    async def get_unprocessed(self, business_asset_id: str, limit: Optional[int] = None) -> List[IngestedEvent]:
         """
         Get all unprocessed ingested events with sources.
 
         Args:
+            business_asset_id: Business asset ID to filter by
             limit: Optional maximum number of events to return
 
         Returns:
@@ -357,6 +405,7 @@ class IngestedEventRepository(BaseRepository[IngestedEvent]):
             query = (
                 client.table(self.table_name)
                 .select("*")
+                .eq("business_asset_id", business_asset_id)
                 .eq("processed", False)
                 .order("created_at", desc=False)  # Process oldest first
             )
@@ -377,6 +426,7 @@ class IngestedEventRepository(BaseRepository[IngestedEvent]):
         except Exception as e:
             logger.error(
                 "Failed to get unprocessed events",
+                business_asset_id=business_asset_id,
                 error=str(e),
                 table=self.table_name
             )
@@ -384,6 +434,7 @@ class IngestedEventRepository(BaseRepository[IngestedEvent]):
 
     async def mark_as_processed(
         self,
+        business_asset_id: str,
         event_id: UUID,
         canonical_event_id: UUID
     ) -> Optional[IngestedEvent]:
@@ -391,6 +442,7 @@ class IngestedEventRepository(BaseRepository[IngestedEvent]):
         Mark an ingested event as processed.
 
         Args:
+            business_asset_id: Business asset ID to filter by
             event_id: ID of the ingested event to mark as processed
             canonical_event_id: ID of the canonical news event seed it was deduplicated into
 
@@ -408,6 +460,7 @@ class IngestedEventRepository(BaseRepository[IngestedEvent]):
             result = (
                 await client.table(self.table_name)
                 .update(updates)
+                .eq("business_asset_id", business_asset_id)
                 .eq("id", str(event_id))
                 .execute()
             )
@@ -415,6 +468,7 @@ class IngestedEventRepository(BaseRepository[IngestedEvent]):
             if not result.data:
                 logger.warning(
                     "No event found to mark as processed",
+                    business_asset_id=business_asset_id,
                     event_id=str(event_id)
                 )
                 return None
@@ -423,6 +477,7 @@ class IngestedEventRepository(BaseRepository[IngestedEvent]):
         except Exception as e:
             logger.error(
                 "Failed to mark event as processed",
+                business_asset_id=business_asset_id,
                 event_id=str(event_id),
                 canonical_event_id=str(canonical_event_id),
                 error=str(e)

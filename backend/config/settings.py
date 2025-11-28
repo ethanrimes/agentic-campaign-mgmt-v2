@@ -40,13 +40,10 @@ class Settings(BaseSettings):
     # OpenAI (default provider)
     openai_api_key: str
 
-    # Meta (Facebook/Instagram)
+    # Meta (Facebook/Instagram) - Shared app credentials
+    # Note: Per-asset credentials (page IDs, access tokens) are stored in Supabase
     meta_app_id: str
     meta_app_secret: str
-    facebook_page_id: str
-    app_users_instagram_account_id: str
-    facebook_page_access_token: str
-    instagram_page_access_token: str
 
     # Wavespeed AI
     wavespeed_api_key: str
@@ -65,7 +62,7 @@ class Settings(BaseSettings):
 
     # Model configuration
     default_model_provider: Literal["openai", "gemini", "anthropic"] = "openai"
-    default_model_name: str = "gpt-4o-mini"
+    default_model_name: str = "gpt-5-mini"
 
     # Target audience (the north star for all agents)
     target_audience: str = "College students at the University of Pennsylvania interested in campus news, events, and local culture"
@@ -129,6 +126,22 @@ class Settings(BaseSettings):
             return self.anthropic_api_key
         else:
             raise ValueError(f"Unknown provider: {provider}")
+
+    def get_business_asset_credentials(self, business_asset_id: str):
+        """
+        Get decrypted credentials for a business asset.
+
+        Args:
+            business_asset_id: The unique identifier for the business asset
+
+        Returns:
+            BusinessAssetCredentials with decrypted tokens
+
+        Raises:
+            ValueError: If business asset not found
+        """
+        from backend.config.business_asset_loader import get_business_asset_credentials
+        return get_business_asset_credentials(business_asset_id)
 
 
 # Singleton instance

@@ -15,13 +15,18 @@ class CompletedPostRepository(BaseRepository[CompletedPost]):
         super().__init__("completed_posts", CompletedPost)
 
     async def get_pending_for_platform(
-        self, platform: Literal["facebook", "instagram"], limit: int = 10
+        self, business_asset_id: str, platform: Literal["facebook", "instagram"], limit: int = 10
     ) -> List[CompletedPost]:
         """
         Get pending posts for a specific platform.
 
         DEPRECATED: Use get_posts_ready_to_publish() instead for scheduled posting.
         This method is kept for backward compatibility.
+
+        Args:
+            business_asset_id: Business asset ID to filter by
+            platform: Platform to filter by
+            limit: Maximum number of posts to return
         """
         try:
             from backend.database import get_supabase_admin_client
@@ -29,6 +34,7 @@ class CompletedPostRepository(BaseRepository[CompletedPost]):
             result = (
                 await client.table(self.table_name)
                 .select("*")
+                .eq("business_asset_id", business_asset_id)
                 .eq("platform", platform)
                 .eq("status", "pending")
                 .order("created_at", desc=False)
@@ -41,23 +47,30 @@ class CompletedPostRepository(BaseRepository[CompletedPost]):
             logger = get_logger(__name__)
             logger.error(
                 "Failed to get pending posts for platform",
+                business_asset_id=business_asset_id,
                 platform=platform,
                 error=str(e),
             )
             return []
 
     async def get_posts_ready_to_publish(
-        self, platform: Literal["facebook", "instagram"], limit: int = 10
+        self, business_asset_id: str, platform: Literal["facebook", "instagram"], limit: int = 10
     ) -> List[CompletedPost]:
         """
         Get posts that are ready to be published based on scheduled_posting_time.
 
         Returns posts where:
+        - business_asset_id matches
         - status = 'pending'
         - platform matches
         - scheduled_posting_time <= NOW() (or is NULL for immediate publishing)
 
         Ordered by scheduled_posting_time (earliest first).
+
+        Args:
+            business_asset_id: Business asset ID to filter by
+            platform: Platform to filter by
+            limit: Maximum number of posts to return
         """
         try:
             from backend.database import get_supabase_admin_client
@@ -69,6 +82,7 @@ class CompletedPostRepository(BaseRepository[CompletedPost]):
             result = (
                 await client.table(self.table_name)
                 .select("*")
+                .eq("business_asset_id", business_asset_id)
                 .eq("platform", platform)
                 .eq("status", "pending")
                 .or_(f"scheduled_posting_time.is.null,scheduled_posting_time.lte.{now}")
@@ -82,18 +96,23 @@ class CompletedPostRepository(BaseRepository[CompletedPost]):
             logger = get_logger(__name__)
             logger.error(
                 "Failed to get posts ready to publish",
+                business_asset_id=business_asset_id,
                 platform=platform,
                 error=str(e),
             )
             return []
 
     async def get_all_pending_posts(
-        self, platform: Optional[Literal["facebook", "instagram"]] = None
+        self, business_asset_id: str, platform: Optional[Literal["facebook", "instagram"]] = None
     ) -> List[CompletedPost]:
         """
         Get all pending posts, optionally filtered by platform.
 
         Useful for the schedule update script.
+
+        Args:
+            business_asset_id: Business asset ID to filter by
+            platform: Optional platform to filter by
         """
         try:
             from backend.database import get_supabase_admin_client
@@ -102,6 +121,7 @@ class CompletedPostRepository(BaseRepository[CompletedPost]):
             query = (
                 client.table(self.table_name)
                 .select("*")
+                .eq("business_asset_id", business_asset_id)
                 .eq("status", "pending")
                 .order("created_at", desc=False)
             )
@@ -116,28 +136,44 @@ class CompletedPostRepository(BaseRepository[CompletedPost]):
             logger = get_logger(__name__)
             logger.error(
                 "Failed to get all pending posts",
+                business_asset_id=business_asset_id,
                 platform=platform,
                 error=str(e),
             )
             return []
 
     async def update_scheduled_time(
-        self, post_id: UUID, scheduled_posting_time: datetime
+        self, business_asset_id: str, post_id: UUID, scheduled_posting_time: datetime
     ) -> CompletedPost | None:
-        """Update the scheduled posting time for a post."""
+        """
+        Update the scheduled posting time for a post.
+
+        Args:
+            business_asset_id: Business asset ID to filter by
+            post_id: ID of the post to update
+            scheduled_posting_time: New scheduled posting time
+        """
         return await self.update(
+            business_asset_id,
             post_id,
             {"scheduled_posting_time": scheduled_posting_time.isoformat()}
         )
 
-    async def get_by_task_id(self, task_id: UUID) -> List[CompletedPost]:
-        """Get all posts for a specific task."""
+    async def get_by_task_id(self, business_asset_id: str, task_id: UUID) -> List[CompletedPost]:
+        """
+        Get all posts for a specific task.
+
+        Args:
+            business_asset_id: Business asset ID to filter by
+            task_id: ID of the task to get posts for
+        """
         try:
             from backend.database import get_supabase_admin_client
             client = await get_supabase_admin_client()
             result = (
                 await client.table(self.table_name)
                 .select("*")
+                .eq("business_asset_id", business_asset_id)
                 .eq("task_id", str(task_id))
                 .execute()
             )
@@ -147,15 +183,24 @@ class CompletedPostRepository(BaseRepository[CompletedPost]):
             logger = get_logger(__name__)
             logger.error(
                 "Failed to get posts by task ID",
+                business_asset_id=business_asset_id,
                 task_id=str(task_id),
                 error=str(e),
             )
             return []
 
     async def mark_published(
-        self, post_id: UUID, platform_post_id: str, platform_post_url: str | None = None
+        self, business_asset_id: str, post_id: UUID, platform_post_id: str, platform_post_url: str | None = None
     ) -> CompletedPost | None:
-        """Mark a post as published."""
+        """
+        Mark a post as published.
+
+        Args:
+            business_asset_id: Business asset ID to filter by
+            post_id: ID of the post to mark as published
+            platform_post_id: Platform's post ID
+            platform_post_url: Optional platform URL for the post
+        """
         from datetime import datetime, timezone
         updates = {
             "status": "published",
@@ -164,22 +209,37 @@ class CompletedPostRepository(BaseRepository[CompletedPost]):
         }
         if platform_post_url:
             updates["platform_post_url"] = platform_post_url
-        return await self.update(post_id, updates)
+        return await self.update(business_asset_id, post_id, updates)
 
-    async def mark_failed(self, post_id: UUID, error_message: str) -> CompletedPost | None:
-        """Mark a post as failed."""
-        return await self.update(post_id, {"status": "failed", "error_message": error_message})
+    async def mark_failed(self, business_asset_id: str, post_id: UUID, error_message: str) -> CompletedPost | None:
+        """
+        Mark a post as failed.
+
+        Args:
+            business_asset_id: Business asset ID to filter by
+            post_id: ID of the post to mark as failed
+            error_message: Error message describing the failure
+        """
+        return await self.update(business_asset_id, post_id, {"status": "failed", "error_message": error_message})
 
     async def get_recent_by_platform(
-        self, platform: Literal["facebook", "instagram"], limit: int = 20
+        self, business_asset_id: str, platform: Literal["facebook", "instagram"], limit: int = 20
     ) -> List[CompletedPost]:
-        """Get recent posts for a platform (for UI)."""
+        """
+        Get recent posts for a platform (for UI).
+
+        Args:
+            business_asset_id: Business asset ID to filter by
+            platform: Platform to filter by
+            limit: Maximum number of posts to return
+        """
         try:
             from backend.database import get_supabase_admin_client
             client = await get_supabase_admin_client()
             result = (
                 await client.table(self.table_name)
                 .select("*")
+                .eq("business_asset_id", business_asset_id)
                 .eq("platform", platform)
                 .order("created_at", desc=True)
                 .limit(limit)
@@ -191,13 +251,20 @@ class CompletedPostRepository(BaseRepository[CompletedPost]):
             logger = get_logger(__name__)
             logger.error(
                 "Failed to get recent posts for platform",
+                business_asset_id=business_asset_id,
                 platform=platform,
                 error=str(e),
             )
             return []
 
-    async def get_posts_since(self, cutoff_date) -> List[CompletedPost]:
-        """Get all posts created since a specific datetime (for insights analysis)."""
+    async def get_posts_since(self, business_asset_id: str, cutoff_date) -> List[CompletedPost]:
+        """
+        Get all posts created since a specific datetime (for insights analysis).
+
+        Args:
+            business_asset_id: Business asset ID to filter by
+            cutoff_date: Get posts created after this datetime
+        """
         try:
             from backend.database import get_supabase_admin_client
             client = await get_supabase_admin_client()
@@ -208,6 +275,7 @@ class CompletedPostRepository(BaseRepository[CompletedPost]):
             result = (
                 await client.table(self.table_name)
                 .select("*")
+                .eq("business_asset_id", business_asset_id)
                 .gte("created_at", cutoff_iso)
                 .eq("status", "published")
                 .order("created_at", desc=True)
@@ -225,6 +293,7 @@ class CompletedPostRepository(BaseRepository[CompletedPost]):
             logger = get_logger(__name__)
             logger.error(
                 "Failed to get posts since cutoff",
+                business_asset_id=business_asset_id,
                 cutoff_date=str(cutoff_date),
                 error=str(e),
             )

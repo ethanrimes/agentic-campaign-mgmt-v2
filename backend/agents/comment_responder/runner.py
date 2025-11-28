@@ -18,17 +18,19 @@ class CommentResponderRunner:
     Processes pending comments and generates/posts responses.
     """
 
-    def __init__(self, max_comments_per_run: int = 10):
+    def __init__(self, business_asset_id: str, max_comments_per_run: int = 10):
         """
         Initialize the runner.
 
         Args:
+            business_asset_id: Business asset ID for multi-tenancy
             max_comments_per_run: Maximum number of comments to process in one run
         """
+        self.business_asset_id = business_asset_id
         self.max_comments_per_run = max_comments_per_run
-        self.agent = CommentResponderAgent()
+        self.agent = CommentResponderAgent(business_asset_id)
         self.comment_repo = PlatformCommentRepository()
-        self.comment_ops = CommentOperations()
+        self.comment_ops = CommentOperations(business_asset_id)
 
     async def run(
         self,
@@ -55,6 +57,7 @@ class CommentResponderRunner:
 
         # Get pending comments
         pending_comments = await self.comment_repo.get_pending_comments(
+            business_asset_id=self.business_asset_id,
             platform=platform,
             limit=limit
         )
@@ -196,6 +199,7 @@ class CommentResponderRunner:
 
 
 async def run_comment_responder(
+    business_asset_id: str,
     platform: str = None,
     limit: int = 10
 ) -> Dict[str, Any]:
@@ -203,11 +207,12 @@ async def run_comment_responder(
     CLI entry point for running the comment responder.
 
     Args:
+        business_asset_id: Business asset ID for multi-tenancy
         platform: Optional platform filter ("facebook" or "instagram")
         limit: Maximum number of comments to process
 
     Returns:
         Dictionary with results
     """
-    runner = CommentResponderRunner(max_comments_per_run=limit)
+    runner = CommentResponderRunner(business_asset_id, max_comments_per_run=limit)
     return await runner.run(platform=platform, limit=limit)

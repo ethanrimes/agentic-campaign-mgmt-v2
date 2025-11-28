@@ -41,13 +41,14 @@ class TrendSearcherAgent:
     hashtags, and patterns relevant to the target audience.
     """
 
-    def __init__(self):
+    def __init__(self, business_asset_id: str):
+        self.business_asset_id = business_asset_id
         self.repo = TrendSeedsRepository()
 
         # Load prompts
         prompt_path = Path(__file__).parent / "prompts" / "trend_searcher.txt"
         self.agent_prompt = prompt_path.read_text()
-        self.global_prompt = get_global_system_prompt()
+        self.global_prompt = get_global_system_prompt(self.business_asset_id)
 
         # Initialize LLM
         self.llm = ChatOpenAI(
@@ -162,6 +163,7 @@ Provide your final analysis as a structured trend insight."""
 
                 # Save to database
                 trend_seed = TrendSeed(
+                    business_asset_id=self.business_asset_id,
                     name=structured_output.name,
                     description=structured_output.description,
                     hashtags=list(hashtags),
@@ -182,16 +184,17 @@ Provide your final analysis as a structured trend insight."""
         return trends
 
 
-async def run_trend_discovery(query: str = "", count: int = 1) -> List[Dict[str, Any]]:
+async def run_trend_discovery(business_asset_id: str, query: str = "", count: int = 1) -> List[Dict[str, Any]]:
     """
     CLI entry point for trend discovery.
 
     Args:
+        business_asset_id: Business asset ID for multi-tenancy
         query: Search query or theme for trend discovery
         count: Number of trends to discover
 
     Returns:
         List of created trend seeds
     """
-    agent = TrendSearcherAgent()
+    agent = TrendSearcherAgent(business_asset_id)
     return await agent.discover_trends(query or "social media trends", count)

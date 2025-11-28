@@ -16,7 +16,7 @@ from backend.services.meta.instagram_publisher import InstagramPublisher
 logger = get_logger(__name__)
 
 
-async def get_media_urls(media_ids: List[UUID]) -> List[str]:
+async def get_media_urls(business_asset_id: str, media_ids: List[UUID]) -> List[str]:
     """Fetch media URLs from media IDs."""
     if not media_ids:
         return []
@@ -25,7 +25,7 @@ async def get_media_urls(media_ids: List[UUID]) -> List[str]:
     urls = []
     for media_id in media_ids:
         try:
-            media = await media_repo.get_by_id(media_id)
+            media = await media_repo.get_by_id(business_asset_id, media_id)
             if media and "public_url" in media:
                 urls.append(str(media["public_url"]))
         except Exception as e:
@@ -39,11 +39,11 @@ def publish():
     pass
 
 
-async def publish_facebook_post(post: CompletedPost, publisher: FacebookPublisher, repo: CompletedPostRepository) -> bool:
+async def publish_facebook_post(business_asset_id: str, post: CompletedPost, publisher: FacebookPublisher, repo: CompletedPostRepository) -> bool:
     """Publish a single Facebook post."""
     try:
         post_type = post.post_type
-        media_urls = await get_media_urls(post.media_ids)
+        media_urls = await get_media_urls(business_asset_id, post.media_ids)
         text = post.text or ""
 
         # Determine publishing method based on post type and media
@@ -62,6 +62,7 @@ async def publish_facebook_post(post: CompletedPost, publisher: FacebookPublishe
 
         # Mark as published
         await repo.mark_published(
+            business_asset_id,
             post.id,
             platform_post_id,
             f"https://www.facebook.com/{platform_post_id}"
@@ -72,15 +73,15 @@ async def publish_facebook_post(post: CompletedPost, publisher: FacebookPublishe
 
     except Exception as e:
         logger.error("Failed to publish Facebook post", post_id=str(post.id), error=str(e))
-        await repo.mark_failed(post.id, str(e))
+        await repo.mark_failed(business_asset_id, post.id, str(e))
         return False
 
 
-async def publish_instagram_post(post: CompletedPost, publisher: InstagramPublisher, repo: CompletedPostRepository) -> bool:
+async def publish_instagram_post(business_asset_id: str, post: CompletedPost, publisher: InstagramPublisher, repo: CompletedPostRepository) -> bool:
     """Publish a single Instagram post."""
     try:
         post_type = post.post_type
-        media_urls = await get_media_urls(post.media_ids)
+        media_urls = await get_media_urls(business_asset_id, post.media_ids)
         caption = post.text or ""
 
         # Determine publishing method based on post type
@@ -95,11 +96,12 @@ async def publish_instagram_post(post: CompletedPost, publisher: InstagramPublis
             platform_post_id = await publisher.post_image(media_urls[0], caption)
         else:
             logger.error("Instagram post requires media", post_id=str(post.id))
-            await repo.mark_failed(post.id, "Instagram posts require media")
+            await repo.mark_failed(business_asset_id, post.id, "Instagram posts require media")
             return False
 
         # Mark as published
         await repo.mark_published(
+            business_asset_id,
             post.id,
             platform_post_id,
             f"https://www.instagram.com/p/{platform_post_id}/"
@@ -110,23 +112,29 @@ async def publish_instagram_post(post: CompletedPost, publisher: InstagramPublis
 
     except Exception as e:
         logger.error("Failed to publish Instagram post", post_id=str(post.id), error=str(e))
-        await repo.mark_failed(post.id, str(e))
+        await repo.mark_failed(business_asset_id, post.id, str(e))
         return False
 
 
 @publish.command()
+@click.option(
+    '--business-asset-id',
+    required=True,
+    type=str,
+    help='Business asset ID (e.g., penndailybuzz, eaglesnationfanhuddle)'
+)
 @click.option("--limit", default=10, help="Maximum number of posts to publish")
-def facebook(limit: int):
+def facebook(business_asset_id: str, limit: int):
     """Publish scheduled Facebook posts that are ready"""
     async def _publish():
-        logger.info("Checking for scheduled Facebook posts")
+        logger.info("Checking for scheduled Facebook posts", business_asset_id=business_asset_id)
         click.echo("📘 Checking for Facebook posts to publish...")
 
         repo = CompletedPostRepository()
-        publisher = FacebookPublisher()
+        publisher = FacebookPublisher(business_asset_id)
 
         # Get posts ready to publish (scheduled time has arrived)
-        ready_posts = await repo.get_posts_ready_to_publish("facebook", limit)
+        ready_posts = await repo.get_posts_ready_to_publish(business_asset_id, "facebook", limit)
 
         if not ready_posts:
             click.echo("   No Facebook posts ready to publish")
@@ -139,7 +147,7 @@ def facebook(limit: int):
         for i, post in enumerate(ready_posts, 1):
             scheduled_time = post.scheduled_posting_time.strftime("%Y-%m-%d %H:%M:%S") if post.scheduled_posting_time else "immediately"
             click.echo(f"   Publishing post {i}/{len(ready_posts)} (scheduled: {scheduled_time})...")
-            if await publish_facebook_post(post, publisher, repo):
+            if await publish_facebook_post(business_asset_id, post, publisher, repo):
                 success_count += 1
 
         click.echo(f"✅ Published {success_count}/{len(ready_posts)} Facebook posts")
@@ -148,18 +156,24 @@ def facebook(limit: int):
 
 
 @publish.command()
+@click.option(
+    '--business-asset-id',
+    required=True,
+    type=str,
+    help='Business asset ID (e.g., penndailybuzz, eaglesnationfanhuddle)'
+)
 @click.option("--limit", default=10, help="Maximum number of posts to publish")
-def instagram(limit: int):
+def instagram(business_asset_id: str, limit: int):
     """Publish scheduled Instagram posts that are ready"""
     async def _publish():
-        logger.info("Checking for scheduled Instagram posts")
+        logger.info("Checking for scheduled Instagram posts", business_asset_id=business_asset_id)
         click.echo("📷 Checking for Instagram posts to publish...")
 
         repo = CompletedPostRepository()
-        publisher = InstagramPublisher()
+        publisher = InstagramPublisher(business_asset_id)
 
         # Get posts ready to publish (scheduled time has arrived)
-        ready_posts = await repo.get_posts_ready_to_publish("instagram", limit)
+        ready_posts = await repo.get_posts_ready_to_publish(business_asset_id, "instagram", limit)
 
         if not ready_posts:
             click.echo("   No Instagram posts ready to publish")
@@ -172,7 +186,7 @@ def instagram(limit: int):
         for i, post in enumerate(ready_posts, 1):
             scheduled_time = post.scheduled_posting_time.strftime("%Y-%m-%d %H:%M:%S") if post.scheduled_posting_time else "immediately"
             click.echo(f"   Publishing post {i}/{len(ready_posts)} (scheduled: {scheduled_time})...")
-            if await publish_instagram_post(post, publisher, repo):
+            if await publish_instagram_post(business_asset_id, post, publisher, repo):
                 success_count += 1
 
         click.echo(f"✅ Published {success_count}/{len(ready_posts)} Instagram posts")
@@ -181,44 +195,50 @@ def instagram(limit: int):
 
 
 @publish.command()
+@click.option(
+    '--business-asset-id',
+    required=True,
+    type=str,
+    help='Business asset ID (e.g., penndailybuzz, eaglesnationfanhuddle)'
+)
 @click.option("--limit", default=10, help="Maximum posts per platform")
-def all(limit: int):
+def all(business_asset_id: str, limit: int):
     """Publish all scheduled posts that are ready"""
     async def _publish():
-        logger.info("Checking for scheduled posts on all platforms")
+        logger.info("Checking for scheduled posts on all platforms", business_asset_id=business_asset_id)
         click.echo("📱 Checking for posts to publish on all platforms...")
 
         repo = CompletedPostRepository()
-        fb_publisher = FacebookPublisher()
-        ig_publisher = InstagramPublisher()
+        fb_publisher = FacebookPublisher(business_asset_id)
+        ig_publisher = InstagramPublisher(business_asset_id)
 
         total_success = 0
         total_attempted = 0
 
         # Publish Facebook posts
         click.echo("\n📘 Facebook:")
-        fb_posts = await repo.get_posts_ready_to_publish("facebook", limit)
+        fb_posts = await repo.get_posts_ready_to_publish(business_asset_id, "facebook", limit)
         if fb_posts:
             click.echo(f"   Found {len(fb_posts)} posts ready to publish")
             for i, post in enumerate(fb_posts, 1):
                 scheduled_time = post.scheduled_posting_time.strftime("%Y-%m-%d %H:%M:%S") if post.scheduled_posting_time else "immediately"
                 click.echo(f"   Publishing post {i}/{len(fb_posts)} (scheduled: {scheduled_time})...")
                 total_attempted += 1
-                if await publish_facebook_post(post, fb_publisher, repo):
+                if await publish_facebook_post(business_asset_id, post, fb_publisher, repo):
                     total_success += 1
         else:
             click.echo("   No posts ready to publish")
 
         # Publish Instagram posts
         click.echo("\n📷 Instagram:")
-        ig_posts = await repo.get_posts_ready_to_publish("instagram", limit)
+        ig_posts = await repo.get_posts_ready_to_publish(business_asset_id, "instagram", limit)
         if ig_posts:
             click.echo(f"   Found {len(ig_posts)} posts ready to publish")
             for i, post in enumerate(ig_posts, 1):
                 scheduled_time = post.scheduled_posting_time.strftime("%Y-%m-%d %H:%M:%S") if post.scheduled_posting_time else "immediately"
                 click.echo(f"   Publishing post {i}/{len(ig_posts)} (scheduled: {scheduled_time})...")
                 total_attempted += 1
-                if await publish_instagram_post(post, ig_publisher, repo):
+                if await publish_instagram_post(business_asset_id, post, ig_publisher, repo):
                     total_success += 1
         else:
             click.echo("   No posts ready to publish")

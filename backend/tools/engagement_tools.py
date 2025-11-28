@@ -29,6 +29,7 @@ logger = get_logger(__name__)
 
 class GetFacebookPageInsightsInput(BaseModel):
     """Input for Facebook Page insights."""
+    business_asset_id: str = Field(..., description="Business asset ID for multi-tenancy support")
     metrics: str = Field(
         "page_post_engagements,page_media_view",
         description="Comma-separated metrics (e.g., 'page_post_engagements,page_media_view,page_follows')"
@@ -47,12 +48,18 @@ class GetFacebookPageInsightsTool(BaseTool):
     Use this to understand overall page performance.
     """
     args_schema: Type[BaseModel] = GetFacebookPageInsightsInput
+    business_asset_id: str
+
+    def __init__(self, business_asset_id: str, **kwargs):
+        """Initialize with business_asset_id."""
+        super().__init__(**kwargs)
+        self.business_asset_id = business_asset_id
 
     def _run(self, query: str) -> str:
         """Sync version - not used by async agents."""
         raise NotImplementedError("Use async version (_arun) instead")
 
-    async def _arun(self, metrics: str, period: str = "day", days_back: int = 7) -> List[FacebookPageInsight]:
+    async def _arun(self, business_asset_id: str, metrics: str, period: str = "day", days_back: int = 7) -> List[FacebookPageInsight]:
         """Fetch page insights from Facebook Graph API."""
         try:
             page_id = settings.facebook_page_id
@@ -112,6 +119,7 @@ class GetFacebookPageInsightsTool(BaseTool):
 
 class GetFacebookPostInsightsInput(BaseModel):
     """Input for Facebook Post insights."""
+    business_asset_id: str = Field(..., description="Business asset ID for multi-tenancy support")
     post_id: str = Field(..., description="Facebook post ID (format: page_id_post_id)")
 
 
@@ -125,12 +133,18 @@ class GetFacebookPostInsightsTool(BaseTool):
     Use this to analyze individual post performance.
     """
     args_schema: Type[BaseModel] = GetFacebookPostInsightsInput
+    business_asset_id: str
+
+    def __init__(self, business_asset_id: str, **kwargs):
+        """Initialize with business_asset_id."""
+        super().__init__(**kwargs)
+        self.business_asset_id = business_asset_id
 
     def _run(self, query: str) -> str:
         """Sync version - not used by async agents."""
         raise NotImplementedError("Use async version (_arun) instead")
-    
-    async def _arun(self, post_id: str) -> Optional[FacebookPostInsight]:
+
+    async def _arun(self, business_asset_id: str, post_id: str) -> Optional[FacebookPostInsight]:
         """Fetch post insights from Facebook Graph API."""
         try:
             access_token = settings.facebook_page_access_token
@@ -194,6 +208,7 @@ class GetFacebookPostInsightsTool(BaseTool):
 
 class GetFacebookVideoInsightsInput(BaseModel):
     """Input for Facebook Video insights."""
+    business_asset_id: str = Field(..., description="Business asset ID for multi-tenancy support")
     video_id: str = Field(..., description="Facebook video ID")
 
 
@@ -207,12 +222,18 @@ class GetFacebookVideoInsightsTool(BaseTool):
     Use this to analyze video performance.
     """
     args_schema: Type[BaseModel] = GetFacebookVideoInsightsInput
+    business_asset_id: str
+
+    def __init__(self, business_asset_id: str, **kwargs):
+        """Initialize with business_asset_id."""
+        super().__init__(**kwargs)
+        self.business_asset_id = business_asset_id
 
     def _run(self, query: str) -> str:
         """Sync version - not used by async agents."""
         raise NotImplementedError("Use async version (_arun) instead")
-    
-    async def _arun(self, video_id: str) -> Optional[FacebookVideoInsight]:
+
+    async def _arun(self, business_asset_id: str, video_id: str) -> Optional[FacebookVideoInsight]:
         """Fetch video insights from Facebook Graph API."""
         try:
             access_token = settings.facebook_page_access_token
@@ -283,6 +304,7 @@ class GetFacebookVideoInsightsTool(BaseTool):
 
 class GetInstagramMediaInsightsInput(BaseModel):
     """Input for Instagram media insights."""
+    business_asset_id: str = Field(..., description="Business asset ID for multi-tenancy support")
     media_id: str = Field(..., description="Instagram media ID")
     media_type: str = Field("image", description="Media type: image, video, carousel, reel, story")
 
@@ -297,12 +319,18 @@ class GetInstagramMediaInsightsTool(BaseTool):
     Use this to analyze individual content performance on Instagram.
     """
     args_schema: Type[BaseModel] = GetInstagramMediaInsightsInput
+    business_asset_id: str
+
+    def __init__(self, business_asset_id: str, **kwargs):
+        """Initialize with business_asset_id."""
+        super().__init__(**kwargs)
+        self.business_asset_id = business_asset_id
 
     def _run(self, query: str) -> str:
         """Sync version - not used by async agents."""
         raise NotImplementedError("Use async version (_arun) instead")
-    
-    async def _arun(self, media_id: str, media_type: str = "image") -> Optional[InstagramMediaInsight]:
+
+    async def _arun(self, business_asset_id: str, media_id: str, media_type: str = "image") -> Optional[InstagramMediaInsight]:
         """Fetch media insights from Instagram Graph API."""
         try:
             access_token = settings.instagram_page_access_token
@@ -374,6 +402,7 @@ class GetInstagramMediaInsightsTool(BaseTool):
 
 class GetInstagramAccountInsightsInput(BaseModel):
     """Input for Instagram account insights."""
+    business_asset_id: str = Field(..., description="Business asset ID for multi-tenancy support")
     period: str = Field("day", description="Period: day, week, or days_28")
     days_back: int = Field(7, description="Number of days to look back")
 
@@ -388,12 +417,18 @@ class GetInstagramAccountInsightsTool(BaseTool):
     Use this to understand overall Instagram performance.
     """
     args_schema: Type[BaseModel] = GetInstagramAccountInsightsInput
+    business_asset_id: str
+
+    def __init__(self, business_asset_id: str, **kwargs):
+        """Initialize with business_asset_id."""
+        super().__init__(**kwargs)
+        self.business_asset_id = business_asset_id
 
     def _run(self, query: str) -> str:
         """Sync version - not used by async agents."""
         raise NotImplementedError("Use async version (_arun) instead")
-    
-    async def _arun(self, period: str = "day", days_back: int = 7) -> Optional[InstagramAccountInsight]:
+
+    async def _arun(self, business_asset_id: str, period: str = "day", days_back: int = 7) -> Optional[InstagramAccountInsight]:
         """Fetch account insights from Instagram Graph API."""
         try:
             ig_account_id = settings.app_users_instagram_account_id
@@ -457,12 +492,19 @@ class GetInstagramAccountInsightsTool(BaseTool):
 # TOOL FACTORY
 # ============================================================================
 
-def create_engagement_tools():
-    """Create all engagement tools for use with Langchain agents."""
+def create_engagement_tools(business_asset_id: str):
+    """Create all engagement tools for use with Langchain agents.
+
+    Args:
+        business_asset_id: The business asset ID for multi-tenancy support.
+
+    Returns:
+        List of engagement tools configured with the provided business_asset_id.
+    """
     return [
-        GetFacebookPageInsightsTool(),
-        GetFacebookPostInsightsTool(),
-        GetFacebookVideoInsightsTool(),
-        GetInstagramMediaInsightsTool(),
-        GetInstagramAccountInsightsTool(),
+        GetFacebookPageInsightsTool(business_asset_id=business_asset_id),
+        GetFacebookPostInsightsTool(business_asset_id=business_asset_id),
+        GetFacebookVideoInsightsTool(business_asset_id=business_asset_id),
+        GetInstagramMediaInsightsTool(business_asset_id=business_asset_id),
+        GetInstagramAccountInsightsTool(business_asset_id=business_asset_id),
     ]

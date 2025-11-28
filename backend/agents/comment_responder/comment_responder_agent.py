@@ -28,13 +28,14 @@ class CommentResponderAgent:
     - Platform-specific context
     """
 
-    def __init__(self):
-        self.comment_ops = CommentOperations()
+    def __init__(self, business_asset_id: str):
+        self.business_asset_id = business_asset_id
+        self.comment_ops = CommentOperations(business_asset_id)
 
         # Load prompts
         prompt_path = Path(__file__).parent / "prompts" / "comment_responder.txt"
         self.agent_prompt = prompt_path.read_text()
-        self.global_prompt = get_global_system_prompt()
+        self.global_prompt = get_global_system_prompt(self.business_asset_id)
 
         # Initialize LLM
         self.llm = ChatOpenAI(

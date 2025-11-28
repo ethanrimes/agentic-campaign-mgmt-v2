@@ -15,49 +15,67 @@ def news_events():
 
 
 @news_events.command()
+@click.option(
+    '--business-asset-id',
+    required=True,
+    type=str,
+    help='Business asset ID (e.g., penndailybuzz, eaglesnationfanhuddle)'
+)
 @click.option("--topic", required=True, help="Topic to search for")
 @click.option("--count", default=5, help="Number of events to retrieve")
-def ingest_perplexity(topic: str, count: int):
+def ingest_perplexity(business_asset_id: str, topic: str, count: int):
     """Ingest news events via Perplexity Sonar"""
     import asyncio
     from backend.agents.news_event import run_perplexity_ingestion
 
-    logger.info("Ingesting news events via Perplexity", topic=topic)
+    logger.info("Ingesting news events via Perplexity", business_asset_id=business_asset_id, topic=topic)
     click.echo(f"🔍 Searching for news about: {topic}")
 
-    result = asyncio.run(run_perplexity_ingestion(topic, count))
+    result = asyncio.run(run_perplexity_ingestion(business_asset_id, topic, count))
 
     click.echo(f"✅ Ingested {len(result)} news events successfully")
     click.echo("Run 'deduplicate' command to consolidate events")
 
 
 @news_events.command()
+@click.option(
+    '--business-asset-id',
+    required=True,
+    type=str,
+    help='Business asset ID (e.g., penndailybuzz, eaglesnationfanhuddle)'
+)
 @click.option("--query", required=True, help="Research query")
 @click.option("--count", default=5, help="Number of events to extract")
-def ingest_deep_research(query: str, count: int):
+def ingest_deep_research(business_asset_id: str, query: str, count: int):
     """Ingest news events via ChatGPT Deep Research"""
     import asyncio
     from backend.agents.news_event import run_deep_research
 
-    logger.info("Running deep research", query=query)
+    logger.info("Running deep research", business_asset_id=business_asset_id, query=query)
     click.echo(f"🔬 Deep research on: {query}")
 
-    result = asyncio.run(run_deep_research(query, count))
+    result = asyncio.run(run_deep_research(business_asset_id, query, count))
 
     click.echo(f"✅ Deep research completed - ingested {len(result)} events")
     click.echo("Run 'deduplicate' command to consolidate events")
 
 
 @news_events.command()
-def deduplicate():
+@click.option(
+    '--business-asset-id',
+    required=True,
+    type=str,
+    help='Business asset ID (e.g., penndailybuzz, eaglesnationfanhuddle)'
+)
+def deduplicate(business_asset_id: str):
     """Run deduplication on ingested events"""
     import asyncio
     from backend.agents.news_event import run_deduplication
 
-    logger.info("Running event deduplication")
+    logger.info("Running event deduplication", business_asset_id=business_asset_id)
     click.echo("🔄 Deduplicating ingested events...")
 
-    stats = asyncio.run(run_deduplication())
+    stats = asyncio.run(run_deduplication(business_asset_id))
 
     click.echo(f"✅ Deduplication complete")
     click.echo(f"   Processed: {stats['processed']}")
@@ -66,13 +84,19 @@ def deduplicate():
 
 
 @news_events.command()
+@click.option(
+    '--business-asset-id',
+    required=True,
+    type=str,
+    help='Business asset ID (e.g., penndailybuzz, eaglesnationfanhuddle)'
+)
 @click.option("--limit", default=10, help="Number of events to display")
-def list(limit: int):
+def list(business_asset_id: str, limit: int):
     """List recent news event seeds"""
     from backend.database.repositories import NewsEventSeedRepository
 
     repo = NewsEventSeedRepository()
-    seeds = repo.get_recent(limit=limit)
+    seeds = repo.get_recent(business_asset_id, limit=limit)
 
     click.echo(f"\n📰 Recent News Event Seeds ({len(seeds)}):\n")
     for seed in seeds:
