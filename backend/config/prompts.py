@@ -8,14 +8,17 @@ This provides the shared objective and target audience context.
 from .settings import settings
 
 
-def get_global_system_prompt() -> str:
+def get_global_system_prompt(business_asset_id: str) -> str:
     """
     Returns the global system prompt that all agents should use as context.
 
     This prompt establishes:
     1. The agent's role within the multi-agent framework
     2. The overarching objective (maximize user engagement)
-    3. The target audience (north star)
+    3. The target audience (north star) - fetched from business asset
+
+    Args:
+        business_asset_id: The unique identifier for the business asset
 
     Usage:
         In any agent implementation, prepend this to the agent-specific instructions:
@@ -23,30 +26,35 @@ def get_global_system_prompt() -> str:
         ```python
         from backend.config import get_global_system_prompt
 
-        system_prompt = get_global_system_prompt() + "\\n\\n" + agent_specific_instructions
+        system_prompt = get_global_system_prompt(business_asset_id) + "\\n\\n" + agent_specific_instructions
         ```
     """
+    # Get target audience from business asset
+    credentials = settings.get_business_asset_credentials(business_asset_id)
+    target_audience = credentials.target_audience
+
     return f"""You are an agent in a multi-agent framework which aims to maximize user engagement on social media (Facebook and Instagram).
 
 Complete your assigned task to the best of your ability in order to achieve this end.
 
-Your target audience is: {settings.target_audience}
+Your target audience is: {target_audience}
 
 Keep this audience in mind at all times when making decisions, generating content, or analyzing data. Every action you take should be optimized to resonate with and engage this specific demographic."""
 
 
-def load_agent_prompt(agent_name: str) -> str:
+def load_agent_prompt(agent_name: str, business_asset_id: str) -> str:
     """
     Load the agent-specific system prompt from the prompts directory.
 
     Args:
         agent_name: Name of the agent (e.g., "perplexity_sonar", "content_creation")
+        business_asset_id: The unique identifier for the business asset
 
     Returns:
         The full system prompt (global + agent-specific)
 
     Example:
-        >>> prompt = load_agent_prompt("content_creation")
+        >>> prompt = load_agent_prompt("content_creation", "penndailybuzz")
     """
     import os
     from pathlib import Path
@@ -89,4 +97,4 @@ def load_agent_prompt(agent_name: str) -> str:
         agent_specific_prompt = f.read().strip()
 
     # Combine global and agent-specific prompts
-    return get_global_system_prompt() + "\n\n" + agent_specific_prompt
+    return get_global_system_prompt(business_asset_id) + "\n\n" + agent_specific_prompt

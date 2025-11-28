@@ -9,6 +9,7 @@ from .insights import InsightReport, ToolCall
 from .media import Image, Video, MediaType
 from .social_media import Post, User, ScraperPost
 from .planner import PlannerOutput, ContentSeedAllocation
+from .business_asset import BusinessAsset, BusinessAssetCreate, BusinessAssetUpdate, BusinessAssetCredentials
 
 __all__ = [
     # Seeds
@@ -38,4 +39,9 @@ __all__ = [
     # Planner
     "PlannerOutput",
     "ContentSeedAllocation",
+    # Business Assets
+    "BusinessAsset",
+    "BusinessAssetCreate",
+    "BusinessAssetUpdate",
+    "BusinessAssetCredentials",
 ]

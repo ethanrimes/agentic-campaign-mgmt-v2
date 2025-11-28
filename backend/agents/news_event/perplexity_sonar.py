@@ -22,7 +22,8 @@ class PerplexitySonarAgent:
     Uses structured output to get news events in standardized format.
     """
 
-    def __init__(self):
+    def __init__(self, business_asset_id: str):
+        self.business_asset_id = business_asset_id
         self.api_key = settings.perplexity_api_key
         if not self.api_key:
             raise ValueError("PERPLEXITY_API_KEY not configured")
@@ -195,6 +196,7 @@ class PerplexitySonarAgent:
 
             # Create IngestedEvent model instance
             ingested_event = IngestedEvent(
+                business_asset_id=self.business_asset_id,
                 name=event_data["name"],
                 start_time=event_data["start_time"],
                 end_time=event_data.get("end_time"),
@@ -219,16 +221,17 @@ class PerplexitySonarAgent:
             return None
 
 
-async def run_perplexity_ingestion(topic: str, num_events: int = 5) -> List[Dict[str, Any]]:
+async def run_perplexity_ingestion(business_asset_id: str, topic: str, num_events: int = 5) -> List[Dict[str, Any]]:
     """
     CLI entry point for running Perplexity Sonar ingestion.
 
     Args:
+        business_asset_id: Business asset ID for multi-tenancy
         topic: Topic to search for
         num_events: Number of events to retrieve
 
     Returns:
         List of ingested events
     """
-    agent = PerplexitySonarAgent()
+    agent = PerplexitySonarAgent(business_asset_id)
     return await agent.ingest_news(topic, num_events)

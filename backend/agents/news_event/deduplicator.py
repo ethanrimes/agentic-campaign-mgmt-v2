@@ -24,7 +24,8 @@ class DeduplicatorAgent:
     and either merges them or creates new seeds.
     """
 
-    def __init__(self):
+    def __init__(self, business_asset_id: str):
+        self.business_asset_id = business_asset_id
         self.ingested_repo = IngestedEventRepository()
         self.canonical_repo = NewsEventSeedRepository()
 
@@ -78,14 +79,14 @@ Is this a duplicate? Which event does it match (if any)?""")
         logger.info("Starting deduplication process")
 
         # Get all ingested events that haven't been processed
-        ingested_events = await self.ingested_repo.get_unprocessed()
+        ingested_events = await self.ingested_repo.get_unprocessed(self.business_asset_id)
 
         if not ingested_events:
             logger.info("No ingested events to process")
             return {"processed": 0, "merged": 0, "new": 0}
 
         # Get all existing canonical events
-        canonical_events = await self.canonical_repo.get_all()
+        canonical_events = await self.canonical_repo.get_all(self.business_asset_id)
 
         stats = {
             "processed": 0,
@@ -237,6 +238,7 @@ Is this a duplicate? Which event does it match (if any)?""")
 
         # Create NewsEventSeed model instance (sources are already Source objects)
         canonical_event = NewsEventSeed(
+            business_asset_id=self.business_asset_id,
             name=name,
             start_time=ingested.start_time,
             end_time=ingested.end_time,
@@ -257,7 +259,7 @@ Is this a duplicate? Which event does it match (if any)?""")
     async def _merge_with_canonical(self, ingested: IngestedEvent, canonical_id: str):
         """Merge ingested event with existing canonical event."""
         # Get existing canonical event
-        canonical = await self.canonical_repo.get_by_id(UUID(canonical_id))
+        canonical = await self.canonical_repo.get_by_id(self.business_asset_id, UUID(canonical_id))
         if not canonical:
             raise Exception(f"Canonical event {canonical_id} not found")
 
@@ -286,7 +288,7 @@ Is this a duplicate? Which event does it match (if any)?""")
             "sources": sources_dict
         }
 
-        await self.canonical_repo.update(UUID(canonical_id), updates)
+        await self.canonical_repo.update(self.business_asset_id, UUID(canonical_id), updates)
 
         logger.info(
             "Merged ingested event with canonical",
@@ -295,12 +297,15 @@ Is this a duplicate? Which event does it match (if any)?""")
         )
 
 
-async def run_deduplication() -> Dict[str, int]:
+async def run_deduplication(business_asset_id: str) -> Dict[str, int]:
     """
     CLI entry point for running deduplication.
+
+    Args:
+        business_asset_id: Business asset ID for multi-tenancy
 
     Returns:
         Statistics about the deduplication process
     """
-    agent = DeduplicatorAgent()
+    agent = DeduplicatorAgent(business_asset_id)
     return await agent.deduplicate_all()

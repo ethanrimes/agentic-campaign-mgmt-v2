@@ -17,11 +17,25 @@ class MetaBaseClient:
     BASE_URL = f"https://graph.facebook.com/{API_VERSION}"
     INSTAGRAM_BASE_URL = f"https://graph.instagram.com/{API_VERSION}"
 
-    def __init__(self):
-        self.page_id = settings.facebook_page_id
-        self.ig_user_id = settings.app_users_instagram_account_id
-        self.page_token = settings.facebook_page_access_token
-        self.ig_token = settings.instagram_page_access_token
+    def __init__(self, business_asset_id: str):
+        """
+        Initialize Meta API client for a specific business asset.
+
+        Args:
+            business_asset_id: The unique identifier for the business asset
+                              (e.g., 'penndailybuzz', 'eaglesnationfanhuddle')
+        """
+        self.business_asset_id = business_asset_id
+
+        # Load credentials from database
+        credentials = settings.get_business_asset_credentials(business_asset_id)
+
+        self.page_id = credentials.facebook_page_id
+        self.ig_user_id = credentials.app_users_instagram_account_id
+        self.page_token = credentials.facebook_page_access_token
+        self.ig_token = credentials.instagram_page_access_token
+
+        logger.debug(f"Initialized MetaBaseClient for business asset: {business_asset_id}")
 
     async def _make_request(
         self,

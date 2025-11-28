@@ -16,15 +16,21 @@ def content():
 
 
 @content.command()
-def create_all():
+@click.option(
+    '--business-asset-id',
+    required=True,
+    type=str,
+    help='Business asset ID (e.g., penndailybuzz, eaglesnationfanhuddle)'
+)
+def create_all(business_asset_id: str):
     """Create content for all pending tasks"""
     import asyncio
     from backend.agents.content_creation import run_content_creation_all
 
-    logger.info("Running content creation for all tasks")
+    logger.info("Running content creation for all tasks", business_asset_id=business_asset_id)
     click.echo(f"🎨 Creating content for all pending tasks...")
 
-    result = asyncio.run(run_content_creation_all())
+    result = asyncio.run(run_content_creation_all(business_asset_id))
 
     click.echo(f"✅ Content creation complete")
     click.echo(f"   Tasks processed: {result['tasks_processed']}")
@@ -32,16 +38,22 @@ def create_all():
 
 
 @content.command()
+@click.option(
+    '--business-asset-id',
+    required=True,
+    type=str,
+    help='Business asset ID (e.g., penndailybuzz, eaglesnationfanhuddle)'
+)
 @click.option("--task-id", required=True, help="Task ID")
-def create(task_id: str):
+def create(business_asset_id: str, task_id: str):
     """Create content for a specific task"""
     import asyncio
     from backend.agents.content_creation import run_content_creation_single
 
-    logger.info("Creating content for task", task_id=task_id)
+    logger.info("Creating content for task", business_asset_id=business_asset_id, task_id=task_id)
     click.echo(f"🎨 Creating content for task: {task_id}")
 
-    result = asyncio.run(run_content_creation_single(task_id))
+    result = asyncio.run(run_content_creation_single(business_asset_id, task_id))
 
     if result['success']:
         click.echo(f"✅ Content created - {result['posts_created']} posts")
@@ -50,13 +62,19 @@ def create(task_id: str):
 
 
 @content.command()
+@click.option(
+    '--business-asset-id',
+    required=True,
+    type=str,
+    help='Business asset ID (e.g., penndailybuzz, eaglesnationfanhuddle)'
+)
 @click.option("--limit", default=10, help="Number of tasks to display")
-def pending(limit: int):
+def pending(business_asset_id: str, limit: int):
     """List pending content creation tasks"""
     from backend.database.repositories import ContentCreationTaskRepository
 
     repo = ContentCreationTaskRepository()
-    tasks = repo.get_pending_tasks(limit=limit)
+    tasks = repo.get_pending_tasks(business_asset_id, limit=limit)
 
     click.echo(f"\n📋 Pending Tasks ({len(tasks)}):\n")
     for task in tasks:

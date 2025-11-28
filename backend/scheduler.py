@@ -10,23 +10,65 @@ This scheduler orchestrates all automated tasks including:
 - Content creation
 - Publishing to social media platforms
 
+Multi-Tenancy Support:
+- Set BUSINESS_ASSETS environment variable with comma-separated list of asset IDs
+- Example: BUSINESS_ASSETS=penndailybuzz,eaglesnationfanhuddle,flyeaglesflycommunity
+- Each job will run for all active business assets
+
 See SCHEDULER_README.md for usage instructions.
 """
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+import os
 import subprocess
 import sys
 from datetime import datetime
 from apscheduler.schedulers.blocking import BlockingScheduler
 from apscheduler.events import EVENT_JOB_EXECUTED, EVENT_JOB_ERROR
 from backend.utils import get_logger
+from backend.database.repositories.business_assets import BusinessAssetRepository
 
 logger = get_logger(__name__)
 
 # Base command for all CLI operations
 BASE_CMD = [sys.executable, "-m", "backend.cli.main"]
+
+
+# ============================================================================
+# BUSINESS ASSET MANAGEMENT
+# ============================================================================
+
+def get_active_business_assets() -> list[str]:
+    """
+    Get list of active business asset IDs.
+
+    Reads from BUSINESS_ASSETS environment variable (comma-separated list),
+    or falls back to fetching all active assets from the database.
+
+    Returns:
+        List of business asset IDs
+    """
+    # Check environment variable first
+    env_assets = os.getenv("BUSINESS_ASSETS", "").strip()
+
+    if env_assets:
+        assets = [asset.strip() for asset in env_assets.split(",") if asset.strip()]
+        logger.info(f"Using business assets from BUSINESS_ASSETS env var: {assets}")
+        return assets
+
+    # Fall back to database
+    try:
+        repo = BusinessAssetRepository()
+        active_assets = repo.get_all_active()
+        asset_ids = [asset.id for asset in active_assets]
+        logger.info(f"Loaded {len(asset_ids)} active business assets from database: {asset_ids}")
+        return asset_ids
+    except Exception as e:
+        logger.error(f"Failed to load business assets from database: {e}")
+        logger.warning("No business assets configured - scheduler will not run any jobs")
+        return []
 
 
 # ============================================================================
@@ -113,23 +155,27 @@ def run_command(cmd_args: list, description: str):
 # ============================================================================
 
 def run_news_ingestion():
-    """Ingest news events from Perplexity Sonar."""
-    run_command(
-        ["news-events", "ingest-perplexity", "--topic", "Philadelphia", "--count", "3"],
-        "News Event Ingestion"
-    )
+    """Ingest news events from Perplexity Sonar for all business assets."""
+    assets = get_active_business_assets()
+    for asset_id in assets:
+        run_command(
+            ["news-events", "ingest-perplexity", "--business-asset-id", asset_id, "--topic", "Philadelphia", "--count", "3"],
+            f"News Event Ingestion - {asset_id}"
+        )
 
 
 def run_news_deduplication():
-    """Deduplicate news events after ingestion."""
-    run_command(
-        ["news-events", "deduplicate"],
-        "News Event Deduplication"
-    )
+    """Deduplicate news events after ingestion for all business assets."""
+    assets = get_active_business_assets()
+    for asset_id in assets:
+        run_command(
+            ["news-events", "deduplicate", "--business-asset-id", asset_id],
+            f"News Event Deduplication - {asset_id}"
+        )
 
 
 def run_news_pipeline():
-    """Run complete news ingestion pipeline (ingest + deduplicate)."""
+    """Run complete news ingestion pipeline (ingest + deduplicate) for all business assets."""
     try:
         run_news_ingestion()
         run_news_deduplication()
@@ -138,19 +184,23 @@ def run_news_pipeline():
 
 
 def run_trend_discovery():
-    """Discover trending content on social media."""
-    run_command(
-        ["trends", "discover", "--query", "UPenn students", "--count", "2"],
-        "Trend Discovery"
-    )
+    """Discover trending content on social media for all business assets."""
+    assets = get_active_business_assets()
+    for asset_id in assets:
+        run_command(
+            ["trends", "discover", "--business-asset-id", asset_id, "--query", "UPenn students", "--count", "2"],
+            f"Trend Discovery - {asset_id}"
+        )
 
 
 def run_ungrounded_generation():
-    """Generate creative ungrounded content ideas."""
-    run_command(
-        ["ungrounded", "generate", "--count", "3"],
-        "Ungrounded Idea Generation"
-    )
+    """Generate creative ungrounded content ideas for all business assets."""
+    assets = get_active_business_assets()
+    for asset_id in assets:
+        run_command(
+            ["ungrounded", "generate", "--business-asset-id", asset_id, "--count", "3"],
+            f"Ungrounded Idea Generation - {asset_id}"
+        )
 
 
 # ============================================================================
@@ -158,31 +208,37 @@ def run_ungrounded_generation():
 # ============================================================================
 
 def run_insights_analysis():
-    """Analyze published content performance."""
-    run_command(
-        ["insights", "analyze", "--days", "30"],
-        "Insights Analysis"
-    )
+    """Analyze published content performance for all business assets."""
+    assets = get_active_business_assets()
+    for asset_id in assets:
+        run_command(
+            ["insights", "analyze", "--business-asset-id", asset_id, "--days", "30"],
+            f"Insights Analysis - {asset_id}"
+        )
 
 
 def run_planner():
-    """Run content planning to create tasks from seeds."""
-    run_command(
-        ["planner", "run", "--max-retries", "3"],
-        "Content Planning"
-    )
+    """Run content planning to create tasks from seeds for all business assets."""
+    assets = get_active_business_assets()
+    for asset_id in assets:
+        run_command(
+            ["planner", "run", "--business-asset-id", asset_id, "--max-retries", "3"],
+            f"Content Planning - {asset_id}"
+        )
 
 
 def run_content_creation():
-    """Create content for all pending tasks."""
-    run_command(
-        ["content", "create-all"],
-        "Content Creation"
-    )
+    """Create content for all pending tasks for all business assets."""
+    assets = get_active_business_assets()
+    for asset_id in assets:
+        run_command(
+            ["content", "create-all", "--business-asset-id", asset_id],
+            f"Content Creation - {asset_id}"
+        )
 
 
 def run_planning_pipeline():
-    """Run complete planning pipeline (insights + planner + content creation)."""
+    """Run complete planning pipeline (insights + planner + content creation) for all business assets."""
     try:
         run_insights_analysis()
         run_planner()
@@ -196,19 +252,23 @@ def run_planning_pipeline():
 # ============================================================================
 
 def run_facebook_publishing():
-    """Check for and publish scheduled Facebook posts."""
-    run_command(
-        ["publish", "facebook"],
-        "Facebook Publishing"
-    )
+    """Check for and publish scheduled Facebook posts for all business assets."""
+    assets = get_active_business_assets()
+    for asset_id in assets:
+        run_command(
+            ["publish", "facebook", "--business-asset-id", asset_id],
+            f"Facebook Publishing - {asset_id}"
+        )
 
 
 def run_instagram_publishing():
-    """Check for and publish scheduled Instagram posts."""
-    run_command(
-        ["publish", "instagram"],
-        "Instagram Publishing"
-    )
+    """Check for and publish scheduled Instagram posts for all business assets."""
+    assets = get_active_business_assets()
+    for asset_id in assets:
+        run_command(
+            ["publish", "instagram", "--business-asset-id", asset_id],
+            f"Instagram Publishing - {asset_id}"
+        )
 
 
 # ============================================================================
@@ -216,19 +276,23 @@ def run_instagram_publishing():
 # ============================================================================
 
 def run_instagram_comment_check():
-    """Check for new comments on Instagram posts."""
-    run_command(
-        ["comments", "check-instagram"],
-        "Instagram Comment Check"
-    )
+    """Check for new comments on Instagram posts for all business assets."""
+    assets = get_active_business_assets()
+    for asset_id in assets:
+        run_command(
+            ["comments", "check-instagram", "--business-asset-id", asset_id],
+            f"Instagram Comment Check - {asset_id}"
+        )
 
 
 def run_comment_responder():
-    """Process pending comments and generate responses."""
-    run_command(
-        ["comments", "respond"],
-        "Comment Responder"
-    )
+    """Process pending comments and generate responses for all business assets."""
+    assets = get_active_business_assets()
+    for asset_id in assets:
+        run_command(
+            ["comments", "respond", "--business-asset-id", asset_id],
+            f"Comment Responder - {asset_id}"
+        )
 
 
 # ============================================================================

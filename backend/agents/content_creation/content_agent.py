@@ -53,7 +53,8 @@ class ContentCreationAgent:
     Uses Wavespeed AI to generate media and creates structured posts.
     """
 
-    def __init__(self):
+    def __init__(self, business_asset_id: str):
+        self.business_asset_id = business_asset_id
         self.tasks_repo = ContentCreationTaskRepository()
         self.posts_repo = CompletedPostRepository()
         self.news_repo = NewsEventSeedRepository()
@@ -63,7 +64,7 @@ class ContentCreationAgent:
         # Load prompts
         prompt_path = Path(__file__).parent / "prompts" / "content_creation.txt"
         self.agent_prompt = prompt_path.read_text()
-        self.global_prompt = get_global_system_prompt()
+        self.global_prompt = get_global_system_prompt(self.business_asset_id)
 
         # Initialize LLM
         self.llm = ChatOpenAI(
@@ -91,7 +92,7 @@ class ContentCreationAgent:
         from backend.scheduler import SCHEDULING_CONFIG
 
         # Get all pending posts for this platform, ordered by scheduled_posting_time
-        all_pending = await self.posts_repo.get_all_pending_posts(platform)
+        all_pending = await self.posts_repo.get_all_pending_posts(self.business_asset_id, platform)
 
         # Filter for posts with scheduled times
         scheduled_posts = [p for p in all_pending if p.scheduled_posting_time is not None]
@@ -138,7 +139,7 @@ class ContentCreationAgent:
 
         try:
             # Get task
-            task = await self.tasks_repo.get_by_id(task_id)
+            task = await self.tasks_repo.get_by_id(self.business_asset_id, task_id)
             if not task:
                 raise Exception(f"Task {task_id} not found")
 
@@ -186,6 +187,7 @@ class ContentCreationAgent:
                         seed_reference["ungrounded_seed_id"] = task.content_seed_id
 
                     completed_post = CompletedPost(
+                        business_asset_id=self.business_asset_id,
                         task_id=task.id,
                         **seed_reference,
                         platform=post_data.platform,
@@ -210,7 +212,7 @@ class ContentCreationAgent:
                     logger.error("Error saving post", error=str(e))
 
             # Update task status
-            await self.tasks_repo.update(task_id, {"status": "completed"})
+            await self.tasks_repo.update(self.business_asset_id, task_id, {"status": "completed"})
 
             logger.info(
                 "Content creation complete",
@@ -223,7 +225,7 @@ class ContentCreationAgent:
         except Exception as e:
             logger.error("Error in content creation", task_id=task_id, error=str(e))
             # Mark task as failed
-            await self.tasks_repo.update(task_id, {"status": "failed"})
+            await self.tasks_repo.update(self.business_asset_id, task_id, {"status": "failed"})
             raise
 
     async def _get_content_seed(
@@ -233,11 +235,11 @@ class ContentCreationAgent:
     ):
         """Fetch content seed based on type."""
         if seed_type == "news_event":
-            return await self.news_repo.get_by_id(seed_id)
+            return await self.news_repo.get_by_id(self.business_asset_id, seed_id)
         elif seed_type == "trend":
-            return await self.trend_repo.get_by_id(seed_id)
+            return await self.trend_repo.get_by_id(self.business_asset_id, seed_id)
         elif seed_type == "ungrounded":
-            return await self.ungrounded_repo.get_by_id(seed_id)
+            return await self.ungrounded_repo.get_by_id(self.business_asset_id, seed_id)
         else:
             raise ValueError(f"Unknown seed type: {seed_type}")
 

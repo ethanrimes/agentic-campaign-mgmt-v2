@@ -246,6 +246,28 @@ python -m backend.cli.main publish instagram
 python -m backend.cli.main publish all
 ```
 
+### Comment Responding
+
+1. **`comments check-instagram`**
+   ```bash
+   python -m backend.cli.main comments check-instagram --max-media 20
+   ```
+   Manually trigger Instagram comment check
+
+2. **`comments respond`**
+   ```bash
+   python -m backend.cli.main comments respond --platform all --limit 10
+   ```
+   Process pending comments and post responses
+
+3. **`comments test-responder`**
+   ```bash
+   python -m backend.cli.main comments test-responder --platform instagram COMMENT_ID
+   ```
+   Test response generation without posting (for debugging)
+
+
+
 ## 🤖 Scheduling with Cron
 
 For automated operation, schedule agents with cron:
@@ -469,3 +491,33 @@ MIT License - see LICENSE file
 ---
 
 **Note**: This framework is designed for research purposes to study AI agent capabilities in autonomous content management. For production use, implement proper content moderation, human-in-the-loop approval, and rate limiting.
+
+
+
+# Lines of Code
+
+```
+(venv) ethan@ist-12739 social-media-manager-v2 % cloc . \
+--not-match-d='(^|/)(__pycache__|\.next|\.pytest_cache|node_modules|venv)($|/)' \
+--exclude-list-file=<(printf "migrations.md\nSCHEDULER_README.md\ntools/tests/README.md\nfrontend/package-lock.json\nfb-webhook/package-lock.json")
+     194 text files.
+     189 unique files.                                          
+    4115 files ignored.
+
+github.com/AlDanial/cloc v 2.06  T=0.35 s (531.2 files/s, 82908.9 lines/s)
+-------------------------------------------------------------------------------
+Language                     files          blank        comment           code
+-------------------------------------------------------------------------------
+Python                         107           3548           3908          10959
+TypeScript                      32            393             99           4322
+Markdown                        12            950              0           2852
+SQL                             18            138            178            456
+Text                             8            151              0            445
+JavaScript                       4             52             42            297
+CSS                              1             32             12            159
+JSON                             4              0              0            121
+TOML                             1              7              0             66
+-------------------------------------------------------------------------------
+SUM:                           187           5271           4239          19677
+-------------------------------------------------------------------------------
+```

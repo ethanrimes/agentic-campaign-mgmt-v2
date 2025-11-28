@@ -30,7 +30,8 @@ class PlannerAgent:
     Selects content seeds and allocates posts/media according to guardrails.
     """
 
-    def __init__(self):
+    def __init__(self, business_asset_id: str):
+        self.business_asset_id = business_asset_id
         self.news_repo = NewsEventSeedRepository()
         self.trend_repo = TrendSeedsRepository()
         self.ungrounded_repo = UngroundedSeedRepository()
@@ -39,7 +40,7 @@ class PlannerAgent:
         # Load prompts
         prompt_path = Path(__file__).parent / "prompts" / "planner.txt"
         self.agent_prompt_template = prompt_path.read_text()
-        self.global_prompt = get_global_system_prompt()
+        self.global_prompt = get_global_system_prompt(self.business_asset_id)
 
         # Initialize LLM
         self.llm = ChatOpenAI(
@@ -107,12 +108,12 @@ class PlannerAgent:
         logger.info("Gathering planning context")
 
         # Get available content seeds
-        news_seeds = await self.news_repo.get_all()
-        trend_seeds = await self.trend_repo.get_all()
-        ungrounded_seeds = await self.ungrounded_repo.get_all()
+        news_seeds = await self.news_repo.get_all(self.business_asset_id)
+        trend_seeds = await self.trend_repo.get_all(self.business_asset_id)
+        ungrounded_seeds = await self.ungrounded_repo.get_all(self.business_asset_id)
 
         # Get latest insights
-        latest_insights = await self.insights_repo.get_latest()
+        latest_insights = await self.insights_repo.get_latest(self.business_asset_id)
 
         context = {
             "news_seeds": news_seeds[:20],  # Limit for context size

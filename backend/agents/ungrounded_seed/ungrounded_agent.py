@@ -39,13 +39,14 @@ class UngroundedSeedAgent:
     2. Direct structured output generation
     """
 
-    def __init__(self):
+    def __init__(self, business_asset_id: str):
+        self.business_asset_id = business_asset_id
         self.repo = UngroundedSeedRepository()
 
         # Load prompts
         prompt_path = Path(__file__).parent / "prompts" / "ungrounded_seed.txt"
         self.agent_prompt = prompt_path.read_text()
-        self.global_prompt = get_global_system_prompt()
+        self.global_prompt = get_global_system_prompt(self.business_asset_id)
 
         # Initialize LLM
         self.llm = ChatOpenAI(
@@ -118,6 +119,7 @@ After checking tools (or if you don't need tools), provide your raw idea descrip
                 if structured_output:
                     # Save directly to database
                     ungrounded_seed = UngroundedSeed(
+                        business_asset_id=self.business_asset_id,
                         idea=structured_output.idea,
                         format=structured_output.format,
                         details=structured_output.details,
@@ -136,15 +138,16 @@ After checking tools (or if you don't need tools), provide your raw idea descrip
         logger.info("Ungrounded seed generation complete", seeds_created=len(seeds))
         return seeds
 
-async def run_ungrounded_generation(count: int = 1) -> List[Dict[str, Any]]:
+async def run_ungrounded_generation(business_asset_id: str, count: int = 1) -> List[Dict[str, Any]]:
     """
     CLI entry point for ungrounded seed generation.
 
     Args:
+        business_asset_id: Business asset ID for multi-tenancy
         count: Number of ideas to generate
 
     Returns:
         List of created ungrounded seeds
     """
-    agent = UngroundedSeedAgent()
+    agent = UngroundedSeedAgent(business_asset_id)
     return await agent.generate_ideas(count)

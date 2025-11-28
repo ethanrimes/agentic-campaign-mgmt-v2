@@ -24,7 +24,8 @@ class DeepResearchAgent:
     then parses results into structured news events with gpt-4o-mini.
     """
 
-    def __init__(self):
+    def __init__(self, business_asset_id: str):
+        self.business_asset_id = business_asset_id
         self.api_key = settings.openai_api_key
         if not self.api_key:
             raise ValueError("OPENAI_API_KEY not configured")
@@ -235,6 +236,7 @@ Research Report:
 
             # Create IngestedEvent model instance
             ingested_event = IngestedEvent(
+                business_asset_id=self.business_asset_id,
                 name=event_data["name"],
                 start_time=event_data["start_time"],
                 end_time=event_data.get("end_time"),
@@ -259,16 +261,17 @@ Research Report:
             return None
 
 
-async def run_deep_research(query: str, num_events: int = 5) -> List[Dict[str, Any]]:
+async def run_deep_research(business_asset_id: str, query: str, num_events: int = 5) -> List[Dict[str, Any]]:
     """
     CLI entry point for running deep research.
 
     Args:
+        business_asset_id: Business asset ID for multi-tenancy
         query: Research query/topic
         num_events: Number of events to extract
 
     Returns:
         List of ingested events
     """
-    agent = DeepResearchAgent()
+    agent = DeepResearchAgent(business_asset_id)
     return await agent.research_and_ingest(query, num_events)

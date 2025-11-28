@@ -19,6 +19,7 @@ class PlatformCommentRepository(BaseRepository[PlatformComment]):
 
     async def get_pending_comments(
         self,
+        business_asset_id: str,
         platform: Optional[Literal["facebook", "instagram"]] = None,
         limit: int = 50
     ) -> List[PlatformComment]:
@@ -26,6 +27,7 @@ class PlatformCommentRepository(BaseRepository[PlatformComment]):
         Get pending comments that need responses.
 
         Args:
+            business_asset_id: Business asset ID to filter by
             platform: Optional platform filter ("facebook" or "instagram")
             limit: Maximum number of comments to return
 
@@ -39,6 +41,7 @@ class PlatformCommentRepository(BaseRepository[PlatformComment]):
             query = (
                 client.table(self.table_name)
                 .select("*")
+                .eq("business_asset_id", business_asset_id)
                 .eq("status", "pending")
                 .order("created_time", desc=False)
                 .limit(limit)
@@ -51,6 +54,7 @@ class PlatformCommentRepository(BaseRepository[PlatformComment]):
 
             logger.info(
                 "Retrieved pending comments",
+                business_asset_id=business_asset_id,
                 platform=platform or "all",
                 count=len(result.data)
             )
@@ -59,6 +63,7 @@ class PlatformCommentRepository(BaseRepository[PlatformComment]):
         except Exception as e:
             logger.error(
                 "Failed to get pending comments",
+                business_asset_id=business_asset_id,
                 platform=platform,
                 error=str(e)
             )
@@ -66,6 +71,7 @@ class PlatformCommentRepository(BaseRepository[PlatformComment]):
 
     async def get_by_comment_id(
         self,
+        business_asset_id: str,
         platform: Literal["facebook", "instagram"],
         comment_id: str
     ) -> Optional[PlatformComment]:
@@ -73,6 +79,7 @@ class PlatformCommentRepository(BaseRepository[PlatformComment]):
         Get a comment by its platform-specific comment ID.
 
         Args:
+            business_asset_id: Business asset ID to filter by
             platform: Platform ("facebook" or "instagram")
             comment_id: Platform's unique comment ID
 
@@ -86,6 +93,7 @@ class PlatformCommentRepository(BaseRepository[PlatformComment]):
             result = (
                 await client.table(self.table_name)
                 .select("*")
+                .eq("business_asset_id", business_asset_id)
                 .eq("platform", platform)
                 .eq("comment_id", comment_id)
                 .execute()
@@ -98,6 +106,7 @@ class PlatformCommentRepository(BaseRepository[PlatformComment]):
         except Exception as e:
             logger.error(
                 "Failed to get comment by comment_id",
+                business_asset_id=business_asset_id,
                 platform=platform,
                 comment_id=comment_id,
                 error=str(e)
@@ -106,6 +115,7 @@ class PlatformCommentRepository(BaseRepository[PlatformComment]):
 
     async def mark_as_responded(
         self,
+        business_asset_id: str,
         comment_record_id: UUID,
         response_text: str,
         response_comment_id: str
@@ -114,6 +124,7 @@ class PlatformCommentRepository(BaseRepository[PlatformComment]):
         Mark a comment as responded.
 
         Args:
+            business_asset_id: Business asset ID to filter by
             comment_record_id: UUID of the comment record in our database
             response_text: The text we responded with
             response_comment_id: Platform ID of our reply comment
@@ -131,11 +142,12 @@ class PlatformCommentRepository(BaseRepository[PlatformComment]):
                 "responded_at": datetime.utcnow().isoformat()
             }
 
-            result = await self.update(comment_record_id, updates)
+            result = await self.update(business_asset_id, comment_record_id, updates)
 
             if result:
                 logger.info(
                     "Marked comment as responded",
+                    business_asset_id=business_asset_id,
                     comment_id=str(comment_record_id),
                     response_comment_id=response_comment_id
                 )
@@ -144,6 +156,7 @@ class PlatformCommentRepository(BaseRepository[PlatformComment]):
         except Exception as e:
             logger.error(
                 "Failed to mark comment as responded",
+                business_asset_id=business_asset_id,
                 comment_id=str(comment_record_id),
                 error=str(e)
             )
@@ -151,6 +164,7 @@ class PlatformCommentRepository(BaseRepository[PlatformComment]):
 
     async def mark_as_failed(
         self,
+        business_asset_id: str,
         comment_record_id: UUID,
         error_message: str,
         increment_retry: bool = True
@@ -159,6 +173,7 @@ class PlatformCommentRepository(BaseRepository[PlatformComment]):
         Mark a comment response as failed.
 
         Args:
+            business_asset_id: Business asset ID to filter by
             comment_record_id: UUID of the comment record
             error_message: Error message describing the failure
             increment_retry: Whether to increment the retry_count
@@ -168,9 +183,13 @@ class PlatformCommentRepository(BaseRepository[PlatformComment]):
         """
         try:
             # Get current comment to access retry_count if needed
-            current = await self.get_by_id(comment_record_id)
+            current = await self.get_by_id(business_asset_id, comment_record_id)
             if not current:
-                logger.error("Comment not found", comment_id=str(comment_record_id))
+                logger.error(
+                    "Comment not found",
+                    business_asset_id=business_asset_id,
+                    comment_id=str(comment_record_id)
+                )
                 return None
 
             updates = {
@@ -181,11 +200,12 @@ class PlatformCommentRepository(BaseRepository[PlatformComment]):
             if increment_retry:
                 updates["retry_count"] = current.retry_count + 1
 
-            result = await self.update(comment_record_id, updates)
+            result = await self.update(business_asset_id, comment_record_id, updates)
 
             if result:
                 logger.info(
                     "Marked comment as failed",
+                    business_asset_id=business_asset_id,
                     comment_id=str(comment_record_id),
                     retry_count=result.retry_count
                 )
@@ -194,16 +214,18 @@ class PlatformCommentRepository(BaseRepository[PlatformComment]):
         except Exception as e:
             logger.error(
                 "Failed to mark comment as failed",
+                business_asset_id=business_asset_id,
                 comment_id=str(comment_record_id),
                 error=str(e)
             )
             return None
 
-    async def mark_as_ignored(self, comment_record_id: UUID) -> Optional[PlatformComment]:
+    async def mark_as_ignored(self, business_asset_id: str, comment_record_id: UUID) -> Optional[PlatformComment]:
         """
         Mark a comment as ignored (won't respond).
 
         Args:
+            business_asset_id: Business asset ID to filter by
             comment_record_id: UUID of the comment record
 
         Returns:
@@ -211,15 +233,20 @@ class PlatformCommentRepository(BaseRepository[PlatformComment]):
         """
         try:
             updates = {"status": "ignored"}
-            result = await self.update(comment_record_id, updates)
+            result = await self.update(business_asset_id, comment_record_id, updates)
 
             if result:
-                logger.info("Marked comment as ignored", comment_id=str(comment_record_id))
+                logger.info(
+                    "Marked comment as ignored",
+                    business_asset_id=business_asset_id,
+                    comment_id=str(comment_record_id)
+                )
 
             return result
         except Exception as e:
             logger.error(
                 "Failed to mark comment as ignored",
+                business_asset_id=business_asset_id,
                 comment_id=str(comment_record_id),
                 error=str(e)
             )
@@ -227,6 +254,7 @@ class PlatformCommentRepository(BaseRepository[PlatformComment]):
 
     async def get_comments_by_post(
         self,
+        business_asset_id: str,
         platform: Literal["facebook", "instagram"],
         post_id: str,
         status: Optional[Literal["pending", "responded", "failed", "ignored"]] = None
@@ -235,6 +263,7 @@ class PlatformCommentRepository(BaseRepository[PlatformComment]):
         Get all comments for a specific post.
 
         Args:
+            business_asset_id: Business asset ID to filter by
             platform: Platform ("facebook" or "instagram")
             post_id: Platform's post ID
             status: Optional status filter
@@ -249,6 +278,7 @@ class PlatformCommentRepository(BaseRepository[PlatformComment]):
             query = (
                 client.table(self.table_name)
                 .select("*")
+                .eq("business_asset_id", business_asset_id)
                 .eq("platform", platform)
                 .eq("post_id", post_id)
                 .order("created_time", desc=False)
@@ -262,6 +292,7 @@ class PlatformCommentRepository(BaseRepository[PlatformComment]):
         except Exception as e:
             logger.error(
                 "Failed to get comments by post",
+                business_asset_id=business_asset_id,
                 platform=platform,
                 post_id=post_id,
                 error=str(e)

@@ -18,14 +18,20 @@ def comments():
 
 
 @comments.command(name="check-instagram")
+@click.option(
+    '--business-asset-id',
+    required=True,
+    type=str,
+    help='Business asset ID (e.g., penndailybuzz, eaglesnationfanhuddle)'
+)
 @click.option("--max-media", default=20, help="Maximum number of recent media to check")
-def check_instagram(max_media: int):
+def check_instagram(business_asset_id: str, max_media: int):
     """Check for new Instagram comments and add to database"""
     async def _check():
-        logger.info("Checking for new Instagram comments")
+        logger.info("Checking for new Instagram comments", business_asset_id=business_asset_id)
         click.echo("📷 Checking for new Instagram comments...")
 
-        result = await check_instagram_comments(max_media=max_media)
+        result = await check_instagram_comments(business_asset_id, max_media=max_media)
 
         if result.get("success"):
             click.echo(f"\n✅ Instagram comment check completed:")
@@ -45,12 +51,18 @@ def check_instagram(max_media: int):
 
 
 @comments.command(name="respond")
+@click.option(
+    '--business-asset-id',
+    required=True,
+    type=str,
+    help='Business asset ID (e.g., penndailybuzz, eaglesnationfanhuddle)'
+)
 @click.option("--platform", type=click.Choice(["facebook", "instagram", "all"]), default="all", help="Platform to process")
 @click.option("--limit", default=10, help="Maximum number of comments to process")
-def respond(platform: str, limit: int):
+def respond(business_asset_id: str, platform: str, limit: int):
     """Process pending comments and generate responses"""
     async def _respond():
-        logger.info("Processing pending comments", platform=platform)
+        logger.info("Processing pending comments", business_asset_id=business_asset_id, platform=platform)
         click.echo(f"💬 Processing pending comments ({platform})...\n")
 
         platforms = ["facebook", "instagram"] if platform == "all" else [platform]
@@ -64,7 +76,7 @@ def respond(platform: str, limit: int):
             icon = "📘" if plat == "facebook" else "📷"
             click.echo(f"{icon} {plat.capitalize()}:")
 
-            result = await run_comment_responder(platform=plat, limit=limit)
+            result = await run_comment_responder(business_asset_id, platform=plat, limit=limit)
 
             if result.get("processed", 0) > 0:
                 click.echo(f"   Processed: {result.get('processed', 0)}")
@@ -90,15 +102,21 @@ def respond(platform: str, limit: int):
 
 
 @comments.command(name="test-responder")
+@click.option(
+    '--business-asset-id',
+    required=True,
+    type=str,
+    help='Business asset ID (e.g., penndailybuzz, eaglesnationfanhuddle)'
+)
 @click.argument("comment_id")
 @click.option("--platform", type=click.Choice(["facebook", "instagram"]), required=True, help="Platform")
-def test_responder(comment_id: str, platform: str):
+def test_responder(business_asset_id: str, comment_id: str, platform: str):
     """Test the comment responder on a specific comment (without posting the reply)"""
     async def _test():
         from backend.database.repositories.platform_comments import PlatformCommentRepository
         from backend.agents.comment_responder import CommentResponderAgent
 
-        logger.info("Testing comment responder", comment_id=comment_id, platform=platform)
+        logger.info("Testing comment responder", business_asset_id=business_asset_id, comment_id=comment_id, platform=platform)
         click.echo(f"🧪 Testing comment responder...")
         click.echo(f"   Platform: {platform}")
         click.echo(f"   Comment ID: {comment_id}\n")
@@ -106,7 +124,7 @@ def test_responder(comment_id: str, platform: str):
         repo = PlatformCommentRepository()
 
         # Try to find the comment in database
-        comment = await repo.get_by_comment_id(platform=platform, comment_id=comment_id)
+        comment = await repo.get_by_comment_id(business_asset_id, platform=platform, comment_id=comment_id)
 
         if not comment:
             click.echo(f"❌ Comment not found in database")
@@ -122,7 +140,7 @@ def test_responder(comment_id: str, platform: str):
 
         # Generate response
         click.echo("Generating response...")
-        agent = CommentResponderAgent()
+        agent = CommentResponderAgent(business_asset_id)
 
         try:
             response = await agent.generate_response(comment)

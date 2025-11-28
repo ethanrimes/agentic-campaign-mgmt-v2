@@ -15,31 +15,43 @@ def insights():
 
 
 @insights.command()
+@click.option(
+    '--business-asset-id',
+    required=True,
+    type=str,
+    help='Business asset ID (e.g., penndailybuzz, eaglesnationfanhuddle)'
+)
 @click.option("--days", default=14, help="Number of days to analyze")
-def analyze(days: int):
+def analyze(business_asset_id: str, days: int):
     """Run insights analysis on recent content"""
     import asyncio
     from backend.agents.insights import run_insights_analysis
 
-    logger.info("Running insights analysis", days=days)
+    logger.info("Running insights analysis", business_asset_id=business_asset_id, days=days)
     click.echo(f"📊 Analyzing content from past {days} days...")
 
-    result = asyncio.run(run_insights_analysis(days))
+    result = asyncio.run(run_insights_analysis(business_asset_id, days))
 
     click.echo(f"✅ Insights analysis complete (Report ID: {result['id']})")
     click.echo(f"\nSummary: {result['summary']}")
 
 
 @insights.command()
+@click.option(
+    '--business-asset-id',
+    required=True,
+    type=str,
+    help='Business asset ID (e.g., penndailybuzz, eaglesnationfanhuddle)'
+)
 @click.option("--limit", default=5, help="Number of reports to display")
-def list(limit: int):
+def list(business_asset_id: str, limit: int):
     """List recent insight reports"""
     import asyncio
     from backend.database.repositories import InsightsRepository
 
     async def _list_reports():
         repo = InsightsRepository()
-        return await repo.get_recent(limit=limit)
+        return await repo.get_recent(business_asset_id, limit=limit)
 
     reports = asyncio.run(_list_reports())
 
@@ -51,14 +63,20 @@ def list(limit: int):
 
 
 @insights.command()
-def latest():
+@click.option(
+    '--business-asset-id',
+    required=True,
+    type=str,
+    help='Business asset ID (e.g., penndailybuzz, eaglesnationfanhuddle)'
+)
+def latest(business_asset_id: str):
     """Show the latest insight report"""
     import asyncio
     from backend.database.repositories import InsightsRepository
 
     async def _get_latest():
         repo = InsightsRepository()
-        return await repo.get_latest()
+        return await repo.get_latest(business_asset_id)
 
     report = asyncio.run(_get_latest())
 

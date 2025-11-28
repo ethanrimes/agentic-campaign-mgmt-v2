@@ -20,9 +20,10 @@ class PlannerRunner:
     On success, converts the plan into content creation tasks.
     """
 
-    def __init__(self, max_retries: int = 3):
+    def __init__(self, business_asset_id: str, max_retries: int = 3):
+        self.business_asset_id = business_asset_id
         self.max_retries = max_retries
-        self.agent = PlannerAgent()
+        self.agent = PlannerAgent(business_asset_id)
         self.tasks_repo = ContentCreationTaskRepository()
 
     async def run(self) -> Dict[str, Any]:
@@ -105,6 +106,7 @@ class PlannerRunner:
             try:
                 # Create ContentCreationTask model instance
                 task = ContentCreationTask(
+                    business_asset_id=self.business_asset_id,
                     content_seed_id=allocation["seed_id"],
                     content_seed_type=allocation["seed_type"],
                     instagram_image_posts=allocation["instagram_image_posts"],
@@ -139,15 +141,16 @@ class PlannerRunner:
         return tasks
 
 
-async def run_planner(max_retries: int = 3) -> Dict[str, Any]:
+async def run_planner(business_asset_id: str, max_retries: int = 3) -> Dict[str, Any]:
     """
     CLI entry point for running the planner.
 
     Args:
+        business_asset_id: Business asset ID for multi-tenancy
         max_retries: Maximum number of attempts
 
     Returns:
         Dictionary with results
     """
-    runner = PlannerRunner(max_retries)
+    runner = PlannerRunner(business_asset_id, max_retries)
     return await runner.run()
