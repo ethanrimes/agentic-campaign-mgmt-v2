@@ -29,6 +29,7 @@ completed_posts,news_event_seed_id,uuid,YES,
 completed_posts,trend_seed_id,uuid,YES,
 completed_posts,ungrounded_seed_id,uuid,YES,
 completed_posts,business_asset_id,text,NO,
+completed_posts,verification_status,USER-DEFINED,NO,'unverified'::verification_status
 content_creation_tasks,id,uuid,NO,uuid_generate_v4()
 content_creation_tasks,instagram_image_posts,integer,YES,0
 content_creation_tasks,instagram_reel_posts,integer,YES,0

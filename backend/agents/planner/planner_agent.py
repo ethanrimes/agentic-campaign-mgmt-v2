@@ -107,18 +107,27 @@ class PlannerAgent:
         """Gather all context needed for planning."""
         logger.info("Gathering planning context")
 
-        # Get available content seeds
-        news_seeds = await self.news_repo.get_all(self.business_asset_id)
-        trend_seeds = await self.trend_repo.get_all(self.business_asset_id)
-        ungrounded_seeds = await self.ungrounded_repo.get_all(self.business_asset_id)
+        # Get most recent content seeds using configurable limits
+        news_seeds = await self.news_repo.get_recent(
+            self.business_asset_id,
+            limit=settings.planner_news_seeds_limit
+        )
+        trend_seeds = await self.trend_repo.get_recent(
+            self.business_asset_id,
+            limit=settings.planner_trend_seeds_limit
+        )
+        ungrounded_seeds = await self.ungrounded_repo.get_recent(
+            self.business_asset_id,
+            limit=settings.planner_ungrounded_seeds_limit
+        )
 
         # Get latest insights
         latest_insights = await self.insights_repo.get_latest(self.business_asset_id)
 
         context = {
-            "news_seeds": news_seeds[:20],  # Limit for context size
-            "trend_seeds": trend_seeds[:20],
-            "ungrounded_seeds": ungrounded_seeds[:20],
+            "news_seeds": news_seeds,
+            "trend_seeds": trend_seeds,
+            "ungrounded_seeds": ungrounded_seeds,
             "insights": latest_insights,
             "week_start": self._get_next_monday().isoformat()
         }
