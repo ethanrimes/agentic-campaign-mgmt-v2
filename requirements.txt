@@ -10,6 +10,7 @@ langchain-anthropic
 openai
 google-generativeai
 anthropic
+google-genai
 
 # HTTP & Async
 aiohttp

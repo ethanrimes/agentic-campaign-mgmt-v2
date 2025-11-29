@@ -1,0 +1,140 @@
+table_name,column_name,data_type,is_nullable,column_default
+business_assets,id,text,NO,
+business_assets,name,text,NO,
+business_assets,facebook_page_id,text,NO,
+business_assets,app_users_instagram_account_id,text,NO,
+business_assets,facebook_page_access_token_encrypted,text,NO,
+business_assets,instagram_page_access_token_encrypted,text,NO,
+business_assets,is_active,boolean,NO,true
+business_assets,created_at,timestamp with time zone,NO,now()
+business_assets,updated_at,timestamp with time zone,NO,now()
+business_assets,target_audience,text,NO,
+completed_posts,id,uuid,NO,uuid_generate_v4()
+completed_posts,task_id,uuid,NO,
+completed_posts,platform,USER-DEFINED,NO,
+completed_posts,post_type,USER-DEFINED,NO,
+completed_posts,text,text,NO,
+completed_posts,location,text,YES,
+completed_posts,music,text,YES,
+completed_posts,hashtags,ARRAY,YES,ARRAY[]::text[]
+completed_posts,status,USER-DEFINED,YES,'pending'::post_status
+completed_posts,published_at,timestamp with time zone,YES,
+completed_posts,platform_post_id,text,YES,
+completed_posts,platform_post_url,text,YES,
+completed_posts,error_message,text,YES,
+completed_posts,created_at,timestamp with time zone,YES,now()
+completed_posts,media_ids,ARRAY,YES,ARRAY[]::uuid[]
+completed_posts,scheduled_posting_time,timestamp with time zone,YES,
+completed_posts,news_event_seed_id,uuid,YES,
+completed_posts,trend_seed_id,uuid,YES,
+completed_posts,ungrounded_seed_id,uuid,YES,
+completed_posts,business_asset_id,text,NO,
+content_creation_tasks,id,uuid,NO,uuid_generate_v4()
+content_creation_tasks,instagram_image_posts,integer,YES,0
+content_creation_tasks,instagram_reel_posts,integer,YES,0
+content_creation_tasks,facebook_feed_posts,integer,YES,0
+content_creation_tasks,facebook_video_posts,integer,YES,0
+content_creation_tasks,image_budget,integer,YES,0
+content_creation_tasks,video_budget,integer,YES,0
+content_creation_tasks,status,USER-DEFINED,YES,'pending'::task_status
+content_creation_tasks,error_message,text,YES,
+content_creation_tasks,created_at,timestamp with time zone,YES,now()
+content_creation_tasks,started_at,timestamp with time zone,YES,
+content_creation_tasks,completed_at,timestamp with time zone,YES,
+content_creation_tasks,business_asset_id,text,NO,
+content_creation_tasks,news_event_seed_id,uuid,YES,
+content_creation_tasks,trend_seed_id,uuid,YES,
+content_creation_tasks,ungrounded_seed_id,uuid,YES,
+ingested_event_sources,id,uuid,NO,uuid_generate_v4()
+ingested_event_sources,ingested_event_id,uuid,NO,
+ingested_event_sources,source_id,uuid,NO,
+ingested_event_sources,created_at,timestamp with time zone,YES,now()
+ingested_events,id,uuid,NO,uuid_generate_v4()
+ingested_events,name,text,NO,
+ingested_events,start_time,timestamp with time zone,YES,
+ingested_events,end_time,timestamp with time zone,YES,
+ingested_events,location,text,NO,
+ingested_events,description,text,NO,
+ingested_events,sources,jsonb,YES,'[]'::jsonb
+ingested_events,created_at,timestamp with time zone,YES,now()
+ingested_events,ingested_by,text,NO,
+ingested_events,processed,boolean,NO,false
+ingested_events,processed_at,timestamp with time zone,YES,
+ingested_events,canonical_event_id,uuid,YES,
+ingested_events,business_asset_id,text,YES,
+insight_reports,id,uuid,NO,uuid_generate_v4()
+insight_reports,summary,text,NO,
+insight_reports,findings,text,NO,
+insight_reports,tool_calls,jsonb,YES,'[]'::jsonb
+insight_reports,created_at,timestamp with time zone,YES,now()
+insight_reports,created_by,text,NO,
+insight_reports,business_asset_id,text,NO,
+media,id,uuid,NO,uuid_generate_v4()
+media,media_type,USER-DEFINED,NO,
+media,storage_path,text,NO,
+media,public_url,text,NO,
+media,prompt,text,YES,
+media,input_image_url,text,YES,
+media,model,text,YES,
+media,width,integer,YES,
+media,height,integer,YES,
+media,duration,real,YES,
+media,file_size,integer,YES,
+media,mime_type,text,NO,
+media,created_at,timestamp with time zone,YES,now()
+media,business_asset_id,text,NO,
+news_event_seed_sources,id,uuid,NO,uuid_generate_v4()
+news_event_seed_sources,news_event_seed_id,uuid,NO,
+news_event_seed_sources,source_id,uuid,NO,
+news_event_seed_sources,created_at,timestamp with time zone,YES,now()
+news_event_seeds,id,uuid,NO,uuid_generate_v4()
+news_event_seeds,name,text,NO,
+news_event_seeds,start_time,timestamp with time zone,YES,
+news_event_seeds,end_time,timestamp with time zone,YES,
+news_event_seeds,location,text,NO,
+news_event_seeds,description,text,NO,
+news_event_seeds,sources,jsonb,YES,'[]'::jsonb
+news_event_seeds,created_at,timestamp with time zone,YES,now()
+news_event_seeds,business_asset_id,text,NO,
+platform_comments,id,uuid,NO,uuid_generate_v4()
+platform_comments,platform,USER-DEFINED,NO,
+platform_comments,comment_id,text,NO,
+platform_comments,post_id,text,NO,
+platform_comments,comment_text,text,NO,
+platform_comments,commenter_username,text,NO,
+platform_comments,commenter_id,text,NO,
+platform_comments,parent_comment_id,text,YES,
+platform_comments,created_time,timestamp with time zone,NO,
+platform_comments,like_count,integer,YES,0
+platform_comments,permalink_url,text,YES,
+platform_comments,status,USER-DEFINED,YES,'pending'::comment_status
+platform_comments,response_text,text,YES,
+platform_comments,response_comment_id,text,YES,
+platform_comments,responded_at,timestamp with time zone,YES,
+platform_comments,error_message,text,YES,
+platform_comments,retry_count,integer,YES,0
+platform_comments,our_post_id,uuid,YES,
+platform_comments,created_at,timestamp with time zone,YES,now()
+platform_comments,updated_at,timestamp with time zone,YES,now()
+platform_comments,business_asset_id,text,NO,
+sources,id,uuid,NO,uuid_generate_v4()
+sources,url,text,NO,
+sources,key_findings,text,NO,
+sources,found_by,text,NO,
+sources,created_at,timestamp with time zone,YES,now()
+trend_seeds,id,uuid,NO,uuid_generate_v4()
+trend_seeds,name,text,NO,
+trend_seeds,description,text,NO,
+trend_seeds,hashtags,ARRAY,YES,ARRAY[]::text[]
+trend_seeds,posts,jsonb,YES,'[]'::jsonb
+trend_seeds,users,jsonb,YES,'[]'::jsonb
+trend_seeds,created_at,timestamp with time zone,YES,now()
+trend_seeds,created_by,text,NO,
+trend_seeds,business_asset_id,text,NO,
+ungrounded_seeds,id,uuid,NO,uuid_generate_v4()
+ungrounded_seeds,idea,text,NO,
+ungrounded_seeds,format,text,NO,
+ungrounded_seeds,details,text,NO,
+ungrounded_seeds,created_at,timestamp with time zone,YES,now()
+ungrounded_seeds,created_by,text,NO,
+ungrounded_seeds,business_asset_id,text,NO,

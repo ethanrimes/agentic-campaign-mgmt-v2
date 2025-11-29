@@ -10,6 +10,7 @@ from .completed_posts import CompletedPostRepository
 from .media import MediaRepository
 from .sources import SourceRepository
 from .platform_comments import PlatformCommentRepository
+from .verifier_responses import VerifierResponseRepository
 
 __all__ = [
     "BaseRepository",
@@ -23,4 +24,5 @@ __all__ = [
     "MediaRepository",
     "SourceRepository",
     "PlatformCommentRepository",
+    "VerifierResponseRepository",
 ]

@@ -10,6 +10,7 @@ import type {
   CompletedPost,
   ContentCreationTask,
   InsightReport,
+  VerifierResponse,
 } from '@/types'
 
 // Helper to build URL with business_asset_id
@@ -147,6 +148,37 @@ export async function getInsightReport(id: string, business_asset_id: string): P
   const response = await fetch(buildApiUrl('/api/insight-reports', { business_asset_id, id }))
   if (!response.ok) {
     throw new Error('Failed to fetch insight report')
+  }
+  return response.json()
+}
+
+// Verifier Responses
+export async function getVerifierResponses(business_asset_id: string): Promise<VerifierResponse[]> {
+  const response = await fetch(buildApiUrl('/api/verifier-responses', { business_asset_id }))
+  if (!response.ok) {
+    throw new Error('Failed to fetch verifier responses')
+  }
+  return response.json()
+}
+
+export async function getVerifierResponse(id: string, business_asset_id: string): Promise<VerifierResponse | null> {
+  const response = await fetch(buildApiUrl('/api/verifier-responses', { business_asset_id, id }))
+  if (!response.ok) {
+    throw new Error('Failed to fetch verifier response')
+  }
+  return response.json()
+}
+
+export async function getVerifierResponseByPostId(
+  completed_post_id: string,
+  business_asset_id: string
+): Promise<VerifierResponse | null> {
+  const response = await fetch(buildApiUrl('/api/verifier-responses', {
+    business_asset_id,
+    completed_post_id
+  }))
+  if (!response.ok) {
+    throw new Error('Failed to fetch verifier response by post ID')
   }
   return response.json()
 }

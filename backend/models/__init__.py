@@ -10,6 +10,7 @@ from .media import Image, Video, MediaType
 from .social_media import Post, User, ScraperPost
 from .planner import PlannerOutput, ContentSeedAllocation
 from .business_asset import BusinessAsset, BusinessAssetCreate, BusinessAssetUpdate, BusinessAssetCredentials
+from .verifier import VerifierResponse, VerifierChecklistInput
 
 __all__ = [
     # Seeds
@@ -44,4 +45,7 @@ __all__ = [
     "BusinessAssetCreate",
     "BusinessAssetUpdate",
     "BusinessAssetCredentials",
+    # Verifier
+    "VerifierResponse",
+    "VerifierChecklistInput",
 ]

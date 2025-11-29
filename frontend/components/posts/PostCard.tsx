@@ -4,7 +4,7 @@
 
 import ExpandableCard from '@/components/common/ExpandableCard'
 import { formatDateTime, formatRelativeTime, getStatusColor, getPlatformIcon, cn } from '@/lib/utils'
-import { ExternalLink, Image as ImageIcon, Film, Sparkles } from 'lucide-react'
+import { ExternalLink, Image as ImageIcon, Film, Sparkles, ShieldCheck, ShieldX, ShieldAlert } from 'lucide-react'
 import type { CompletedPost } from '@/types'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -17,6 +17,33 @@ export default function PostCard({ post }: PostCardProps) {
   const mediaUrls = post.media_urls || []
   const hashtags = post.hashtags || []
 
+  const verificationStatusBadge = () => {
+    const status = (post as any).verification_status || 'unverified'
+    switch (status) {
+      case 'verified':
+        return (
+          <span className="flex items-center gap-1.5 bg-green-50 text-green-700 px-3 py-1.5 rounded-full font-medium border border-green-100">
+            <ShieldCheck className="w-3.5 h-3.5" />
+            Verified
+          </span>
+        )
+      case 'rejected':
+        return (
+          <span className="flex items-center gap-1.5 bg-red-50 text-red-700 px-3 py-1.5 rounded-full font-medium border border-red-100">
+            <ShieldX className="w-3.5 h-3.5" />
+            Rejected
+          </span>
+        )
+      default:
+        return (
+          <span className="flex items-center gap-1.5 bg-amber-50 text-amber-700 px-3 py-1.5 rounded-full font-medium border border-amber-100">
+            <ShieldAlert className="w-3.5 h-3.5" />
+            Unverified
+          </span>
+        )
+    }
+  }
+
   const preview = (
     <div className="space-y-3">
       <p className="text-sm line-clamp-3 text-gray-700 leading-relaxed">{post.text}</p>
@@ -24,6 +51,7 @@ export default function PostCard({ post }: PostCardProps) {
         <span className="bg-gradient-to-r from-blue-50 to-purple-50 text-blue-700 px-3 py-1.5 rounded-full font-medium border border-blue-100">
           {post.post_type.replace(/_/g, ' ')}
         </span>
+        {verificationStatusBadge()}
         {mediaUrls.length > 0 && (
           <span className="flex items-center gap-1.5 bg-purple-50 text-purple-700 px-3 py-1.5 rounded-full font-medium border border-purple-100">
             {mediaUrls[0].includes('video') ? (
@@ -204,6 +232,47 @@ export default function PostCard({ post }: PostCardProps) {
             <ExternalLink className="w-4 h-4 text-cyan-600 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
           </div>
         </Link>
+
+        {/* Verification Report Link */}
+        {((post as any).verification_status === 'verified' || (post as any).verification_status === 'rejected') && (
+          <Link
+            href={`/verifier?post=${post.id}`}
+            className={cn(
+              "block p-4 rounded-xl border hover:shadow-lg transition-all group",
+              (post as any).verification_status === 'verified'
+                ? "bg-gradient-to-br from-green-50 to-emerald-50 border-green-200 hover:border-green-300"
+                : "bg-gradient-to-br from-red-50 to-rose-50 border-red-200 hover:border-red-300"
+            )}
+          >
+            <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-2">
+              {(post as any).verification_status === 'verified' ? (
+                <ShieldCheck className="w-3.5 h-3.5 text-green-600" />
+              ) : (
+                <ShieldX className="w-3.5 h-3.5 text-red-600" />
+              )}
+              Verification Report
+            </h4>
+            <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-2">
+                <span className={cn(
+                  "text-xs px-3 py-2 rounded-lg font-medium inline-block",
+                  (post as any).verification_status === 'verified'
+                    ? "bg-white text-green-700 border border-green-200"
+                    : "bg-white text-red-700 border border-red-200"
+                )}>
+                  {(post as any).verification_status === 'verified' ? 'Approved' : 'Rejected'}
+                </span>
+                <span className="text-sm text-gray-600">
+                  View verification details
+                </span>
+              </div>
+              <ExternalLink className={cn(
+                "w-4 h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform",
+                (post as any).verification_status === 'verified' ? "text-green-600" : "text-red-600"
+              )} />
+            </div>
+          </Link>
+        )}
       </div>
     </ExpandableCard>
   )

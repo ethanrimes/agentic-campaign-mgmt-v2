@@ -62,6 +62,7 @@ class CompletedPostRepository(BaseRepository[CompletedPost]):
         Returns posts where:
         - business_asset_id matches
         - status = 'pending'
+        - verification_status = 'verified' (must pass content verification)
         - platform matches
         - scheduled_posting_time <= NOW() (or is NULL for immediate publishing)
 
@@ -79,12 +80,14 @@ class CompletedPostRepository(BaseRepository[CompletedPost]):
             now = datetime.now(timezone.utc).isoformat()
 
             # Get posts where scheduled_posting_time is NULL or <= now
+            # AND verification_status is 'verified'
             result = (
                 await client.table(self.table_name)
                 .select("*")
                 .eq("business_asset_id", business_asset_id)
                 .eq("platform", platform)
                 .eq("status", "pending")
+                .eq("verification_status", "verified")
                 .or_(f"scheduled_posting_time.is.null,scheduled_posting_time.lte.{now}")
                 .order("scheduled_posting_time", desc=False)
                 .limit(limit)
@@ -256,6 +259,57 @@ class CompletedPostRepository(BaseRepository[CompletedPost]):
                 error=str(e),
             )
             return []
+
+    async def get_unverified_posts(
+        self, business_asset_id: str, limit: int = 50
+    ) -> List[CompletedPost]:
+        """
+        Get all unverified pending posts.
+
+        Args:
+            business_asset_id: Business asset ID to filter by
+            limit: Maximum number of posts to return
+        """
+        try:
+            from backend.database import get_supabase_admin_client
+            client = await get_supabase_admin_client()
+            result = (
+                await client.table(self.table_name)
+                .select("*")
+                .eq("business_asset_id", business_asset_id)
+                .eq("status", "pending")
+                .eq("verification_status", "unverified")
+                .order("created_at", desc=False)
+                .limit(limit)
+                .execute()
+            )
+            return [self.model_class(**item) for item in result.data]
+        except Exception as e:
+            from backend.utils import get_logger
+            logger = get_logger(__name__)
+            logger.error(
+                "Failed to get unverified posts",
+                business_asset_id=business_asset_id,
+                error=str(e),
+            )
+            return []
+
+    async def update_verification_status(
+        self, business_asset_id: str, post_id: UUID, verification_status: str
+    ) -> CompletedPost | None:
+        """
+        Update the verification status for a post.
+
+        Args:
+            business_asset_id: Business asset ID to filter by
+            post_id: ID of the post to update
+            verification_status: New verification status ('unverified', 'verified', 'rejected')
+        """
+        return await self.update(
+            business_asset_id,
+            post_id,
+            {"verification_status": verification_status}
+        )
 
     async def get_posts_since(self, business_asset_id: str, cutoff_date) -> List[CompletedPost]:
         """
