@@ -36,6 +36,7 @@ from .planner import planner
 from .content import content
 from .publish import publish
 from .comments import comments
+from .verifier import verifier
 
 # Register subcommands
 cli.add_command(news_events)
@@ -46,6 +47,7 @@ cli.add_command(planner)
 cli.add_command(content)
 cli.add_command(publish)
 cli.add_command(comments)
+cli.add_command(verifier)
 
 
 if __name__ == "__main__":

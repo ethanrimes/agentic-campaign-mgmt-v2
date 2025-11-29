@@ -54,6 +54,7 @@ export interface CompletedPost {
   music: string | null
   hashtags: string[] | null
   status: 'pending' | 'published' | 'failed'
+  verification_status: 'unverified' | 'verified' | 'rejected'
   scheduled_posting_time: string | null
   published_at: string | null
   platform_post_id: string | null
@@ -100,4 +101,18 @@ export interface ToolCall {
   arguments: Record<string, any>
   result: any
   timestamp: string
+}
+
+export interface VerifierResponse {
+  id: string
+  business_asset_id: string
+  completed_post_id: string
+  is_approved: boolean
+  has_source_link_if_news: boolean | null
+  has_no_offensive_content: boolean
+  has_no_misinformation: boolean | null
+  reasoning: string
+  issues_found: string[]
+  model: string
+  created_at: string
 }

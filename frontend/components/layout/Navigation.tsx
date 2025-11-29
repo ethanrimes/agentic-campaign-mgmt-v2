@@ -13,9 +13,9 @@ const navItems = [
   { name: 'Content Seeds', href: '/content-seeds' },
   { name: 'Scheduled Posts', href: '/scheduled-posts' },
   { name: 'Insight Reports', href: '/insights' },
+  { name: 'Verifier Reports', href: '/verifier' },
   { name: 'Facebook', href: '/facebook' },
   { name: 'Instagram', href: '/instagram' },
-  { name: 'Login', href: '/login' },
 ]
 
 export default function Navigation() {

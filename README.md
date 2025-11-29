@@ -504,6 +504,8 @@ MIT License - see LICENSE file
      189 unique files.                                          
     4115 files ignored.
 
+cloc . --not-match-d='(^|/)(__pycache__|\.next|\.pytest_cache|node_modules|venv)($|/)' --exclude-list-file=<(printf "migrations.md\nSCHEDULER_README.md\ntools/tests/README.md\nfrontend/package-lock.json\nfb-webhook/package-lock.json")
+
 github.com/AlDanial/cloc v 2.06  T=0.35 s (531.2 files/s, 82908.9 lines/s)
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code

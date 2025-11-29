@@ -25,6 +25,9 @@ from backend.utils import get_logger
 
 logger = get_logger(__name__)
 
+# AI disclosure footnote - appended to all posts deterministically
+AI_DISCLOSURE_FOOTNOTE = "\n\n✨ AI-assisted"
+
 
 class PostOutput(BaseModel):
     """A structured social media post."""
@@ -188,6 +191,9 @@ class ContentCreationAgent:
                     # Calculate scheduled posting time
                     scheduled_time = await self._calculate_scheduled_time(post_data.platform)
 
+                    # Deterministically append AI disclosure footnote to post text
+                    post_text = post_data.text + AI_DISCLOSURE_FOOTNOTE
+
                     # The seed reference is deterministically copied from the task
                     # This ensures posts always reference the same seed as the task
                     completed_post = CompletedPost(
@@ -198,7 +204,7 @@ class ContentCreationAgent:
                         ungrounded_seed_id=task.ungrounded_seed_id,
                         platform=post_data.platform,
                         post_type=post_data.post_type,
-                        text=post_data.text,
+                        text=post_text,
                         media_ids=media_uuids,
                         location=post_data.location,
                         hashtags=post_data.hashtags,

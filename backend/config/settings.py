@@ -64,9 +64,6 @@ class Settings(BaseSettings):
     default_model_provider: Literal["openai", "gemini", "anthropic"] = "openai"
     default_model_name: str = "gpt-5-mini"
 
-    # Target audience (the north star for all agents)
-    target_audience: str = "College students at the University of Pennsylvania interested in campus news, events, and local culture"
-
     # Content generation guardrails
     min_posts_per_week: int = 3
     max_posts_per_week: int = 15

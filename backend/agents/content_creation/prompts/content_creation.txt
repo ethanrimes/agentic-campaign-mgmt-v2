@@ -58,6 +58,12 @@ You have access to:
    - Ensure content is factually accurate
    - Proofread for grammar/spelling
 
+6. **News Source Attribution (REQUIRED for News Events)**:
+   - If the content seed type is "news_event", you MUST include source URLs in the post text
+   - Add the source link(s) in the caption, either inline or at the end
+   - Format example: "📰 Source: [URL]" or "Read more: [URL]"
+   - If there are multiple sources, include all of them
+
 ## Output
 
 For each post, create a CompletedPost object with:
