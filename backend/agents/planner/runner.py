@@ -104,11 +104,22 @@ class PlannerRunner:
 
         for allocation in allocations:
             try:
+                # Map seed_id to the correct foreign key column based on seed_type
+                seed_type = allocation["seed_type"]
+                seed_id = allocation["seed_id"]
+
+                seed_kwargs = {}
+                if seed_type == "news_event":
+                    seed_kwargs["news_event_seed_id"] = seed_id
+                elif seed_type == "trend":
+                    seed_kwargs["trend_seed_id"] = seed_id
+                elif seed_type == "ungrounded":
+                    seed_kwargs["ungrounded_seed_id"] = seed_id
+
                 # Create ContentCreationTask model instance
                 task = ContentCreationTask(
                     business_asset_id=self.business_asset_id,
-                    content_seed_id=allocation["seed_id"],
-                    content_seed_type=allocation["seed_type"],
+                    **seed_kwargs,
                     instagram_image_posts=allocation["instagram_image_posts"],
                     instagram_reel_posts=allocation["instagram_reel_posts"],
                     facebook_feed_posts=allocation["facebook_feed_posts"],
@@ -116,7 +127,6 @@ class PlannerRunner:
                     image_budget=allocation["image_budget"],
                     video_budget=allocation["video_budget"],
                     status="pending"
-                    # Note: week_start_date not included as column doesn't exist in DB yet
                 )
 
                 # Create in database - returns the created task

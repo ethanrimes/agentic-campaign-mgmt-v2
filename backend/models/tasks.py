@@ -25,10 +25,15 @@ class ContentCreationTask(BaseModel):
     id: UUID = Field(default_factory=uuid4, description="Unique task ID")
     business_asset_id: str = Field(..., description="Business asset ID for multi-tenancy")
 
-    # Seed reference
-    content_seed_id: UUID = Field(..., description="ID of the content seed to use")
-    content_seed_type: Literal["news_event", "trend", "ungrounded"] = Field(
-        ..., description="Type of content seed"
+    # Seed references (exactly one must be set for non-failed tasks)
+    news_event_seed_id: Optional[UUID] = Field(
+        None, description="Foreign key to news_event_seeds table (mutually exclusive)"
+    )
+    trend_seed_id: Optional[UUID] = Field(
+        None, description="Foreign key to trend_seeds table (mutually exclusive)"
+    )
+    ungrounded_seed_id: Optional[UUID] = Field(
+        None, description="Foreign key to ungrounded_seeds table (mutually exclusive)"
     )
 
     # Post allocations (from planner)
@@ -66,13 +71,38 @@ class ContentCreationTask(BaseModel):
         None, description="When content creation finished"
     )
 
+    @property
+    def content_seed_id(self) -> UUID:
+        """Get the content seed ID (for backwards compatibility)."""
+        if self.news_event_seed_id:
+            return self.news_event_seed_id
+        elif self.trend_seed_id:
+            return self.trend_seed_id
+        elif self.ungrounded_seed_id:
+            return self.ungrounded_seed_id
+        else:
+            raise ValueError("No content seed ID set")
+
+    @property
+    def content_seed_type(self) -> Literal["news_event", "trend", "ungrounded"]:
+        """Get the content seed type (for backwards compatibility)."""
+        if self.news_event_seed_id:
+            return "news_event"
+        elif self.trend_seed_id:
+            return "trend"
+        elif self.ungrounded_seed_id:
+            return "ungrounded"
+        else:
+            raise ValueError("No content seed type set")
+
     class Config:
         json_schema_extra = {
             "example": {
                 "id": "b8c9d0e1-f2a3-0b1c-5d6e-7f8a9b0c1d2e",
                 "business_asset_id": "penndailybuzz",
-                "content_seed_id": "b2c3d4e5-f6a7-5b6c-9d0e-1f2a3b4c5d6e",
-                "content_seed_type": "news_event",
+                "news_event_seed_id": "b2c3d4e5-f6a7-5b6c-9d0e-1f2a3b4c5d6e",
+                "trend_seed_id": None,
+                "ungrounded_seed_id": None,
                 "instagram_image_posts": 2,
                 "instagram_reel_posts": 0,
                 "facebook_feed_posts": 1,
