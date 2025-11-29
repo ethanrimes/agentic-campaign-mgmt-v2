@@ -7,7 +7,7 @@ Shared by trend seed agent, ungrounded seed agent, and others.
 
 from langchain.tools import BaseTool
 from typing import Optional, Type
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from backend.database.repositories import (
     NewsEventSeedRepository,
     TrendSeedsRepository,
@@ -28,15 +28,18 @@ class SearchNewsEventsTool(BaseTool):
     name: str = "search_news_events"
     description: str = "Search for news event seeds by name/description"
     args_schema: Type[BaseModel] = SearchNewsEventsInput
+    business_asset_id: str
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     def _run(self) -> str:
         """Raise error, as this is an async-only tool."""
         raise NotImplementedError("Use async version (_arun) instead")
-    
+
     async def _arun(self, query: str, limit: int = 5) -> str:
         """Search news events."""
         repo = NewsEventSeedRepository()
-        seeds = await repo.search_by_name(query, limit=limit)
+        seeds = await repo.search_by_name(self.business_asset_id, query, limit=limit)
 
         if not seeds:
             return f"No news events found matching '{query}'"
@@ -62,6 +65,9 @@ class GetRecentSeedsTool(BaseTool):
     name: str = "get_recent_seeds"
     description: str = "Get recent content seeds of a specific type (news, trend, or ungrounded). Only use this when you need to see what content already exists to avoid duplication."
     args_schema: Type[BaseModel] = GetRecentSeedsInput
+    business_asset_id: str
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     def _run(self) -> str:
         """Raise error, as this is an async-only tool."""
@@ -78,7 +84,7 @@ class GetRecentSeedsTool(BaseTool):
         else:
             return f"Invalid seed type: {seed_type}"
 
-        seeds = await repo.get_recent(limit=limit)
+        seeds = await repo.get_recent(self.business_asset_id, limit=limit)
 
         if not seeds:
             return f"No {seed_type} seeds found"
@@ -104,6 +110,9 @@ class GetLatestInsightsTool(BaseTool):
     name: str = "get_latest_insights"
     description: str = "Get the most recent insights report about content performance. Use this to understand what content works well with the audience."
     args_schema: Type[BaseModel] = GetLatestInsightsInput
+    business_asset_id: str
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     def _run(self) -> str:
         """Raise error, as this is an async-only tool."""
@@ -112,7 +121,7 @@ class GetLatestInsightsTool(BaseTool):
     async def _arun(self) -> str:
         """Get latest insights."""
         repo = InsightsRepository()
-        report = await repo.get_latest()
+        report = await repo.get_latest(self.business_asset_id)
 
         if not report:
             return "No insights reports found"
@@ -126,10 +135,15 @@ Findings:
 """
 
 
-def create_knowledge_base_tools():
-    """Create all knowledge base tools for use with Langchain agents."""
+def create_knowledge_base_tools(business_asset_id: str):
+    """
+    Create all knowledge base tools for use with Langchain agents.
+
+    Args:
+        business_asset_id: The business asset ID to scope the tools to
+    """
     return [
-        SearchNewsEventsTool(),
-        GetRecentSeedsTool(),
-        GetLatestInsightsTool(),
+        SearchNewsEventsTool(business_asset_id=business_asset_id),
+        GetRecentSeedsTool(business_asset_id=business_asset_id),
+        GetLatestInsightsTool(business_asset_id=business_asset_id),
     ]

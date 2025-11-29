@@ -61,7 +61,7 @@ class TrendSearcherAgent:
         self.tools = [
             *create_instagram_scraper_tools(),
             *create_facebook_scraper_tools(),
-            *create_knowledge_base_tools(),
+            *create_knowledge_base_tools(business_asset_id),
         ]
 
         # Create agent
@@ -72,18 +72,25 @@ class TrendSearcherAgent:
             response_format=ToolStrategy(TrendSeedOutput)
         )
 
-    async def discover_trends(self, query: str, count: int = 1) -> List[Dict[str, Any]]:
+    async def discover_trends(self, query: str = None, count: int = 1) -> List[Dict[str, Any]]:
         """
         Discover social media trends.
 
         Args:
-            query: Search query or guidance for trend discovery
+            query: Search query or guidance for trend discovery. If None, discovers trends
+                   relevant to target audience.
             count: Number of trends to discover
 
         Returns:
             List of created trend seeds
         """
         logger.info("Starting trend discovery", query=query, count=count)
+
+        # Build query if not provided
+        if not query:
+            credentials = settings.get_business_asset_credentials(self.business_asset_id)
+            target_audience = credentials.target_audience
+            query = f"trends and viral content relevant to this target audience: {target_audience}"
 
         trends = []
 
@@ -184,17 +191,17 @@ Provide your final analysis as a structured trend insight."""
         return trends
 
 
-async def run_trend_discovery(business_asset_id: str, query: str = "", count: int = 1) -> List[Dict[str, Any]]:
+async def run_trend_discovery(business_asset_id: str, query: str = None, count: int = 1) -> List[Dict[str, Any]]:
     """
     CLI entry point for trend discovery.
 
     Args:
         business_asset_id: Business asset ID for multi-tenancy
-        query: Search query or theme for trend discovery
+        query: Search query or theme for trend discovery (optional - uses target audience if not provided)
         count: Number of trends to discover
 
     Returns:
         List of created trend seeds
     """
     agent = TrendSearcherAgent(business_asset_id)
-    return await agent.discover_trends(query or "social media trends", count)
+    return await agent.discover_trends(query, count)

@@ -213,24 +213,24 @@ python -m backend.cli.main ungrounded generate --count 5
 
 ```bash
 # Run insights agent
-python -m backend.cli.main insights analyze --days 14
+python -m backend.cli.main insights analyze --days 14 --business-asset-id penndailybuzz
 ```
 
 ### Content Planning
 
 ```bash
 # Run planner agent (with retries)
-python -m backend.cli.main planner run --max-retries 3
+python -m backend.cli.main planner run --max-retries 3 --business-asset-id penndailybuzz
 ```
 
 ### Content Creation
 
 ```bash
 # Create content for all pending tasks
-python -m backend.cli.main content create-all
+python -m backend.cli.main content create-all --business-asset-id penndailybuzz
 
 # Create content for specific task
-python -m backend.cli.main content create --task-id abc-123-def
+python -m backend.cli.main content create --task-id abc-123-def --business-asset-id penndailybuzz
 ```
 
 ### Publishing

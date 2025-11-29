@@ -1,13 +1,47 @@
 // frontend/app/insights/page.tsx
 
-import { getInsightReports } from '@/lib/api'
+'use client'
+
+import { useState, useEffect } from 'react'
+import { getInsightReports } from '@/lib/api-client'
+import { useBusinessAsset } from '@/lib/business-asset-context'
 import InsightReportCard from '@/components/insights/InsightReportCard'
 import { BarChart3 } from 'lucide-react'
+import type { InsightReport } from '@/types'
 
-export const dynamic = 'force-dynamic'
+export default function InsightsPage() {
+  const { selectedAsset } = useBusinessAsset()
+  const [reports, setReports] = useState<InsightReport[]>([])
+  const [loading, setLoading] = useState(true)
 
-export default async function InsightsPage() {
-  const reports = await getInsightReports()
+  useEffect(() => {
+    async function loadReports() {
+      if (!selectedAsset) return
+
+      try {
+        setLoading(true)
+        const data = await getInsightReports(selectedAsset.id)
+        setReports(data)
+      } catch (error) {
+        console.error('Failed to load insight reports:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadReports()
+  }, [selectedAsset])
+
+  if (!selectedAsset || loading) {
+    return (
+      <div className="max-w-6xl mx-auto">
+        <div className="text-center py-16">
+          <BarChart3 className="w-16 h-16 text-green-400 mx-auto mb-4 animate-pulse" />
+          <p className="text-lg text-gray-600">Loading...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="max-w-6xl mx-auto animate-fade-in">

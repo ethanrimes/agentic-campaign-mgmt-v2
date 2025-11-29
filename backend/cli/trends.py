@@ -21,7 +21,7 @@ def trends():
     type=str,
     help='Business asset ID (e.g., penndailybuzz, eaglesnationfanhuddle)'
 )
-@click.option("--query", required=True, help="Search query or theme")
+@click.option("--query", default=None, help="Search query or theme (optional - uses target audience if not provided)")
 @click.option("--count", default=1, help="Number of trends to discover")
 def discover(business_asset_id: str, query: str, count: int):
     """Discover trends from social media"""
@@ -29,7 +29,10 @@ def discover(business_asset_id: str, query: str, count: int):
     from backend.agents.trend_seed import run_trend_discovery
 
     logger.info("Discovering trends", business_asset_id=business_asset_id, query=query, count=count)
-    click.echo(f"🔎 Discovering trends for: {query}")
+    if query:
+        click.echo(f"🔎 Discovering trends for: {query}")
+    else:
+        click.echo(f"🔎 Discovering trends relevant to target audience...")
 
     result = asyncio.run(run_trend_discovery(business_asset_id, query, count))
 

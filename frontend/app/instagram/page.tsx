@@ -1,13 +1,47 @@
 // frontend/app/instagram/page.tsx
 
-import { getCompletedPosts } from '@/lib/api'
+'use client'
+
+import { useState, useEffect } from 'react'
+import { getCompletedPosts } from '@/lib/api-client'
+import { useBusinessAsset } from '@/lib/business-asset-context'
 import { Instagram } from 'lucide-react'
 import InstagramPostGrid from '@/components/posts/InstagramPostGrid'
+import type { CompletedPost } from '@/types'
 
-export const dynamic = 'force-dynamic'
+export default function InstagramPage() {
+  const { selectedAsset } = useBusinessAsset()
+  const [posts, setPosts] = useState<CompletedPost[]>([])
+  const [loading, setLoading] = useState(true)
 
-export default async function InstagramPage() {
-  const posts = await getCompletedPosts('instagram')
+  useEffect(() => {
+    async function loadPosts() {
+      if (!selectedAsset) return
+
+      try {
+        setLoading(true)
+        const data = await getCompletedPosts(selectedAsset.id, 'instagram')
+        setPosts(data)
+      } catch (error) {
+        console.error('Failed to load Instagram posts:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadPosts()
+  }, [selectedAsset])
+
+  if (!selectedAsset || loading) {
+    return (
+      <div className="max-w-7xl mx-auto">
+        <div className="text-center py-16">
+          <Instagram className="w-16 h-16 text-pink-400 mx-auto mb-4 animate-pulse" />
+          <p className="text-lg text-gray-600">Loading...</p>
+        </div>
+      </div>
+    )
+  }
 
   const statusCounts = {
     published: posts.filter(p => p.status === 'published').length,

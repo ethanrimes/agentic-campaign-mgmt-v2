@@ -21,7 +21,7 @@ def news_events():
     type=str,
     help='Business asset ID (e.g., penndailybuzz, eaglesnationfanhuddle)'
 )
-@click.option("--topic", required=True, help="Topic to search for")
+@click.option("--topic", default=None, help="Topic to search for (optional - uses target audience if not provided)")
 @click.option("--count", default=5, help="Number of events to retrieve")
 def ingest_perplexity(business_asset_id: str, topic: str, count: int):
     """Ingest news events via Perplexity Sonar"""
@@ -29,7 +29,10 @@ def ingest_perplexity(business_asset_id: str, topic: str, count: int):
     from backend.agents.news_event import run_perplexity_ingestion
 
     logger.info("Ingesting news events via Perplexity", business_asset_id=business_asset_id, topic=topic)
-    click.echo(f"🔍 Searching for news about: {topic}")
+    if topic:
+        click.echo(f"🔍 Searching for news about: {topic}")
+    else:
+        click.echo(f"🔍 Searching for news relevant to target audience...")
 
     result = asyncio.run(run_perplexity_ingestion(business_asset_id, topic, count))
 
@@ -44,7 +47,7 @@ def ingest_perplexity(business_asset_id: str, topic: str, count: int):
     type=str,
     help='Business asset ID (e.g., penndailybuzz, eaglesnationfanhuddle)'
 )
-@click.option("--query", required=True, help="Research query")
+@click.option("--query", default=None, help="Research query (optional - uses target audience if not provided)")
 @click.option("--count", default=5, help="Number of events to extract")
 def ingest_deep_research(business_asset_id: str, query: str, count: int):
     """Ingest news events via ChatGPT Deep Research"""
@@ -52,7 +55,10 @@ def ingest_deep_research(business_asset_id: str, query: str, count: int):
     from backend.agents.news_event import run_deep_research
 
     logger.info("Running deep research", business_asset_id=business_asset_id, query=query)
-    click.echo(f"🔬 Deep research on: {query}")
+    if query:
+        click.echo(f"🔬 Deep research on: {query}")
+    else:
+        click.echo(f"🔬 Deep research on content relevant to target audience...")
 
     result = asyncio.run(run_deep_research(business_asset_id, query, count))
 

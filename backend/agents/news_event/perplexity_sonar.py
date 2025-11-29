@@ -8,6 +8,7 @@ from pathlib import Path
 import json
 
 from backend.config.settings import settings
+from backend.config.prompts import get_global_system_prompt
 from backend.database.repositories import IngestedEventRepository
 from backend.models.seeds import IngestedEvent, Source
 from backend.utils import get_logger
@@ -36,12 +37,13 @@ class PerplexitySonarAgent:
         prompt_path = Path(__file__).parent / "prompts" / "perplexity_sonar.txt"
         self.system_prompt = prompt_path.read_text()
 
-    async def ingest_news(self, topic: str, num_events: int = 5) -> List[Dict[str, Any]]:
+    async def ingest_news(self, topic: str = None, num_events: int = 5) -> List[Dict[str, Any]]:
         """
         Ingest news events for a given topic.
 
         Args:
-            topic: Topic to search for (e.g., "Philadelphia", "AI technology")
+            topic: Topic to search for (e.g., "Philadelphia", "AI technology").
+                   If None, searches for news relevant to target audience.
             num_events: Number of events to retrieve (default: 5)
 
         Returns:
@@ -51,7 +53,16 @@ class PerplexitySonarAgent:
 
         try:
             # Build user query
-            user_query = f"Summarize the top {num_events} recent news events about {topic}. "
+            if topic:
+                user_query = f"Summarize the top {num_events} recent news events about {topic}. "
+            else:
+                # Get target audience from global system prompt
+                global_prompt = get_global_system_prompt(self.business_asset_id)
+                credentials = settings.get_business_asset_credentials(self.business_asset_id)
+                target_audience = credentials.target_audience
+
+                user_query = f"Summarize the top {num_events} recent news events that would be relevant and interesting to this target audience: {target_audience}. "
+
             user_query += "Include name, timing, location, a 2–3 sentence description, and credible sources."
 
             # Call Perplexity API
@@ -221,13 +232,13 @@ class PerplexitySonarAgent:
             return None
 
 
-async def run_perplexity_ingestion(business_asset_id: str, topic: str, num_events: int = 5) -> List[Dict[str, Any]]:
+async def run_perplexity_ingestion(business_asset_id: str, topic: str = None, num_events: int = 5) -> List[Dict[str, Any]]:
     """
     CLI entry point for running Perplexity Sonar ingestion.
 
     Args:
         business_asset_id: Business asset ID for multi-tenancy
-        topic: Topic to search for
+        topic: Topic to search for (optional - uses target audience if not provided)
         num_events: Number of events to retrieve
 
     Returns:

@@ -33,6 +33,7 @@ class GenerateImageTool(BaseTool):
     Use this to create visual content for social media posts.
     """
     args_schema: Type[BaseModel] = GenerateImageInput
+    business_asset_id: str = ""  # Will be set during initialization
 
     def _run(
         self,
@@ -77,6 +78,7 @@ class GenerateImageTool(BaseTool):
 
             # Create Image model
             image = Image(
+                business_asset_id=self.business_asset_id,
                 storage_path=storage_path,
                 public_url=public_url,
                 prompt=prompt,
@@ -118,6 +120,7 @@ class GenerateVideoTool(BaseTool):
     Note: Video generation takes 1-5 minutes depending on complexity.
     """
     args_schema: Type[BaseModel] = GenerateVideoInput
+    business_asset_id: str = ""  # Will be set during initialization
 
     def _run(
         self,
@@ -169,6 +172,7 @@ class GenerateVideoTool(BaseTool):
 
             # Create Video model
             video = Video(
+                business_asset_id=self.business_asset_id,
                 storage_path=storage_path,
                 public_url=public_url,
                 prompt=prompt,
@@ -211,6 +215,7 @@ class GenerateImageAndVideoTool(BaseTool):
     Note: This takes 1-5 minutes due to video generation time.
     """
     args_schema: Type[BaseModel] = GenerateImageAndVideoInput
+    business_asset_id: str = ""  # Will be set during initialization
 
     def _run(
         self,
@@ -261,6 +266,7 @@ class GenerateImageAndVideoTool(BaseTool):
 
             # Create Image model and save to database
             image_model = Image(
+                business_asset_id=self.business_asset_id,
                 storage_path=image_path,
                 public_url=image_url,
                 prompt=image_prompt,
@@ -284,6 +290,7 @@ class GenerateImageAndVideoTool(BaseTool):
 
             # Create Video model and save to database
             video_model = Video(
+                business_asset_id=self.business_asset_id,
                 storage_path=video_path,
                 public_url=video_url,
                 prompt=video_prompt,
@@ -311,10 +318,10 @@ Video:
             return f"Error generating image and video: {str(e)}"
 
 
-def create_media_generation_tools():
+def create_media_generation_tools(business_asset_id: str):
     """Create all media generation tools for use with Langchain agents."""
     return [
-        GenerateImageTool(),
-        GenerateVideoTool(),
-        GenerateImageAndVideoTool(),
+        GenerateImageTool(business_asset_id=business_asset_id),
+        GenerateVideoTool(business_asset_id=business_asset_id),
+        GenerateImageAndVideoTool(business_asset_id=business_asset_id),
     ]

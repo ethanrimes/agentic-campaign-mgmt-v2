@@ -1,13 +1,47 @@
 // frontend/app/facebook/page.tsx
 
-import { getCompletedPosts } from '@/lib/api'
+'use client'
+
+import { useState, useEffect } from 'react'
+import { getCompletedPosts } from '@/lib/api-client'
+import { useBusinessAsset } from '@/lib/business-asset-context'
 import { Facebook } from 'lucide-react'
 import FacebookPostGrid from '@/components/posts/FacebookPostGrid'
+import type { CompletedPost } from '@/types'
 
-export const dynamic = 'force-dynamic'
+export default function FacebookPage() {
+  const { selectedAsset } = useBusinessAsset()
+  const [posts, setPosts] = useState<CompletedPost[]>([])
+  const [loading, setLoading] = useState(true)
 
-export default async function FacebookPage() {
-  const posts = await getCompletedPosts('facebook')
+  useEffect(() => {
+    async function loadPosts() {
+      if (!selectedAsset) return
+
+      try {
+        setLoading(true)
+        const data = await getCompletedPosts(selectedAsset.id, 'facebook')
+        setPosts(data)
+      } catch (error) {
+        console.error('Failed to load Facebook posts:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadPosts()
+  }, [selectedAsset])
+
+  if (!selectedAsset || loading) {
+    return (
+      <div className="max-w-7xl mx-auto">
+        <div className="text-center py-16">
+          <Facebook className="w-16 h-16 text-blue-400 mx-auto mb-4 animate-pulse" />
+          <p className="text-lg text-gray-600">Loading...</p>
+        </div>
+      </div>
+    )
+  }
 
   const statusCounts = {
     published: posts.filter(p => p.status === 'published').length,

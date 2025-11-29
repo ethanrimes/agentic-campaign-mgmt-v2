@@ -147,6 +147,7 @@ class InsightReport(BaseModel):
     """
 
     id: UUID = Field(default_factory=uuid4, description="Unique insight report ID")
+    business_asset_id: str = Field(..., description="Business asset ID for multi-tenancy")
     summary: str = Field(
         ...,
         description="High-level summary of findings and recommendations",

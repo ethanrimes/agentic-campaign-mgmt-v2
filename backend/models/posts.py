@@ -20,6 +20,7 @@ class CompletedPost(BaseModel):
     """
 
     id: UUID = Field(default_factory=uuid4, description="Unique post ID")
+    business_asset_id: str = Field(..., description="Business asset ID for multi-tenancy")
 
     # Task reference
     task_id: UUID = Field(
@@ -122,6 +123,7 @@ class CompletedPost(BaseModel):
         json_schema_extra={
             "example": {
                 "id": "c9d0e1f2-a3b4-1c2d-6e7f-8a9b0c1d2e3f",
+                "business_asset_id": "penndailybuzz",
                 "task_id": "b8c9d0e1-f2a3-0b1c-5d6e-7f8a9b0c1d2e",
                 "news_event_seed_id": "b2c3d4e5-f6a7-5b6c-9d0e-1f2a3b4c5d6e",
                 "trend_seed_id": None,

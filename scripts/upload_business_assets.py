@@ -155,7 +155,7 @@ def upload_business_asset(
             return False
 
 
-def upload_from_json(json_file: str, update_if_exists: bool = False) -> None:
+def upload_from_json(json_file: str, update_if_exists: bool = True) -> None:
     """
     Upload multiple business assets from a JSON file.
 

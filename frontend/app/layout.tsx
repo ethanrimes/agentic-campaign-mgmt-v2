@@ -4,6 +4,7 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import '@/styles/globals.css'
 import Navigation from '@/components/layout/Navigation'
+import { BusinessAssetProvider } from '@/lib/business-asset-context'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -20,12 +21,14 @@ export default function RootLayout({
   return (
     <html lang="en" className="smooth-scroll">
       <body className={inter.className}>
-        <div className="min-h-screen">
-          <Navigation />
-          <main className="container mx-auto px-4 py-8 animate-fade-in">
-            {children}
-          </main>
-        </div>
+        <BusinessAssetProvider>
+          <div className="min-h-screen">
+            <Navigation />
+            <main className="container mx-auto px-4 py-8 animate-fade-in">
+              {children}
+            </main>
+          </div>
+        </BusinessAssetProvider>
       </body>
     </html>
   )

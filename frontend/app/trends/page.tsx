@@ -1,13 +1,47 @@
 // frontend/app/trends/page.tsx
 
-import { getTrendSeeds } from '@/lib/api'
+'use client'
+
+import { useState, useEffect } from 'react'
+import { getTrendSeeds } from '@/lib/api-client'
+import { useBusinessAsset } from '@/lib/business-asset-context'
 import TrendSeedCard from '@/components/seeds/TrendSeedCard'
 import { TrendingUp } from 'lucide-react'
+import type { TrendSeed } from '@/types'
 
-export const dynamic = 'force-dynamic'
+export default function TrendsPage() {
+  const { selectedAsset } = useBusinessAsset()
+  const [seeds, setSeeds] = useState<TrendSeed[]>([])
+  const [loading, setLoading] = useState(true)
 
-export default async function TrendsPage() {
-  const seeds = await getTrendSeeds()
+  useEffect(() => {
+    async function loadSeeds() {
+      if (!selectedAsset) return
+
+      try {
+        setLoading(true)
+        const data = await getTrendSeeds(selectedAsset.id)
+        setSeeds(data)
+      } catch (error) {
+        console.error('Failed to load trend seeds:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadSeeds()
+  }, [selectedAsset])
+
+  if (!selectedAsset || loading) {
+    return (
+      <div className="max-w-6xl mx-auto">
+        <div className="text-center py-16">
+          <TrendingUp className="w-16 h-16 text-purple-400 mx-auto mb-4 animate-pulse" />
+          <p className="text-lg text-gray-600">Loading...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="max-w-6xl mx-auto animate-fade-in">

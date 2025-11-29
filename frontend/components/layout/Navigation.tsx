@@ -4,9 +4,10 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { cn } from '@/lib/utils'
-import { ChevronDown, Zap } from 'lucide-react'
+import { ChevronDown, Zap, Loader2 } from 'lucide-react'
+import { useBusinessAsset } from '@/lib/business-asset-context'
 
 const navItems = [
   { name: 'Content Seeds', href: '/content-seeds' },
@@ -20,7 +21,28 @@ const navItems = [
 export default function Navigation() {
   const pathname = usePathname()
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
-  const currentCampaign = 'Penn Daily Buzz'
+  const { selectedAsset, allAssets, setSelectedAsset, isLoading } = useBusinessAsset()
+  const dropdownRef = useRef<HTMLDivElement>(null)
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  const handleAssetSelect = (assetId: string) => {
+    const asset = allAssets.find(a => a.id === assetId)
+    if (asset) {
+      setSelectedAsset(asset)
+      setIsDropdownOpen(false)
+    }
+  }
 
   return (
     <nav className="sticky top-0 z-50 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 shadow-lg border-b border-slate-700">
@@ -64,25 +86,57 @@ export default function Navigation() {
               )
             })}
 
-            {/* Campaign Dropdown */}
-            <div className="relative ml-4">
+            {/* Business Asset Dropdown */}
+            <div className="relative ml-4" ref={dropdownRef}>
               <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="flex items-center gap-2 px-4 py-2 bg-slate-700 text-white rounded-lg text-sm font-medium hover:bg-slate-600 transition-all duration-200"
+                className="flex items-center gap-2 px-4 py-2 bg-slate-700 text-white rounded-lg text-sm font-medium hover:bg-slate-600 transition-all duration-200 min-w-[200px]"
+                disabled={isLoading}
               >
-                <span>{currentCampaign}</span>
-                <ChevronDown className={cn(
-                  "w-4 h-4 transition-transform duration-200",
-                  isDropdownOpen && "rotate-180"
-                )} />
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Loading...</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="truncate">{selectedAsset?.name || 'Select Campaign'}</span>
+                    <ChevronDown className={cn(
+                      "w-4 h-4 transition-transform duration-200 flex-shrink-0",
+                      isDropdownOpen && "rotate-180"
+                    )} />
+                  </>
+                )}
               </button>
 
-              {isDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-56 bg-slate-800 rounded-lg shadow-xl border border-slate-700 overflow-hidden">
+              {isDropdownOpen && !isLoading && (
+                <div className="absolute right-0 mt-2 w-64 bg-slate-800 rounded-lg shadow-xl border border-slate-700 overflow-hidden max-h-96 overflow-y-auto">
                   <div className="py-1">
-                    <div className="px-4 py-2 text-slate-300 hover:bg-slate-700 cursor-pointer transition-colors">
-                      {currentCampaign}
-                    </div>
+                    {allAssets.length === 0 ? (
+                      <div className="px-4 py-3 text-slate-400 text-sm text-center">
+                        No business assets found
+                      </div>
+                    ) : (
+                      allAssets.map((asset) => (
+                        <button
+                          key={asset.id}
+                          onClick={() => handleAssetSelect(asset.id)}
+                          className={cn(
+                            "w-full px-4 py-2.5 text-left text-sm transition-colors",
+                            selectedAsset?.id === asset.id
+                              ? "bg-slate-700 text-white font-medium"
+                              : "text-slate-300 hover:bg-slate-700 hover:text-white"
+                          )}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span>{asset.name}</span>
+                            {selectedAsset?.id === asset.id && (
+                              <span className="text-cyan-400 text-xs">✓</span>
+                            )}
+                          </div>
+                        </button>
+                      ))
+                    )}
                   </div>
                 </div>
               )}

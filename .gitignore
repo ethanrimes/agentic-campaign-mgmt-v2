@@ -74,6 +74,7 @@ frontend/.vercel
 frontend/.turbo
 fb-webhook/node_modules
 fb-webhook/package-lock.json
+frontend/MULTI_TENANT_FRONTEND.md
 
 # Package managers
 package-lock.json

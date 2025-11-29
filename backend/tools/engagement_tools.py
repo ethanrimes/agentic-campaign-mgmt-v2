@@ -7,11 +7,10 @@ Integrates with Graph API v24.0 to fetch real-time insights data.
 
 import aiohttp
 from typing import Type, List, Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pydantic import BaseModel, Field
 from langchain.tools import BaseTool
 
-from backend.config.settings import settings
 from backend.models.insights import (
     FacebookPageInsight,
     FacebookPostInsight,
@@ -52,8 +51,7 @@ class GetFacebookPageInsightsTool(BaseTool):
 
     def __init__(self, business_asset_id: str, **kwargs):
         """Initialize with business_asset_id."""
-        super().__init__(**kwargs)
-        self.business_asset_id = business_asset_id
+        super().__init__(business_asset_id=business_asset_id, **kwargs)
 
     def _run(self, query: str) -> str:
         """Sync version - not used by async agents."""
@@ -62,11 +60,13 @@ class GetFacebookPageInsightsTool(BaseTool):
     async def _arun(self, business_asset_id: str, metrics: str, period: str = "day", days_back: int = 7) -> List[FacebookPageInsight]:
         """Fetch page insights from Facebook Graph API."""
         try:
-            page_id = settings.facebook_page_id
-            access_token = settings.facebook_page_access_token
+            from backend.config.business_asset_loader import get_business_asset_credentials
+            credentials = get_business_asset_credentials(self.business_asset_id)
+            page_id = credentials.facebook_page_id
+            access_token = credentials.facebook_page_access_token
 
             # Calculate date range
-            until = datetime.utcnow()
+            until = datetime.now(timezone.utc)
             since = until - timedelta(days=min(days_back, 90))
 
             url = f"https://graph.facebook.com/v24.0/{page_id}/insights"
@@ -137,8 +137,7 @@ class GetFacebookPostInsightsTool(BaseTool):
 
     def __init__(self, business_asset_id: str, **kwargs):
         """Initialize with business_asset_id."""
-        super().__init__(**kwargs)
-        self.business_asset_id = business_asset_id
+        super().__init__(business_asset_id=business_asset_id, **kwargs)
 
     def _run(self, query: str) -> str:
         """Sync version - not used by async agents."""
@@ -147,7 +146,9 @@ class GetFacebookPostInsightsTool(BaseTool):
     async def _arun(self, business_asset_id: str, post_id: str) -> Optional[FacebookPostInsight]:
         """Fetch post insights from Facebook Graph API."""
         try:
-            access_token = settings.facebook_page_access_token
+            from backend.config.business_asset_loader import get_business_asset_credentials
+            credentials = get_business_asset_credentials(self.business_asset_id)
+            access_token = credentials.facebook_page_access_token
 
             # Fetch reaction metrics
             url = f"https://graph.facebook.com/v24.0/{post_id}/insights"
@@ -226,8 +227,7 @@ class GetFacebookVideoInsightsTool(BaseTool):
 
     def __init__(self, business_asset_id: str, **kwargs):
         """Initialize with business_asset_id."""
-        super().__init__(**kwargs)
-        self.business_asset_id = business_asset_id
+        super().__init__(business_asset_id=business_asset_id, **kwargs)
 
     def _run(self, query: str) -> str:
         """Sync version - not used by async agents."""
@@ -236,7 +236,9 @@ class GetFacebookVideoInsightsTool(BaseTool):
     async def _arun(self, business_asset_id: str, video_id: str) -> Optional[FacebookVideoInsight]:
         """Fetch video insights from Facebook Graph API."""
         try:
-            access_token = settings.facebook_page_access_token
+            from backend.config.business_asset_loader import get_business_asset_credentials
+            credentials = get_business_asset_credentials(self.business_asset_id)
+            access_token = credentials.facebook_page_access_token
 
             url = f"https://graph.facebook.com/v24.0/{video_id}/video_insights"
             params = {
@@ -323,8 +325,7 @@ class GetInstagramMediaInsightsTool(BaseTool):
 
     def __init__(self, business_asset_id: str, **kwargs):
         """Initialize with business_asset_id."""
-        super().__init__(**kwargs)
-        self.business_asset_id = business_asset_id
+        super().__init__(business_asset_id=business_asset_id, **kwargs)
 
     def _run(self, query: str) -> str:
         """Sync version - not used by async agents."""
@@ -333,7 +334,9 @@ class GetInstagramMediaInsightsTool(BaseTool):
     async def _arun(self, business_asset_id: str, media_id: str, media_type: str = "image") -> Optional[InstagramMediaInsight]:
         """Fetch media insights from Instagram Graph API."""
         try:
-            access_token = settings.instagram_page_access_token
+            from backend.config.business_asset_loader import get_business_asset_credentials
+            credentials = get_business_asset_credentials(self.business_asset_id)
+            access_token = credentials.instagram_page_access_token
 
             # Build metric list based on media type
             if media_type == "reel":
@@ -421,8 +424,7 @@ class GetInstagramAccountInsightsTool(BaseTool):
 
     def __init__(self, business_asset_id: str, **kwargs):
         """Initialize with business_asset_id."""
-        super().__init__(**kwargs)
-        self.business_asset_id = business_asset_id
+        super().__init__(business_asset_id=business_asset_id, **kwargs)
 
     def _run(self, query: str) -> str:
         """Sync version - not used by async agents."""
@@ -431,12 +433,14 @@ class GetInstagramAccountInsightsTool(BaseTool):
     async def _arun(self, business_asset_id: str, period: str = "day", days_back: int = 7) -> Optional[InstagramAccountInsight]:
         """Fetch account insights from Instagram Graph API."""
         try:
-            ig_account_id = settings.app_users_instagram_account_id
-            access_token = settings.instagram_page_access_token
+            from backend.config.business_asset_loader import get_business_asset_credentials
+            credentials = get_business_asset_credentials(self.business_asset_id)
+            ig_account_id = credentials.app_users_instagram_account_id
+            access_token = credentials.instagram_page_access_token
 
             # Calculate date range
-            until = int(datetime.utcnow().timestamp())
-            since = int((datetime.utcnow() - timedelta(days=days_back)).timestamp())
+            until = int(datetime.now(timezone.utc).timestamp())
+            since = int((datetime.now(timezone.utc) - timedelta(days=days_back)).timestamp())
 
             url = f"https://graph.instagram.com/v24.0/{ig_account_id}/insights"
             params = {

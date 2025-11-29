@@ -74,7 +74,7 @@ class ContentCreationAgent:
         )
 
         # Create tools
-        self.tools = create_media_generation_tools()
+        self.tools = create_media_generation_tools(self.business_asset_id)
 
         self.agent_executor = create_agent(
             model=self.llm,

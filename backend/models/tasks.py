@@ -23,6 +23,7 @@ class ContentCreationTask(BaseModel):
     """
 
     id: UUID = Field(default_factory=uuid4, description="Unique task ID")
+    business_asset_id: str = Field(..., description="Business asset ID for multi-tenancy")
 
     # Seed reference
     content_seed_id: UUID = Field(..., description="ID of the content seed to use")
@@ -69,6 +70,7 @@ class ContentCreationTask(BaseModel):
         json_schema_extra = {
             "example": {
                 "id": "b8c9d0e1-f2a3-0b1c-5d6e-7f8a9b0c1d2e",
+                "business_asset_id": "penndailybuzz",
                 "content_seed_id": "b2c3d4e5-f6a7-5b6c-9d0e-1f2a3b4c5d6e",
                 "content_seed_type": "news_event",
                 "instagram_image_posts": 2,
