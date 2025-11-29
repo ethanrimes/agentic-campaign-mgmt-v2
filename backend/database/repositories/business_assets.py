@@ -9,7 +9,7 @@ each with their own credentials stored encrypted in the database.
 
 from typing import List, Optional
 from datetime import datetime
-from backend.database.connection import get_supabase_sync_client
+from backend.database.connection import get_supabase_sync_admin_client
 from backend.models.business_asset import (
     BusinessAsset,
     BusinessAssetCreate,
@@ -26,7 +26,7 @@ class BusinessAssetRepository:
     """Repository for business asset CRUD operations with encryption support."""
 
     def __init__(self):
-        self.client = get_supabase_sync_client()
+        self.client = get_supabase_sync_admin_client()
         self.table = "business_assets"
 
     def get_by_id(self, business_asset_id: str) -> Optional[BusinessAsset]:

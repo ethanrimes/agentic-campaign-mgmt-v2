@@ -149,6 +149,17 @@ class ContentCreationAgent:
                 task.content_seed_type
             )
 
+            # Check if seed exists (handle orphaned tasks)
+            if not seed:
+                error_msg = f"Content seed {task.content_seed_id} ({task.content_seed_type}) no longer exists"
+                logger.error("Orphaned task detected", task_id=task_id, error=error_msg)
+                await self.tasks_repo.update(
+                    self.business_asset_id,
+                    task_id,
+                    {"status": "failed", "error_message": error_msg}
+                )
+                raise Exception(error_msg)
+
             # Build task context
             context = self._format_task_context(task, seed)
 
@@ -177,19 +188,14 @@ class ContentCreationAgent:
                     # Calculate scheduled posting time
                     scheduled_time = await self._calculate_scheduled_time(post_data.platform)
 
-                    # Map content seed type to the correct foreign key field
-                    seed_reference = {}
-                    if task.content_seed_type == "news_event":
-                        seed_reference["news_event_seed_id"] = task.content_seed_id
-                    elif task.content_seed_type == "trend":
-                        seed_reference["trend_seed_id"] = task.content_seed_id
-                    elif task.content_seed_type == "ungrounded":
-                        seed_reference["ungrounded_seed_id"] = task.content_seed_id
-
+                    # The seed reference is deterministically copied from the task
+                    # This ensures posts always reference the same seed as the task
                     completed_post = CompletedPost(
                         business_asset_id=self.business_asset_id,
                         task_id=task.id,
-                        **seed_reference,
+                        news_event_seed_id=task.news_event_seed_id,
+                        trend_seed_id=task.trend_seed_id,
+                        ungrounded_seed_id=task.ungrounded_seed_id,
                         platform=post_data.platform,
                         post_type=post_data.post_type,
                         text=post_data.text,

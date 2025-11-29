@@ -192,21 +192,21 @@ python -m backend.cli.main news-events ingest-perplexity --topic "Philadelphia n
 python -m backend.cli.main news-events ingest-deep-research --query "Recent SEPTA updates"
 
 # Run deduplication
-python -m backend.cli.main news-events deduplicate
+python -m backend.cli.main news-events deduplicate --business-asset-id penndailybuzz
 ```
 
 ### Trend Discovery
 
 ```bash
 # Discover trends
-python -m backend.cli.main trends discover --keyword "Penn campus" --platform instagram
+python -m backend.cli.main trends discover --business-asset-id penndailybuzz
 ```
 
 ### Ungrounded Seed Generation
 
 ```bash
 # Generate creative content ideas
-python -m backend.cli.main ungrounded generate --count 5
+python -m backend.cli.main ungrounded generate --count 1 --business-asset-id penndailybuzz
 ```
 
 ### Insights Analysis

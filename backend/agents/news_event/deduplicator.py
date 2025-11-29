@@ -130,7 +130,7 @@ Is this a duplicate? Which event does it match (if any)?""")
         if not canonical_events:
             canonical = await self._create_canonical_event(ingested)
             # Mark ingested event as processed
-            await self.ingested_repo.mark_as_processed(ingested.id, UUID(canonical["id"]))
+            await self.ingested_repo.mark_as_processed(self.business_asset_id, ingested.id, UUID(canonical["id"]))
             return {"action": "new", "canonical_event": canonical}
 
         # Check for duplicates using LLM
@@ -144,7 +144,7 @@ Is this a duplicate? Which event does it match (if any)?""")
             if not canonical_id_str:
                 logger.warning("LLM returned is_duplicate=True but no matching_event_id, creating new event")
                 canonical = await self._create_canonical_event(ingested)
-                await self.ingested_repo.mark_as_processed(ingested.id, UUID(canonical["id"]))
+                await self.ingested_repo.mark_as_processed(self.business_asset_id, ingested.id, UUID(canonical["id"]))
                 return {"action": "new", "canonical_event": canonical}
 
             # Clean up UUID string (strip whitespace, remove quotes)
@@ -160,18 +160,18 @@ Is this a duplicate? Which event does it match (if any)?""")
                     error=str(e)
                 )
                 canonical = await self._create_canonical_event(ingested)
-                await self.ingested_repo.mark_as_processed(ingested.id, UUID(canonical["id"]))
+                await self.ingested_repo.mark_as_processed(self.business_asset_id, ingested.id, UUID(canonical["id"]))
                 return {"action": "new", "canonical_event": canonical}
 
             await self._merge_with_canonical(ingested, str(canonical_id))
             # Mark ingested event as processed
-            await self.ingested_repo.mark_as_processed(ingested.id, canonical_id)
+            await self.ingested_repo.mark_as_processed(self.business_asset_id, ingested.id, canonical_id)
             return {"action": "merged", "canonical_id": str(canonical_id)}
         else:
             # Create new canonical event
             canonical = await self._create_canonical_event(ingested)
             # Mark ingested event as processed
-            await self.ingested_repo.mark_as_processed(ingested.id, UUID(canonical["id"]))
+            await self.ingested_repo.mark_as_processed(self.business_asset_id, ingested.id, UUID(canonical["id"]))
             return {"action": "new", "canonical_event": canonical}
 
     async def _find_duplicate(
