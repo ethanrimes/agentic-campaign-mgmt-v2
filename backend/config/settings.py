@@ -81,6 +81,14 @@ class Settings(BaseSettings):
     wavespeed_polling_interval: float = 2.0
     wavespeed_max_poll_attempts: int = 120
 
+    # Planner context limits (how many recent seeds to fetch for planning)
+    planner_news_seeds_limit: int = 10
+    planner_trend_seeds_limit: int = 10
+    planner_ungrounded_seeds_limit: int = 10
+
+    # Deduplicator configuration (how many recent canonical seeds to compare against)
+    deduplicator_canonical_seeds_limit: int = 10
+
     # Publishing
     publishing_check_interval: int = 6  # hours
 

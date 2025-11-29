@@ -85,8 +85,11 @@ Is this a duplicate? Which event does it match (if any)?""")
             logger.info("No ingested events to process")
             return {"processed": 0, "merged": 0, "new": 0}
 
-        # Get all existing canonical events
-        canonical_events = await self.canonical_repo.get_all(self.business_asset_id)
+        # Get most recent canonical events for comparison using configurable limit
+        canonical_events = await self.canonical_repo.get_recent(
+            self.business_asset_id,
+            limit=settings.deduplicator_canonical_seeds_limit
+        )
 
         stats = {
             "processed": 0,
