@@ -237,13 +237,13 @@ python -m backend.cli.main content create --task-id abc-123-def --business-asset
 
 ```bash
 # Publish pending Facebook posts
-python -m backend.cli.main publish facebook
+python -m backend.cli.main publish facebook --business-asset-id penndailybuzz
 
 # Publish pending Instagram posts
 python -m backend.cli.main publish instagram
 
 # Publish all
-python -m backend.cli.main publish all
+python -m backend.cli.main publish all --business-asset-id penndailybuzz
 ```
 
 ### Comment Responding
