@@ -26,6 +26,7 @@ class IngestedEvent(BaseModel):
     """
 
     id: UUID = Field(default_factory=uuid4, description="Unique ingested event ID")
+    business_asset_id: str = Field(..., description="Business asset ID for multi-tenancy")
     name: str = Field(..., description="Concise event title")
     start_time: Optional[str] = Field(
         None, description="Event start date/time in ISO 8601 format"
@@ -86,6 +87,7 @@ class NewsEventSeed(BaseModel):
     """
 
     id: UUID = Field(default_factory=uuid4, description="Unique news event seed ID")
+    business_asset_id: str = Field(..., description="Business asset ID for multi-tenancy")
     name: str = Field(..., description="Canonical event title")
     start_time: Optional[str] = Field(
         None, description="Event start date/time in ISO 8601 format"
@@ -134,6 +136,7 @@ class TrendSeed(BaseModel):
     """
 
     id: UUID = Field(default_factory=uuid4, description="Unique trend seed ID")
+    business_asset_id: str = Field(..., description="Business asset ID for multi-tenancy")
     name: str = Field(..., description="Concise trend name/title")
     description: str = Field(
         ...,
@@ -191,6 +194,7 @@ class UngroundedSeed(BaseModel):
     """
 
     id: UUID = Field(default_factory=uuid4, description="Unique ungrounded seed ID")
+    business_asset_id: str = Field(..., description="Business asset ID for multi-tenancy")
     idea: str = Field(
         ..., description="Natural language description of the content idea"
     )

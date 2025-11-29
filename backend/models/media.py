@@ -25,6 +25,10 @@ class Image(BaseModel):
     """
 
     id: UUID = Field(default_factory=uuid4, description="Unique image ID")
+    business_asset_id: str = Field(
+        ...,
+        description="Business asset ID this media belongs to"
+    )
     storage_path: str = Field(
         ...,
         description="Path in Supabase storage bucket (e.g., 'task_123/images/img_001.png')",
@@ -71,6 +75,10 @@ class Video(BaseModel):
     """
 
     id: UUID = Field(default_factory=uuid4, description="Unique video ID")
+    business_asset_id: str = Field(
+        ...,
+        description="Business asset ID this media belongs to"
+    )
     storage_path: str = Field(
         ...,
         description="Path in Supabase storage bucket (e.g., 'task_123/videos/vid_001.mp4')",

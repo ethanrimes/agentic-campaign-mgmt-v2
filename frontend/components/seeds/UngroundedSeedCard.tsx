@@ -8,13 +8,15 @@ import SeedTimeline from './SeedTimeline'
 import { formatRelativeTime } from '@/lib/utils'
 import { FileText } from 'lucide-react'
 import type { UngroundedSeed } from '@/types'
-import { getContentCreationTasksBySeed, getCompletedPostsBySeed } from '@/lib/api'
+import { getContentCreationTasksBySeed, getCompletedPostsBySeed } from '@/lib/api-client'
+import { useBusinessAsset } from '@/lib/business-asset-context'
 
 interface UngroundedSeedCardProps {
   seed: UngroundedSeed
 }
 
 export default function UngroundedSeedCard({ seed }: UngroundedSeedCardProps) {
+  const { selectedAsset } = useBusinessAsset()
   const [tasks, setTasks] = useState<any[]>([])
   const [posts, setPosts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -22,12 +24,12 @@ export default function UngroundedSeedCard({ seed }: UngroundedSeedCardProps) {
 
   useEffect(() => {
     async function loadData() {
-      if (!isExpanded) return
+      if (!isExpanded || !selectedAsset) return
       try {
         setLoading(true)
         const [tasksData, postsData] = await Promise.all([
-          getContentCreationTasksBySeed(seed.id),
-          getCompletedPostsBySeed(seed.id, 'ungrounded'),
+          getContentCreationTasksBySeed(seed.id, selectedAsset.id),
+          getCompletedPostsBySeed(seed.id, 'ungrounded', selectedAsset.id),
         ])
         setTasks(tasksData)
         setPosts(postsData)
@@ -38,7 +40,7 @@ export default function UngroundedSeedCard({ seed }: UngroundedSeedCardProps) {
       }
     }
     loadData()
-  }, [seed.id, isExpanded])
+  }, [seed.id, isExpanded, selectedAsset])
 
   const preview = (
     <div className="space-y-3">

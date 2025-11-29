@@ -8,13 +8,15 @@ import SeedTimeline from './SeedTimeline'
 import { formatDate, formatRelativeTime } from '@/lib/utils'
 import { MapPin, Calendar, ExternalLink } from 'lucide-react'
 import type { NewsEventSeed } from '@/types'
-import { getContentCreationTasksBySeed, getCompletedPostsBySeed } from '@/lib/api'
+import { getContentCreationTasksBySeed, getCompletedPostsBySeed } from '@/lib/api-client'
+import { useBusinessAsset } from '@/lib/business-asset-context'
 
 interface NewsEventCardProps {
   seed: NewsEventSeed
 }
 
 export default function NewsEventCard({ seed }: NewsEventCardProps) {
+  const { selectedAsset } = useBusinessAsset()
   const [tasks, setTasks] = useState<any[]>([])
   const [posts, setPosts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -22,12 +24,12 @@ export default function NewsEventCard({ seed }: NewsEventCardProps) {
 
   useEffect(() => {
     async function loadData() {
-      if (!isExpanded) return
+      if (!isExpanded || !selectedAsset) return
       try {
         setLoading(true)
         const [tasksData, postsData] = await Promise.all([
-          getContentCreationTasksBySeed(seed.id),
-          getCompletedPostsBySeed(seed.id, 'news_event'),
+          getContentCreationTasksBySeed(seed.id, selectedAsset.id),
+          getCompletedPostsBySeed(seed.id, 'news_event', selectedAsset.id),
         ])
         setTasks(tasksData)
         setPosts(postsData)
@@ -38,7 +40,7 @@ export default function NewsEventCard({ seed }: NewsEventCardProps) {
       }
     }
     loadData()
-  }, [seed.id, isExpanded])
+  }, [seed.id, isExpanded, selectedAsset])
 
   const preview = (
     <div className="space-y-3">

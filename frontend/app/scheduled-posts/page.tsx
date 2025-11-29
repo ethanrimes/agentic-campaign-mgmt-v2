@@ -1,13 +1,15 @@
 // frontend/app/scheduled-posts/page.tsx
 
-import { getCompletedPosts } from '@/lib/api'
+'use client'
+
+import { useState, useEffect } from 'react'
+import { getCompletedPosts } from '@/lib/api-client'
+import { useBusinessAsset } from '@/lib/business-asset-context'
 import { Calendar, Instagram } from 'lucide-react'
 import ScheduledPostsCalendar from '@/components/posts/ScheduledPostsCalendar'
 import ExpandableFacebookPosts from '@/components/posts/ExpandableFacebookPosts'
 import InstagramPostGrid from '@/components/posts/InstagramPostGrid'
 import { CompletedPost } from '@/types'
-
-export const dynamic = 'force-dynamic'
 
 // Helper function to get the relevant date for a post
 function getPostDate(post: CompletedPost): Date {
@@ -58,8 +60,39 @@ interface PostsByDate {
   }
 }
 
-export default async function ScheduledPostsPage() {
-  const posts = await getCompletedPosts()
+export default function ScheduledPostsPage() {
+  const { selectedAsset } = useBusinessAsset()
+  const [posts, setPosts] = useState<CompletedPost[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function loadPosts() {
+      if (!selectedAsset) return
+
+      try {
+        setLoading(true)
+        const data = await getCompletedPosts(selectedAsset.id)
+        setPosts(data)
+      } catch (error) {
+        console.error('Failed to load posts:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadPosts()
+  }, [selectedAsset])
+
+  if (!selectedAsset || loading) {
+    return (
+      <div className="max-w-7xl mx-auto">
+        <div className="text-center py-16">
+          <Calendar className="w-16 h-16 text-cyan-400 mx-auto mb-4 animate-pulse" />
+          <p className="text-lg text-gray-600">Loading...</p>
+        </div>
+      </div>
+    )
+  }
 
   // Separate posts by platform for counts
   const facebookPosts = posts.filter(p => p.platform === 'facebook')

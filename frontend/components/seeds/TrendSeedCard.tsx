@@ -8,13 +8,15 @@ import SeedTimeline from './SeedTimeline'
 import { formatRelativeTime } from '@/lib/utils'
 import { Hash, User } from 'lucide-react'
 import type { TrendSeed } from '@/types'
-import { getContentCreationTasksBySeed, getCompletedPostsBySeed } from '@/lib/api'
+import { getContentCreationTasksBySeed, getCompletedPostsBySeed } from '@/lib/api-client'
+import { useBusinessAsset } from '@/lib/business-asset-context'
 
 interface TrendSeedCardProps {
   seed: TrendSeed
 }
 
 export default function TrendSeedCard({ seed }: TrendSeedCardProps) {
+  const { selectedAsset } = useBusinessAsset()
   const [tasks, setTasks] = useState<any[]>([])
   const [posts, setPosts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -22,12 +24,12 @@ export default function TrendSeedCard({ seed }: TrendSeedCardProps) {
 
   useEffect(() => {
     async function loadData() {
-      if (!isExpanded) return
+      if (!isExpanded || !selectedAsset) return
       try {
         setLoading(true)
         const [tasksData, postsData] = await Promise.all([
-          getContentCreationTasksBySeed(seed.id),
-          getCompletedPostsBySeed(seed.id, 'trend'),
+          getContentCreationTasksBySeed(seed.id, selectedAsset.id),
+          getCompletedPostsBySeed(seed.id, 'trend', selectedAsset.id),
         ])
         setTasks(tasksData)
         setPosts(postsData)
@@ -38,7 +40,7 @@ export default function TrendSeedCard({ seed }: TrendSeedCardProps) {
       }
     }
     loadData()
-  }, [seed.id, isExpanded])
+  }, [seed.id, isExpanded, selectedAsset])
 
   const preview = (
     <div className="space-y-3">

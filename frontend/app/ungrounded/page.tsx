@@ -1,13 +1,47 @@
 // frontend/app/ungrounded/page.tsx
 
-import { getUngroundedSeeds } from '@/lib/api'
+'use client'
+
+import { useState, useEffect } from 'react'
+import { getUngroundedSeeds } from '@/lib/api-client'
+import { useBusinessAsset } from '@/lib/business-asset-context'
 import UngroundedSeedCard from '@/components/seeds/UngroundedSeedCard'
 import { Lightbulb } from 'lucide-react'
+import type { UngroundedSeed } from '@/types'
 
-export const dynamic = 'force-dynamic'
+export default function UngroundedPage() {
+  const { selectedAsset } = useBusinessAsset()
+  const [seeds, setSeeds] = useState<UngroundedSeed[]>([])
+  const [loading, setLoading] = useState(true)
 
-export default async function UngroundedPage() {
-  const seeds = await getUngroundedSeeds()
+  useEffect(() => {
+    async function loadSeeds() {
+      if (!selectedAsset) return
+
+      try {
+        setLoading(true)
+        const data = await getUngroundedSeeds(selectedAsset.id)
+        setSeeds(data)
+      } catch (error) {
+        console.error('Failed to load ungrounded seeds:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadSeeds()
+  }, [selectedAsset])
+
+  if (!selectedAsset || loading) {
+    return (
+      <div className="max-w-6xl mx-auto">
+        <div className="text-center py-16">
+          <Lightbulb className="w-16 h-16 text-amber-400 mx-auto mb-4 animate-pulse" />
+          <p className="text-lg text-gray-600">Loading...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="max-w-6xl mx-auto animate-fade-in">

@@ -19,23 +19,23 @@ from backend.tools.engagement_tools import (
     GetInstagramAccountInsightsTool,
 )
 from backend.database.repositories.completed_posts import CompletedPostRepository
-from backend.config.settings import settings
 from backend.utils import get_logger
 
 logger = get_logger(__name__)
 
 
-async def test_facebook_page_insights():
+async def test_facebook_page_insights(business_asset_id: str):
     """Test Facebook Page insights."""
     logger.info("=" * 80)
     logger.info("TESTING: Facebook Page Insights")
     logger.info("=" * 80)
 
-    tool = GetFacebookPageInsightsTool()
+    tool = GetFacebookPageInsightsTool(business_asset_id=business_asset_id)
 
     # Test 1: Basic page metrics
     logger.info("\n--- Test 1: Page engagements and media views (last 7 days) ---")
     result = await tool._arun(
+        business_asset_id=business_asset_id,
         metrics="page_post_engagements,page_media_view",
         period="day",
         days_back=7
@@ -50,6 +50,7 @@ async def test_facebook_page_insights():
     # Test 2: Follows metrics
     logger.info("\n--- Test 2: Page follows (last 7 days) ---")
     result = await tool._arun(
+        business_asset_id=business_asset_id,
         metrics="page_daily_follows,page_daily_follows_unique",
         period="day",
         days_back=7
@@ -64,13 +65,13 @@ async def test_facebook_page_insights():
     logger.info("\n✓ Facebook Page insights tests complete\n")
 
 
-async def test_facebook_post_insights():
+async def test_facebook_post_insights(business_asset_id: str):
     """Test Facebook Post insights."""
     logger.info("=" * 80)
     logger.info("TESTING: Facebook Post Insights")
     logger.info("=" * 80)
 
-    tool = GetFacebookPostInsightsTool()
+    tool = GetFacebookPostInsightsTool(business_asset_id=business_asset_id)
     repo = CompletedPostRepository()
 
     # Get recent Facebook posts
@@ -89,7 +90,7 @@ async def test_facebook_post_insights():
             logger.info(f"\n--- Testing post: {post.platform_post_id} ---")
             logger.info(f"  Text: {post.text[:80]}...")
 
-            result = await tool._arun(post_id=post.platform_post_id)
+            result = await tool._arun(business_asset_id=business_asset_id, post_id=post.platform_post_id)
 
             if result:
                 logger.info("✓ Post insights retrieved:")
@@ -107,13 +108,13 @@ async def test_facebook_post_insights():
     logger.info("\n✓ Facebook Post insights tests complete\n")
 
 
-async def test_facebook_video_insights():
+async def test_facebook_video_insights(business_asset_id: str):
     """Test Facebook Video insights."""
     logger.info("=" * 80)
     logger.info("TESTING: Facebook Video Insights")
     logger.info("=" * 80)
 
-    tool = GetFacebookVideoInsightsTool()
+    tool = GetFacebookVideoInsightsTool(business_asset_id=business_asset_id)
     repo = CompletedPostRepository()
 
     # Get recent Facebook posts with media
@@ -134,7 +135,7 @@ async def test_facebook_video_insights():
             video_id = post.media_ids[0]
             logger.info(f"\n--- Testing video: {video_id} ---")
 
-            result = await tool._arun(video_id=video_id)
+            result = await tool._arun(business_asset_id=business_asset_id, video_id=video_id)
 
             if result:
                 logger.info("✓ Video insights retrieved:")
@@ -151,13 +152,13 @@ async def test_facebook_video_insights():
     logger.info("\n✓ Facebook Video insights tests complete\n")
 
 
-async def test_instagram_media_insights():
+async def test_instagram_media_insights(business_asset_id: str):
     """Test Instagram Media insights."""
     logger.info("=" * 80)
     logger.info("TESTING: Instagram Media Insights")
     logger.info("=" * 80)
 
-    tool = GetInstagramMediaInsightsTool()
+    tool = GetInstagramMediaInsightsTool(business_asset_id=business_asset_id)
     repo = CompletedPostRepository()
 
     # Get recent Instagram posts
@@ -179,6 +180,7 @@ async def test_instagram_media_insights():
             logger.info(f"  Text: {post.text[:80]}...")
 
             result = await tool._arun(
+                business_asset_id=business_asset_id,
                 media_id=post.platform_post_id,
                 media_type=media_type
             )
@@ -205,17 +207,17 @@ async def test_instagram_media_insights():
     logger.info("\n✓ Instagram Media insights tests complete\n")
 
 
-async def test_instagram_account_insights():
+async def test_instagram_account_insights(business_asset_id: str):
     """Test Instagram Account insights."""
     logger.info("=" * 80)
     logger.info("TESTING: Instagram Account Insights")
     logger.info("=" * 80)
 
-    tool = GetInstagramAccountInsightsTool()
+    tool = GetInstagramAccountInsightsTool(business_asset_id=business_asset_id)
 
     # Test 1: Last 7 days
     logger.info("\n--- Test 1: Account metrics (last 7 days) ---")
-    result = await tool._arun(period="day", days_back=7)
+    result = await tool._arun(business_asset_id=business_asset_id, period="day", days_back=7)
 
     if result:
         logger.info("✓ Account insights retrieved:")
@@ -229,7 +231,7 @@ async def test_instagram_account_insights():
 
     # Test 2: Last 28 days
     logger.info("\n--- Test 2: Account metrics (last 28 days) ---")
-    result = await tool._arun(period="days_28", days_back=28)
+    result = await tool._arun(business_asset_id=business_asset_id, period="days_28", days_back=28)
 
     if result:
         logger.info("✓ Account insights retrieved (28-day period):")
@@ -241,7 +243,7 @@ async def test_instagram_account_insights():
     logger.info("\n✓ Instagram Account insights tests complete\n")
 
 
-async def test_error_handling():
+async def test_error_handling(business_asset_id: str):
     """Test error handling with invalid inputs."""
     logger.info("=" * 80)
     logger.info("TESTING: Error Handling")
@@ -249,8 +251,8 @@ async def test_error_handling():
 
     # Test 1: Invalid post ID
     logger.info("\n--- Test 1: Invalid Facebook post ID ---")
-    tool = GetFacebookPostInsightsTool()
-    result = await tool._arun(post_id="invalid_post_id_123")
+    tool = GetFacebookPostInsightsTool(business_asset_id=business_asset_id)
+    result = await tool._arun(business_asset_id=business_asset_id, post_id="invalid_post_id_123")
     if result is None:
         logger.info("✓ Correctly returned None for invalid post ID")
     else:
@@ -258,8 +260,8 @@ async def test_error_handling():
 
     # Test 2: Invalid Instagram media ID
     logger.info("\n--- Test 2: Invalid Instagram media ID ---")
-    tool = GetInstagramMediaInsightsTool()
-    result = await tool._arun(media_id="invalid_media_123", media_type="image")
+    tool = GetInstagramMediaInsightsTool(business_asset_id=business_asset_id)
+    result = await tool._arun(business_asset_id=business_asset_id, media_id="invalid_media_123", media_type="image")
     if result is None:
         logger.info("✓ Correctly returned None for invalid media ID")
     else:
@@ -270,24 +272,24 @@ async def test_error_handling():
 
 async def main():
     """Run all engagement tool tests."""
+    # Default to penndailybuzz for testing
+    business_asset_id = "penndailybuzz"
+
     logger.info("\n" + "=" * 80)
     logger.info("ENGAGEMENT TOOLS INTEGRATION TESTS")
     logger.info("=" * 80)
     logger.info(f"\nConfiguration:")
-    logger.info(f"  Facebook Page ID: {settings.facebook_page_id}")
-    logger.info(f"  Instagram Account ID: {settings.app_users_instagram_account_id}")
-    logger.info(f"  FB Token: {settings.facebook_page_access_token[:20]}...")
-    logger.info(f"  IG Token: {settings.instagram_page_access_token[:20]}...")
+    logger.info(f"  Business Asset ID: {business_asset_id}")
     logger.info("\n")
 
     try:
         # Run all tests
-        await test_facebook_page_insights()
-        await test_facebook_post_insights()
-        await test_facebook_video_insights()
-        await test_instagram_media_insights()
-        await test_instagram_account_insights()
-        await test_error_handling()
+        await test_facebook_page_insights(business_asset_id)
+        await test_facebook_post_insights(business_asset_id)
+        await test_facebook_video_insights(business_asset_id)
+        await test_instagram_media_insights(business_asset_id)
+        await test_instagram_account_insights(business_asset_id)
+        await test_error_handling(business_asset_id)
 
         logger.info("=" * 80)
         logger.info("ALL TESTS COMPLETED SUCCESSFULLY ✓")

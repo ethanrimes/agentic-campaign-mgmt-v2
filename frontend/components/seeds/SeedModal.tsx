@@ -7,7 +7,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { X, MapPin, Calendar, ExternalLink, Hash, FileText, CheckCircle2, Clock, AlertCircle } from 'lucide-react'
 import type { NewsEventSeed, TrendSeed, UngroundedSeed } from '@/types'
 import { formatDate, formatRelativeTime, formatDateTime } from '@/lib/utils'
-import { getContentCreationTasksBySeed, getCompletedPostsBySeed } from '@/lib/api'
+import { getContentCreationTasksBySeed, getCompletedPostsBySeed } from '@/lib/api-client'
+import { useBusinessAsset } from '@/lib/business-asset-context'
 import SeedTimeline from './SeedTimeline'
 
 interface SeedModalProps {
@@ -18,17 +19,19 @@ interface SeedModalProps {
 }
 
 export default function SeedModal({ seed, seedType, postCount, onClose }: SeedModalProps) {
+  const { selectedAsset } = useBusinessAsset()
   const [tasks, setTasks] = useState<any[]>([])
   const [posts, setPosts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     async function loadData() {
+      if (!selectedAsset) return
       try {
         setLoading(true)
         const [tasksData, postsData] = await Promise.all([
-          getContentCreationTasksBySeed(seed.id),
-          getCompletedPostsBySeed(seed.id, seedType),
+          getContentCreationTasksBySeed(seed.id, selectedAsset.id),
+          getCompletedPostsBySeed(seed.id, seedType, selectedAsset.id),
         ])
         setTasks(tasksData)
         setPosts(postsData)
@@ -39,7 +42,7 @@ export default function SeedModal({ seed, seedType, postCount, onClose }: SeedMo
       }
     }
     loadData()
-  }, [seed.id, seedType])
+  }, [seed.id, seedType, selectedAsset])
 
   const newsEventSeed = seedType === 'news_event' ? seed as NewsEventSeed : null
   const trendSeed = seedType === 'trend' ? seed as TrendSeed : null

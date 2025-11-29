@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import List, Dict, Any, Optional
 
 from backend.config.settings import settings
+from backend.config.prompts import get_global_system_prompt
 from backend.database.repositories.news_event_seeds import IngestedEventRepository
 from backend.models.seeds import IngestedEvent, Source
 from backend.utils import get_logger
@@ -45,14 +46,14 @@ class DeepResearchAgent:
 
     async def research_and_ingest(
         self,
-        query: str,
+        query: str = None,
         num_events: int = 5
     ) -> List[Dict[str, Any]]:
         """
         Perform deep research and ingest news events.
 
         Args:
-            query: Research query/topic
+            query: Research query/topic. If None, researches news relevant to target audience.
             num_events: Number of events to extract
 
         Returns:
@@ -61,6 +62,12 @@ class DeepResearchAgent:
         logger.info("Starting deep research", query=query, num_events=num_events)
 
         try:
+            # Build query if not provided
+            if not query:
+                credentials = settings.get_business_asset_credentials(self.business_asset_id)
+                target_audience = credentials.target_audience
+                query = f"Recent news events and developments that would be relevant and interesting to this target audience: {target_audience}"
+
             # Step 1: Perform deep research
             research_report = await self._perform_deep_research(query)
 
@@ -133,8 +140,21 @@ Format the report clearly with sections for each major event. Include as many re
                 result = await response.json()
 
                 # Extract response content from Responses API format
-                # The Responses API returns choices[0].message.content similar to chat completions
-                content = result["choices"][0]["message"]["content"]
+                # The Responses API returns output array with message objects
+                if result.get("status") != "completed":
+                    raise Exception(f"Research request incomplete: {result.get('status')}")
+
+                # Find the message output in the output array
+                content = None
+                for output_item in result.get("output", []):
+                    if output_item.get("type") == "message" and output_item.get("role") == "assistant":
+                        # Extract text from content array
+                        for content_item in output_item.get("content", []):
+                            if content_item.get("type") == "output_text":
+                                content = content_item.get("text")
+                                break
+                    if content:
+                        break
 
                 if not content:
                     raise Exception("No research output generated")
@@ -261,13 +281,13 @@ Research Report:
             return None
 
 
-async def run_deep_research(business_asset_id: str, query: str, num_events: int = 5) -> List[Dict[str, Any]]:
+async def run_deep_research(business_asset_id: str, query: str = None, num_events: int = 5) -> List[Dict[str, Any]]:
     """
     CLI entry point for running deep research.
 
     Args:
         business_asset_id: Business asset ID for multi-tenancy
-        query: Research query/topic
+        query: Research query/topic (optional - uses target audience if not provided)
         num_events: Number of events to extract
 
     Returns:

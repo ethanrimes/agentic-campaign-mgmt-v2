@@ -1,13 +1,47 @@
 // frontend/app/news-events/page.tsx
 
-import { getNewsEventSeeds } from '@/lib/api'
+'use client'
+
+import { useState, useEffect } from 'react'
+import { getNewsEventSeeds } from '@/lib/api-client'
+import { useBusinessAsset } from '@/lib/business-asset-context'
 import NewsEventCard from '@/components/seeds/NewsEventCard'
 import { Database } from 'lucide-react'
+import type { NewsEventSeed } from '@/types'
 
-export const dynamic = 'force-dynamic'
+export default function NewsEventsPage() {
+  const { selectedAsset } = useBusinessAsset()
+  const [seeds, setSeeds] = useState<NewsEventSeed[]>([])
+  const [loading, setLoading] = useState(true)
 
-export default async function NewsEventsPage() {
-  const seeds = await getNewsEventSeeds()
+  useEffect(() => {
+    async function loadSeeds() {
+      if (!selectedAsset) return
+
+      try {
+        setLoading(true)
+        const data = await getNewsEventSeeds(selectedAsset.id)
+        setSeeds(data)
+      } catch (error) {
+        console.error('Failed to load news event seeds:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadSeeds()
+  }, [selectedAsset])
+
+  if (!selectedAsset || loading) {
+    return (
+      <div className="max-w-6xl mx-auto">
+        <div className="text-center py-16">
+          <Database className="w-16 h-16 text-blue-400 mx-auto mb-4 animate-pulse" />
+          <p className="text-lg text-gray-600">Loading...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="max-w-6xl mx-auto animate-fade-in">

@@ -56,7 +56,7 @@ class UngroundedSeedAgent:
         )
 
         # Create tools (only knowledge base access)
-        self.tools = create_knowledge_base_tools()
+        self.tools = create_knowledge_base_tools(business_asset_id)
 
     async def generate_ideas(self, count: int = 1) -> List[Dict[str, Any]]:
         """

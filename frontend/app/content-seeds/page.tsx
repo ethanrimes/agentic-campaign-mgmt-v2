@@ -1,18 +1,58 @@
 // frontend/app/content-seeds/page.tsx
 
-import { getNewsEventSeeds, getTrendSeeds, getUngroundedSeeds, getPostCountsBySeed } from '@/lib/api'
+'use client'
+
+import { useState, useEffect } from 'react'
+import { getNewsEventSeeds, getTrendSeeds, getUngroundedSeeds, getPostCountsBySeed } from '@/lib/api-client'
+import { useBusinessAsset } from '@/lib/business-asset-context'
 import { Database, TrendingUp, Lightbulb, Sparkles } from 'lucide-react'
 import ContentSeedsGrid from '@/components/seeds/ContentSeedsGrid'
+import type { NewsEventSeed, TrendSeed, UngroundedSeed } from '@/types'
 
-export const dynamic = 'force-dynamic'
+export default function ContentSeedsPage() {
+  const { selectedAsset } = useBusinessAsset()
+  const [newsSeeds, setNewsSeeds] = useState<NewsEventSeed[]>([])
+  const [trendSeeds, setTrendSeeds] = useState<TrendSeed[]>([])
+  const [ungroundedSeeds, setUngroundedSeeds] = useState<UngroundedSeed[]>([])
+  const [postCounts, setPostCounts] = useState<Record<string, number>>({})
+  const [loading, setLoading] = useState(true)
 
-export default async function ContentSeedsPage({ searchParams }: { searchParams: { seed?: string; type?: string } }) {
-  const [newsSeeds, trendSeeds, ungroundedSeeds, postCounts] = await Promise.all([
-    getNewsEventSeeds(),
-    getTrendSeeds(),
-    getUngroundedSeeds(),
-    getPostCountsBySeed(),
-  ])
+  useEffect(() => {
+    async function loadData() {
+      if (!selectedAsset) return
+
+      try {
+        setLoading(true)
+        const [news, trends, ungrounded, counts] = await Promise.all([
+          getNewsEventSeeds(selectedAsset.id),
+          getTrendSeeds(selectedAsset.id),
+          getUngroundedSeeds(selectedAsset.id),
+          getPostCountsBySeed(selectedAsset.id),
+        ])
+        setNewsSeeds(news)
+        setTrendSeeds(trends)
+        setUngroundedSeeds(ungrounded)
+        setPostCounts(counts)
+      } catch (error) {
+        console.error('Failed to load content seeds:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadData()
+  }, [selectedAsset])
+
+  if (!selectedAsset || loading) {
+    return (
+      <div className="max-w-7xl mx-auto">
+        <div className="text-center py-16">
+          <Sparkles className="w-16 h-16 text-cyan-400 mx-auto mb-4 animate-pulse" />
+          <p className="text-lg text-gray-600">Loading...</p>
+        </div>
+      </div>
+    )
+  }
 
   const totalSeeds = newsSeeds.length + trendSeeds.length + ungroundedSeeds.length
 
@@ -76,8 +116,6 @@ export default async function ContentSeedsPage({ searchParams }: { searchParams:
           trendSeeds={trendSeeds}
           ungroundedSeeds={ungroundedSeeds}
           postCounts={postCounts}
-          initialSeedId={searchParams.seed}
-          initialSeedType={searchParams.type as 'news_event' | 'trend' | 'ungrounded' | undefined}
         />
       )}
     </div>

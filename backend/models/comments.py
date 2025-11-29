@@ -22,6 +22,7 @@ class PlatformComment(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID = Field(default_factory=uuid4, description="Unique comment record ID")
+    business_asset_id: str = Field(..., description="Business asset ID for multi-tenancy")
 
     # Platform identification
     platform: Literal["facebook", "instagram"] = Field(
