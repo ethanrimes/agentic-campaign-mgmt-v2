@@ -14,6 +14,7 @@ docs
 IMPLEMENTATION_COMPLETE.md
 backend/database/migrations/migrations.md
 MULTI_TENANT_IMPLEMENTATION.md
+table_columns.csv
 
 # Python
 __pycache__/
