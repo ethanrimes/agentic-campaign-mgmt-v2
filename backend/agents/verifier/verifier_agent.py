@@ -280,38 +280,38 @@ class VerifierAgent:
         Returns:
             VerifierChecklistInput with the verification result
         """
-        # Build the JSON schema for structured output
-        response_schema = {
-            "type": "object",
-            "properties": {
-                "has_source_link_if_news": {
-                    "type": ["boolean", "null"],
-                    "description": "For news events: does the post include source URL(s)? null if not a news event."
-                },
-                "has_no_offensive_content": {
-                    "type": "boolean",
-                    "description": "True means NO offensive content found."
-                },
-                "has_no_misinformation": {
-                    "type": ["boolean", "null"],
-                    "description": "For news events: True means NO misinformation found. null if not a news event."
-                },
-                "is_approved": {
-                    "type": "boolean",
-                    "description": "Overall approval: should this post be published?"
-                },
-                "reasoning": {
-                    "type": "string",
-                    "description": "Detailed explanation of the verification decision."
-                },
-                "issues_found": {
-                    "type": "array",
-                    "items": {"type": "string"},
-                    "description": "List of specific issues found. Empty if no issues."
-                }
+        # Build the schema using types.Schema objects (required by Gemini SDK)
+        response_schema = types.Schema(
+            type=types.Type.OBJECT,
+            properties={
+                "has_source_link_if_news": types.Schema(
+                    type=types.Type.BOOLEAN,
+                    description="For news events: does the post include source URL(s)? Omit if not a news event."
+                ),
+                "has_no_offensive_content": types.Schema(
+                    type=types.Type.BOOLEAN,
+                    description="True means NO offensive content found."
+                ),
+                "has_no_misinformation": types.Schema(
+                    type=types.Type.BOOLEAN,
+                    description="For news events: True means NO misinformation found. Omit if not a news event."
+                ),
+                "is_approved": types.Schema(
+                    type=types.Type.BOOLEAN,
+                    description="Overall approval: should this post be published?"
+                ),
+                "reasoning": types.Schema(
+                    type=types.Type.STRING,
+                    description="Detailed explanation of the verification decision."
+                ),
+                "issues_found": types.Schema(
+                    type=types.Type.ARRAY,
+                    items=types.Schema(type=types.Type.STRING),
+                    description="List of specific issues found. Empty if no issues."
+                )
             },
-            "required": ["has_no_offensive_content", "is_approved", "reasoning", "issues_found"]
-        }
+            required=["has_no_offensive_content", "is_approved", "reasoning", "issues_found"]
+        )
 
         try:
             response = self.client.models.generate_content(

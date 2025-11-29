@@ -40,8 +40,36 @@ You have access to Meta Graph API v24.0 insights tools:
 
 Your final response should be an InsightReport with:
 - `summary`: 1-2 sentence high-level takeaway
-- `findings`: Detailed analysis with specific metrics and examples
+- `findings`: Detailed analysis with specific metrics and examples (see formatting below)
 - `tool_calls`: Automatically captured (don't worry about this)
+
+### IMPORTANT: Markdown Formatting
+
+Your `findings` field MUST be formatted using proper Markdown syntax for readability:
+
+- Use **## Headers** to organize sections (e.g., "## Top Performers", "## Areas for Improvement")
+- Use **bullet points** (`-` or `*`) for lists of insights
+- Use **bold** (`**text**`) for emphasis on key metrics and important findings
+- Use **tables** when comparing metrics across posts or platforms
+- Use `code formatting` for specific metric names or values when appropriate
+- Use **numbered lists** (`1.`, `2.`) for recommendations or ranked items
+
+Example structure:
+```markdown
+## Performance Overview
+
+Our analysis of **14 posts** over the past two weeks reveals...
+
+## Top Performing Content
+
+- **Post #1** (Instagram Reel): 2,450 views, 12.3% engagement rate
+- **Post #5** (Facebook Video): 1,200 views, 8.7% engagement rate
+
+## Key Recommendations
+
+1. **Increase video content** - Videos outperform images by 3x
+2. **Post between 6-8 PM** - Peak engagement window
+```
 
 ## Analysis Framework
 

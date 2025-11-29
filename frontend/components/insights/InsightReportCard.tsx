@@ -5,6 +5,7 @@
 import ExpandableCard from '@/components/common/ExpandableCard'
 import { formatDateTime, formatRelativeTime } from '@/lib/utils'
 import { Activity } from 'lucide-react'
+import ReactMarkdown from 'react-markdown'
 import type { InsightReport } from '@/types'
 
 interface InsightReportCardProps {
@@ -52,8 +53,8 @@ export default function InsightReportCard({ report }: InsightReportCardProps) {
             <div className="w-1 h-4 bg-gradient-to-b from-blue-500 to-purple-500 rounded-full"></div>
             Detailed Findings
           </h4>
-          <div className="prose prose-gray max-w-none">
-            <p className="text-gray-700 leading-relaxed whitespace-pre-line">{report.findings}</p>
+          <div className="prose prose-sm prose-gray max-w-none prose-headings:text-gray-900 prose-headings:font-bold prose-h2:text-base prose-h2:mt-4 prose-h2:mb-2 prose-h3:text-sm prose-p:text-gray-700 prose-p:leading-relaxed prose-ul:my-2 prose-li:my-0.5 prose-strong:text-gray-900 prose-table:text-sm">
+            <ReactMarkdown>{report.findings}</ReactMarkdown>
           </div>
         </div>
 
