@@ -84,24 +84,24 @@ class SchedulingConfig:
     """
 
     # Publishing frequency (hours between posts)
-    FACEBOOK_POST_INTERVAL_HOURS = 12  # Post to Facebook once per day
-    INSTAGRAM_POST_INTERVAL_HOURS = 8  # Post to Instagram twice per day
+    FACEBOOK_POST_INTERVAL_HOURS = 6  # Post to Facebook once per day
+    INSTAGRAM_POST_INTERVAL_HOURS = 6  # Post to Instagram twice per day
 
     # Initial delay before first post (hours from content creation)
-    FACEBOOK_INITIAL_DELAY_HOURS = 2  # Wait 2 hours before first Facebook post
-    INSTAGRAM_INITIAL_DELAY_HOURS = 1  # Wait 1 hour before first Instagram post
+    FACEBOOK_INITIAL_DELAY_HOURS = 0  # Wait 2 hours before first Facebook post
+    INSTAGRAM_INITIAL_DELAY_HOURS = 0  # Wait 1 hour before first Instagram post
 
     # Publishing check frequency (minutes)
     # How often the publisher scripts should check for posts to publish
-    PUBLISH_CHECK_INTERVAL_MINUTES = 5
+    PUBLISH_CHECK_INTERVAL_MINUTES = 30
 
     # Comment management (minutes)
     INSTAGRAM_COMMENT_CHECK_INTERVAL_MINUTES = 180  # Check for new Instagram comments
-    COMMENT_RESPONDER_INTERVAL_MINUTES = 5  # Process and respond to pending comments
+    COMMENT_RESPONDER_INTERVAL_MINUTES = 15  # Process and respond to pending comments
 
     # Content pipeline scheduling (hours)
-    NEWS_PIPELINE_INTERVAL_HOURS = 6  # News ingestion + deduplication
-    TREND_DISCOVERY_INTERVAL_HOURS = 6  # Trend discovery
+    NEWS_PIPELINE_INTERVAL_HOURS = 12  # News ingestion + deduplication
+    TREND_DISCOVERY_INTERVAL_HOURS = 24  # Trend discovery
     UNGROUNDED_GENERATION_INTERVAL_HOURS = 12  # Ungrounded idea generation
 
     # Analysis and planning (cron)
