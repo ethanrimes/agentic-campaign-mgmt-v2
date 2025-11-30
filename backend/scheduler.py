@@ -22,6 +22,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import os
+import signal
 import subprocess
 import sys
 import time
@@ -354,7 +355,8 @@ def create_scheduler():
         id='trend_discovery',
         name='Trend Discovery',
         max_instances=1,
-        coalesce=True
+        coalesce=True,
+        next_run_time=datetime.now()
     )
 
     # Ungrounded generation
@@ -365,7 +367,8 @@ def create_scheduler():
         id='ungrounded_generation',
         name='Ungrounded Idea Generation',
         max_instances=1,
-        coalesce=True
+        coalesce=True,
+        next_run_time=datetime.now()
     )
 
     # ========================================================================
@@ -396,7 +399,8 @@ def create_scheduler():
         id='facebook_publishing',
         name='Facebook Publishing',
         max_instances=1,
-        coalesce=True
+        coalesce=True,
+        next_run_time=datetime.now()
     )
 
     # Instagram publishing - check for scheduled posts at configured interval
@@ -407,7 +411,8 @@ def create_scheduler():
         id='instagram_publishing',
         name='Instagram Publishing',
         max_instances=1,
-        coalesce=True
+        coalesce=True,
+        next_run_time=datetime.now()
     )
 
     # ========================================================================
@@ -422,7 +427,8 @@ def create_scheduler():
         id='instagram_comment_check',
         name='Instagram Comment Check',
         max_instances=1,
-        coalesce=True
+        coalesce=True,
+        next_run_time=datetime.now()
     )
 
     # Comment responder - process pending comments and generate responses
@@ -433,7 +439,24 @@ def create_scheduler():
         id='comment_responder',
         name='Comment Responder',
         max_instances=1,
-        coalesce=True
+        coalesce=True,
+        next_run_time=datetime.now()
+    )
+
+    # ========================================================================
+    # MONITORING
+    # ========================================================================
+
+    # Heartbeat - log every 5 minutes to confirm scheduler is alive
+    scheduler.add_job(
+        lambda: logger.info("Scheduler heartbeat - still running"),
+        'interval',
+        minutes=5,
+        id='heartbeat',
+        name='Heartbeat',
+        max_instances=1,
+        coalesce=True,
+        next_run_time=datetime.now()
     )
 
     return scheduler
@@ -443,8 +466,18 @@ def create_scheduler():
 # MAIN ENTRY POINT
 # ============================================================================
 
+def signal_handler(signum, frame):
+    """Handle termination signals."""
+    logger.info(f"Received signal {signum}, shutting down...")
+    raise SystemExit(0)
+
+
 def main():
     """Start the scheduler."""
+    # Set up signal handlers for graceful shutdown
+    signal.signal(signal.SIGTERM, signal_handler)
+    signal.signal(signal.SIGINT, signal_handler)
+
     logger.info("=" * 80)
     logger.info("Starting Social Media Manager Scheduler")
     logger.info("=" * 80)
@@ -481,7 +514,11 @@ def main():
             time.sleep(1)
     except (KeyboardInterrupt, SystemExit):
         logger.info("Scheduler stopped by user")
+    except Exception as e:
+        logger.error(f"Scheduler crashed with error: {e}", exc_info=True)
+    finally:
         scheduler.shutdown()
+        logger.info("Scheduler shutdown complete")
 
 
 if __name__ == "__main__":
