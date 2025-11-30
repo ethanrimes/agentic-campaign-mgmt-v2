@@ -378,13 +378,13 @@ def create_scheduler():
     # Planning pipeline (insights + planner + content creation)
     scheduler.add_job(
         run_planning_pipeline,
-        'cron',
-        hour=SCHEDULING_CONFIG.PLANNING_PIPELINE_HOUR,
-        minute=0,
+        'interval',
+        hours=12,
         id='planning_pipeline',
         name='Planning Pipeline (Insights + Planner + Content Creation)',
         max_instances=1,
-        coalesce=True
+        coalesce=True,
+        next_run_time=datetime.now()
     )
 
     # ========================================================================
