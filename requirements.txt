@@ -5,6 +5,7 @@ langchain
 langchain-openai
 langchain-google-genai
 langchain-anthropic
+facebook_business
 
 # AI/ML APIs
 openai

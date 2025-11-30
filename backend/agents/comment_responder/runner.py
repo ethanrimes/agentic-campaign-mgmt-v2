@@ -140,7 +140,6 @@ class CommentResponderRunner:
 
         logger.info(
             "Comment responder run completed",
-            business_asset_id=self.business_asset_id,
             **{k: v for k, v in results.items() if k not in ["errors", "instagram_fetch"]}
         )
 
