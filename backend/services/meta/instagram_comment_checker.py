@@ -185,6 +185,7 @@ class InstagramCommentChecker:
         try:
             # Check if comment already exists in database
             existing = await self.comment_repo.get_by_comment_id(
+                business_asset_id=self.business_asset_id,
                 platform="instagram",
                 comment_id=comment_id
             )
