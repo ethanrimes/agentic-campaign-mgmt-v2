@@ -323,7 +323,7 @@ def job_listener(event):
 def create_scheduler():
     """Create and configure the scheduler with all jobs."""
     executors = {
-        'default': ThreadPoolExecutor(10)  # Allow up to 10 concurrent jobs
+        'default': ThreadPoolExecutor(20)  # Allow up to 20 concurrent jobs
     }
     scheduler = BackgroundScheduler(executors=executors)
 
