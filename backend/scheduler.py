@@ -24,8 +24,10 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 import os
 import subprocess
 import sys
+import time
 from datetime import datetime
-from apscheduler.schedulers.blocking import BlockingScheduler
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.executors.pool import ThreadPoolExecutor
 from apscheduler.events import EVENT_JOB_EXECUTED, EVENT_JOB_ERROR
 from backend.utils import get_logger
 from backend.database.repositories.business_assets import BusinessAssetRepository
@@ -320,7 +322,10 @@ def job_listener(event):
 
 def create_scheduler():
     """Create and configure the scheduler with all jobs."""
-    scheduler = BlockingScheduler()
+    executors = {
+        'default': ThreadPoolExecutor(10)  # Allow up to 10 concurrent jobs
+    }
+    scheduler = BackgroundScheduler(executors=executors)
 
     # Add event listener
     scheduler.add_listener(job_listener, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
@@ -470,8 +475,10 @@ def main():
     logger.info("Scheduler started. Press Ctrl+C to exit.")
     logger.info("=" * 80)
 
+    scheduler.start()
     try:
-        scheduler.start()
+        while True:
+            time.sleep(1)
     except (KeyboardInterrupt, SystemExit):
         logger.info("Scheduler stopped by user")
         scheduler.shutdown()
