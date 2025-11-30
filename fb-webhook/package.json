@@ -1,14 +1,17 @@
 {
   "name": "fb-webhook",
   "version": "1.0.0",
-  "description": "Facebook webhook server for comment notifications",
+  "description": "Multi-tenant Facebook webhook server for comment notifications",
   "main": "index.js",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": ["facebook", "webhook", "comments"],
+  "keywords": ["facebook", "webhook", "comments", "multi-tenant"],
   "author": "",
   "license": "ISC",
   "type": "commonjs",

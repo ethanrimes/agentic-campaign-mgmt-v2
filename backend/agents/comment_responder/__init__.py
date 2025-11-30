@@ -2,7 +2,11 @@
 
 """Comment responder agent for generating replies to social media comments."""
 
-from .runner import run_comment_responder
+from .runner import run_comment_responder, run_comment_responder_all_assets
 from .comment_responder_agent import CommentResponderAgent
 
-__all__ = ["run_comment_responder", "CommentResponderAgent"]
+__all__ = [
+    "run_comment_responder",
+    "run_comment_responder_all_assets",
+    "CommentResponderAgent"
+]

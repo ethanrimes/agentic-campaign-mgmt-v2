@@ -65,18 +65,18 @@ class Settings(BaseSettings):
     default_model_name: str = "gpt-5-mini"
 
     # Content generation guardrails
-    min_posts_per_week: int = 3
-    max_posts_per_week: int = 15
-    min_content_seeds_per_week: int = 2
-    max_content_seeds_per_week: int = 8
-    min_videos_per_week: int = 0
-    max_videos_per_week: int = 5
-    min_images_per_week: int = 1
-    max_images_per_week: int = 20
+    min_posts_per_week: int = 10
+    max_posts_per_week: int = 20
+    min_content_seeds_per_week: int = 8
+    max_content_seeds_per_week: int = 15
+    min_videos_per_week: int = 2
+    max_videos_per_week: int = 10
+    min_images_per_week: int = 10
+    max_images_per_week: int = 30
 
     # Wavespeed configuration
-    wavespeed_image_model: str = "stability-ai/sdxl-lora"
-    wavespeed_video_model: str = "wavespeed-ai/wan-2.2/i2v-5b-720p"
+    wavespeed_image_model: str = "bytedance/seedream-v4"
+    wavespeed_video_model: str = "bytedance/seedance-v1-pro-t2v-480p"
     wavespeed_api_base: str = "https://api.wavespeed.ai/api/v3"
     wavespeed_polling_interval: float = 2.0
     wavespeed_max_poll_attempts: int = 120
