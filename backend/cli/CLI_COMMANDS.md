@@ -146,7 +146,7 @@ Publish scheduled content to social platforms.
 
 ```bash
 # Publish scheduled Facebook posts
-python -m backend.cli.main publish facebook --business-asset-id penndailybuzz --limit 10
+python -m backend.cli.main publish facebook --business-asset-id eaglesnationfanhuddle --limit 2
 
 # Publish scheduled Instagram posts
 python -m backend.cli.main publish instagram --business-asset-id eaglesnationfanhuddle --limit 10

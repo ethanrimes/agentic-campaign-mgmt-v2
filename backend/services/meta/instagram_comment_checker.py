@@ -202,6 +202,24 @@ class InstagramCommentChecker:
             from_data = comment.get("from", {})
             commenter_id = from_data.get("id", "") or from_data.get("self_ig_scoped_id", "")
 
+            # Skip comments/replies from our own accounts
+            # This prevents responding to our own replies (infinite loop)
+            # Check against both Instagram account ID and Facebook Page ID
+            from backend.config.settings import settings
+            credentials = settings.get_business_asset_credentials(self.business_asset_id)
+            own_account_ids = {
+                credentials.app_users_instagram_account_id,
+                credentials.facebook_page_id,
+            }
+            if commenter_id and commenter_id in own_account_ids:
+                logger.debug(
+                    "Skipping comment from own account",
+                    comment_id=comment_id,
+                    commenter_id=commenter_id,
+                    username=username
+                )
+                return
+
             # Parse timestamp
             timestamp_str = comment.get("timestamp", "")
             try:

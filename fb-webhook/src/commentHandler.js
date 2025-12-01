@@ -104,6 +104,12 @@ async function handleCommentEvent(value, pageId) {
     const commenterName = from.name || "Unknown";
     const commenterId = from.id || "unknown";
 
+    // Skip comments from our own Page (prevents responding to our own replies)
+    if (commenterId === pageId) {
+      console.log(`Skipping comment from own Page (comment_id: ${commentId}, commenter_id: ${commenterId})`);
+      return;
+    }
+
     // Extract parent_id if this is a reply
     const parentId = commentDetails.parent?.id || value.parent_id || null;
 
