@@ -2,6 +2,7 @@
 
 import { formatDateTime, getStatusColor, cn } from '@/lib/utils'
 import type { ContentCreationTask, CompletedPost } from '@/types'
+import VerificationStatusBadge from '@/components/common/VerificationStatusBadge'
 
 interface SeedTimelineProps {
   tasks: ContentCreationTask[]
@@ -59,9 +60,16 @@ export default function SeedTimeline({ tasks, posts, loading }: SeedTimelineProp
                 <span className="text-sm font-medium text-gray-900">
                   {post.platform === 'facebook' ? '📘' : '📷'} {post.post_type.replace(/_/g, ' ')}
                 </span>
-                <span className={cn('text-xs px-2 py-1 rounded-full', getStatusColor(post.status))}>
-                  {post.status}
-                </span>
+                <div className="flex items-center gap-2">
+                  <VerificationStatusBadge
+                    status={post.verification_status || 'unverified'}
+                    postId={post.id}
+                    size="sm"
+                  />
+                  <span className={cn('text-xs px-2 py-1 rounded-full', getStatusColor(post.status))}>
+                    {post.status}
+                  </span>
+                </div>
               </div>
               <p className="text-xs text-gray-500 mb-2">
                 Created: {formatDateTime(post.created_at)}

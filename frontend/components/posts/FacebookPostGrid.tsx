@@ -9,6 +9,7 @@ import type { CompletedPost } from '@/types'
 import { formatDateTime } from '@/lib/utils'
 import Image from 'next/image'
 import Link from 'next/link'
+import VerificationStatusBadge from '@/components/common/VerificationStatusBadge'
 
 interface FacebookPostGridProps {
   posts: CompletedPost[]
@@ -95,6 +96,14 @@ export default function FacebookPostGrid({ posts }: FacebookPostGridProps) {
                   {post.status}
                 </span>
               </div>
+              {/* Verification status indicator */}
+              <div className="absolute bottom-2 right-2">
+                <VerificationStatusBadge
+                  status={post.verification_status || 'unverified'}
+                  postId={post.id}
+                  size="sm"
+                />
+              </div>
             </div>
           )
         })}
@@ -172,14 +181,21 @@ export default function FacebookPostGrid({ posts }: FacebookPostGridProps) {
               <div className="md:w-1/3 p-6 overflow-y-auto">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
-                    <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium mb-3 ${
-                      selectedPost.status === 'published'
-                        ? 'bg-green-100 text-green-700'
-                        : selectedPost.status === 'pending'
-                        ? 'bg-amber-100 text-amber-700'
-                        : 'bg-red-100 text-red-700'
-                    }`}>
-                      {selectedPost.status}
+                    <div className="flex items-center gap-2 flex-wrap mb-3">
+                      <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${
+                        selectedPost.status === 'published'
+                          ? 'bg-green-100 text-green-700'
+                          : selectedPost.status === 'pending'
+                          ? 'bg-amber-100 text-amber-700'
+                          : 'bg-red-100 text-red-700'
+                      }`}>
+                        {selectedPost.status}
+                      </div>
+                      <VerificationStatusBadge
+                        status={selectedPost.verification_status || 'unverified'}
+                        postId={selectedPost.id}
+                        size="md"
+                      />
                     </div>
                   </div>
                   <button
