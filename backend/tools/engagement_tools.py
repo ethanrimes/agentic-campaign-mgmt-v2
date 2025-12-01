@@ -400,6 +400,112 @@ class GetInstagramMediaInsightsTool(BaseTool):
 
 
 # ============================================================================
+# PLATFORM COMMENTS (DATABASE) TOOLS
+# ============================================================================
+
+class GetPlatformCommentsInput(BaseModel):
+    """Input for fetching platform comments from database."""
+    business_asset_id: str = Field(..., description="Business asset ID for multi-tenancy support")
+    platform: Optional[str] = Field(None, description="Filter by platform: 'facebook' or 'instagram'")
+    post_id: Optional[str] = Field(None, description="Filter by specific post ID")
+    status: Optional[str] = Field(None, description="Filter by status: 'pending', 'responded', 'failed', 'ignored'")
+    limit: int = Field(50, description="Maximum number of comments to return")
+
+
+class GetPlatformCommentsTool(BaseTool):
+    """Get platform comments from the database."""
+
+    name: str = "get_platform_comments"
+    description: str = """
+    Get comments from Facebook and Instagram posts stored in our database.
+    Returns comment text, commenter info, response status, and engagement data.
+    Use this to analyze audience sentiment, common questions, and response quality.
+    """
+    args_schema: Type[BaseModel] = GetPlatformCommentsInput
+    business_asset_id: str
+
+    def __init__(self, business_asset_id: str, **kwargs):
+        """Initialize with business_asset_id."""
+        super().__init__(business_asset_id=business_asset_id, **kwargs)
+
+    def _run(self, query: str) -> str:
+        """Sync version - not used by async agents."""
+        raise NotImplementedError("Use async version (_arun) instead")
+
+    async def _arun(
+        self,
+        business_asset_id: str,
+        platform: Optional[str] = None,
+        post_id: Optional[str] = None,
+        status: Optional[str] = None,
+        limit: int = 50
+    ) -> List[dict]:
+        """Fetch comments from the database."""
+        try:
+            from backend.database.repositories.platform_comments import PlatformCommentRepository
+            repo = PlatformCommentRepository()
+
+            # If filtering by post_id, use the post-specific method
+            if post_id and platform:
+                comments = await repo.get_comments_by_post(
+                    business_asset_id=self.business_asset_id,
+                    platform=platform,
+                    post_id=post_id,
+                    status=status
+                )
+            else:
+                # Use pending comments method or get all
+                if status == "pending":
+                    comments = await repo.get_pending_comments(
+                        business_asset_id=self.business_asset_id,
+                        platform=platform,
+                        limit=limit
+                    )
+                else:
+                    # Get all comments with filters via direct query
+                    from backend.database import get_supabase_admin_client
+                    client = await get_supabase_admin_client()
+
+                    query = (
+                        client.table("platform_comments")
+                        .select("*")
+                        .eq("business_asset_id", self.business_asset_id)
+                        .order("created_time", desc=True)
+                        .limit(limit)
+                    )
+
+                    if platform:
+                        query = query.eq("platform", platform)
+                    if status:
+                        query = query.eq("status", status)
+
+                    result = await query.execute()
+                    from backend.models import PlatformComment
+                    comments = [PlatformComment(**item) for item in result.data]
+
+            # Convert to dicts for agent consumption
+            return [
+                {
+                    "comment_id": c.comment_id,
+                    "platform": c.platform,
+                    "post_id": c.post_id,
+                    "comment_text": c.comment_text,
+                    "commenter_username": c.commenter_username,
+                    "created_time": c.created_time.isoformat() if c.created_time else None,
+                    "like_count": c.like_count,
+                    "status": c.status,
+                    "response_text": c.response_text,
+                    "responded_at": c.responded_at.isoformat() if c.responded_at else None,
+                }
+                for c in comments
+            ]
+
+        except Exception as e:
+            logger.error("Error fetching platform comments", error=str(e), exc_info=True)
+            return []
+
+
+# ============================================================================
 # INSTAGRAM ACCOUNT INSIGHTS TOOLS
 # ============================================================================
 
@@ -511,4 +617,5 @@ def create_engagement_tools(business_asset_id: str):
         GetFacebookVideoInsightsTool(business_asset_id=business_asset_id),
         GetInstagramMediaInsightsTool(business_asset_id=business_asset_id),
         GetInstagramAccountInsightsTool(business_asset_id=business_asset_id),
+        GetPlatformCommentsTool(business_asset_id=business_asset_id),
     ]
