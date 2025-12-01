@@ -162,7 +162,7 @@ def run_news_ingestion():
     assets = get_active_business_assets()
     for asset_id in assets:
         run_command(
-            ["news-events", "ingest-perplexity", "--business-asset-id", asset_id, "--topic", "Philadelphia", "--count", "3"],
+            ["news-events", "ingest-perplexity", "--business-asset-id", asset_id, "--count", "3"],
             f"News Event Ingestion - {asset_id}"
         )
 

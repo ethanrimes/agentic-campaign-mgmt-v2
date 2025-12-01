@@ -63,7 +63,16 @@ class PerplexitySonarAgent:
 
                 user_query = f"Summarize the top {num_events} recent news events that would be relevant and interesting to this target audience: {target_audience}. "
 
+                logger.debug(
+                    "Built query from target audience",
+                    target_audience=target_audience,
+                    business_asset_id=self.business_asset_id
+                )
+
             user_query += "Include name, timing, location, a 2–3 sentence description, and credible sources."
+
+            logger.debug("Perplexity Sonar user query", user_query=user_query)
+            logger.debug("Perplexity Sonar system prompt", system_prompt=self.system_prompt)
 
             # Call Perplexity API
             events_data = await self._call_perplexity_api(user_query)
@@ -177,7 +186,8 @@ class PerplexitySonarAgent:
             }
         }
 
-        # Assuming self.api_base = "https://api.perplexity.ai/chat/completions"
+        logger.debug("Perplexity API request payload", payload=json.dumps(payload, indent=2))
+
         async with aiohttp.ClientSession() as session:
             async with session.post(self.api_base, headers=headers, json=payload) as response:
                 if response.status != 200:
@@ -186,11 +196,28 @@ class PerplexitySonarAgent:
 
                 result = await response.json()
 
+                # Log the full API response for debugging
+                logger.debug(
+                    "Perplexity API raw response",
+                    response_keys=list(result.keys()),
+                    has_citations="citations" in result,
+                    citations=result.get("citations", [])
+                )
+
                 # Extract content from response
                 content = result["choices"][0]["message"]["content"]
 
+                logger.debug("Perplexity API content response", content=content)
+
                 # Parse JSON content (Perplexity returns a JSON string in the 'content' field)
                 parsed = json.loads(content)
+
+                logger.debug(
+                    "Perplexity parsed events",
+                    num_events=len(parsed.get("news_events", [])),
+                    events_with_sources=sum(1 for e in parsed.get("news_events", []) if e.get("sources"))
+                )
+
                 return parsed["news_events"]
 
     async def _save_ingested_event(self, event_data: Dict[str, Any]) -> Dict[str, Any]:

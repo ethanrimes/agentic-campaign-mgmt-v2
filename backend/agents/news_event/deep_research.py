@@ -68,6 +68,14 @@ class DeepResearchAgent:
                 target_audience = credentials.target_audience
                 query = f"Recent news events and developments that would be relevant and interesting to this target audience: {target_audience}"
 
+                logger.debug(
+                    "Built query from target audience",
+                    target_audience=target_audience,
+                    business_asset_id=self.business_asset_id
+                )
+
+            logger.debug("Deep research query", query=query)
+
             # Step 1: Perform deep research
             research_report = await self._perform_deep_research(query)
 
@@ -128,6 +136,7 @@ Format the report clearly with sections for each major event. Include as many re
         }
 
         logger.info("Submitting deep research request", model=self.research_model, query=query)
+        logger.debug("Deep research API payload", payload=json.dumps(payload, indent=2))
 
         # Deep research can take several minutes, so set a long timeout
         timeout = aiohttp.ClientTimeout(total=600)  # 10 minutes
@@ -138,6 +147,12 @@ Format the report clearly with sections for each major event. Include as many re
                     raise Exception(f"Deep research API error ({response.status}): {error_text}")
 
                 result = await response.json()
+
+                logger.debug(
+                    "Deep research API raw response",
+                    status=result.get("status"),
+                    output_count=len(result.get("output", []))
+                )
 
                 # Extract response content from Responses API format
                 # The Responses API returns output array with message objects
@@ -160,6 +175,7 @@ Format the report clearly with sections for each major event. Include as many re
                     raise Exception("No research output generated")
 
                 logger.info("Deep research completed", length=len(content))
+                logger.debug("Deep research report content", research_report=content)
                 return content
 
     async def _parse_research_to_events(
@@ -224,6 +240,8 @@ Research Report:
         }
 
         logger.info("Parsing research report", parser_model=self.parser_model)
+        logger.debug("Parser system prompt", system_prompt=self.parser_system_prompt)
+        logger.debug("Parser user prompt", parser_prompt=parser_prompt)
 
         async with aiohttp.ClientSession() as session:
             async with session.post(
@@ -238,8 +256,17 @@ Research Report:
                 result = await response.json()
                 content = result["choices"][0]["message"]["content"]
 
+                logger.debug("Parser raw response", content=content)
+
                 # Parse JSON
                 parsed = json.loads(content)
+
+                logger.debug(
+                    "Parser extracted events",
+                    num_events=len(parsed.get("events", [])),
+                    events_with_sources=sum(1 for e in parsed.get("events", []) if e.get("sources"))
+                )
+
                 return parsed.get("events", [])
 
     async def _save_ingested_event(self, event_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:

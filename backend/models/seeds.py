@@ -23,6 +23,10 @@ class IngestedEvent(BaseModel):
     """
     Raw event ingested from research agents (Perplexity/Deep Research).
     These are processed by the deduplicator to create NewsEventSeeds.
+
+    Note: The 'sources' field is populated by the repository layer from the
+    normalized sources table via the ingested_event_sources junction table,
+    not from a database column.
     """
 
     id: UUID = Field(default_factory=uuid4, description="Unique ingested event ID")
@@ -84,6 +88,10 @@ class NewsEventSeed(BaseModel):
     """
     Canonical news event seed in the knowledge database.
     Created by deduplicating and consolidating IngestedEvents.
+
+    Note: The 'sources' field is populated by the repository layer from the
+    normalized sources table via the news_event_seed_sources junction table,
+    not from a database column.
     """
 
     id: UUID = Field(default_factory=uuid4, description="Unique news event seed ID")
