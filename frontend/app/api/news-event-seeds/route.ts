@@ -25,9 +25,10 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Build query parameters
+    // Build query parameters with source relation via junction table
+    // This fetches news_event_seeds with their related sources through news_event_seed_sources
     const queryParams = new URLSearchParams()
-    queryParams.set('select', '*')
+    queryParams.set('select', 'id,name,start_time,end_time,location,description,created_at,business_asset_id,news_event_seed_sources(sources(id,url,key_findings,found_by,created_at))')
     queryParams.set('business_asset_id', `eq.${business_asset_id}`)
 
     if (id) {
@@ -58,12 +59,25 @@ export async function GET(request: NextRequest) {
 
     const data = await response.json()
 
+    // Transform the nested junction table structure to flat sources array
+    // From: { news_event_seed_sources: [{ sources: { id, url, ... } }] }
+    // To:   { sources: [{ id, url, ... }] }
+    const transformedData = data.map((seed: any) => {
+      const sources = seed.news_event_seed_sources
+        ?.map((junction: any) => junction.sources)
+        .filter(Boolean) || []
+
+      // Remove the junction table field and add flattened sources
+      const { news_event_seed_sources, ...rest } = seed
+      return { ...rest, sources }
+    })
+
     // If fetching single item, return just that item or null
     if (id) {
-      return NextResponse.json(data[0] || null)
+      return NextResponse.json(transformedData[0] || null)
     }
 
-    return NextResponse.json(data)
+    return NextResponse.json(transformedData)
   } catch (error) {
     console.error('Error in news-event-seeds API:', error)
     return NextResponse.json(
