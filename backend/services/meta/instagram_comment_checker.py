@@ -12,6 +12,7 @@ from typing import Dict, Any, List
 from datetime import datetime
 from backend.services.meta.comment_operations import CommentOperations
 from backend.database.repositories.platform_comments import PlatformCommentRepository
+from backend.config.settings import settings
 from backend.utils import get_logger
 
 logger = get_logger(__name__)
@@ -38,17 +39,21 @@ class InstagramCommentChecker:
 
     async def check_for_new_comments(
         self,
-        max_media_to_check: int = 20
+        max_media_to_check: int = None
     ) -> Dict[str, Any]:
         """
         Check for new comments on recent Instagram media.
 
         Args:
-            max_media_to_check: Maximum number of recent media posts to check
+            max_media_to_check: Maximum number of recent media posts to check.
+                               Defaults to settings.instagram_comments_max_media.
 
         Returns:
             Dictionary with results summary
         """
+        if max_media_to_check is None:
+            max_media_to_check = settings.instagram_comments_max_media
+
         logger.info(
             "Starting Instagram comment check",
             max_media=max_media_to_check
@@ -202,21 +207,14 @@ class InstagramCommentChecker:
             from_data = comment.get("from", {})
             commenter_id = from_data.get("id", "") or from_data.get("self_ig_scoped_id", "")
 
-            # Skip comments/replies from our own accounts
-            # This prevents responding to our own replies (infinite loop)
-            # Check against both Instagram account ID and Facebook Page ID
-            from backend.config.settings import settings
-            credentials = settings.get_business_asset_credentials(self.business_asset_id)
-            own_account_ids = {
-                credentials.app_users_instagram_account_id,
-                credentials.facebook_page_id,
-            }
-            if commenter_id and commenter_id in own_account_ids:
+            # Skip comments from our own account by checking if username matches business_asset_id
+            # The business_asset_id (e.g., "penndailybuzz") matches the Instagram username
+            if username and username.lower() == self.business_asset_id.lower():
                 logger.debug(
                     "Skipping comment from own account",
                     comment_id=comment_id,
-                    commenter_id=commenter_id,
-                    username=username
+                    username=username,
+                    business_asset_id=self.business_asset_id
                 )
                 return
 
@@ -274,14 +272,15 @@ class InstagramCommentChecker:
 
 async def check_instagram_comments(
     business_asset_id: str,
-    max_media: int = 20
+    max_media: int = None
 ) -> Dict[str, Any]:
     """
     CLI/Scheduler entry point for checking Instagram comments.
 
     Args:
         business_asset_id: The unique identifier for the business asset
-        max_media: Maximum number of recent media to check
+        max_media: Maximum number of recent media to check.
+                  Defaults to settings.instagram_comments_max_media.
 
     Returns:
         Dictionary with results
