@@ -281,36 +281,33 @@ class VerifierAgent:
             VerifierChecklistInput with the verification result
         """
         # Build the schema using types.Schema objects (required by Gemini SDK)
+        # Note: is_approved is NOT in the schema - we compute it deterministically from the checklist results
         response_schema = types.Schema(
             type=types.Type.OBJECT,
             properties={
                 "has_source_link_if_news": types.Schema(
                     type=types.Type.BOOLEAN,
-                    description="For news events: does the post include source URL(s)? Omit if not a news event."
+                    description="For news events: does the post include source URL(s)? Return null/omit if not a news event."
                 ),
                 "has_no_offensive_content": types.Schema(
                     type=types.Type.BOOLEAN,
-                    description="True means NO offensive content found."
+                    description="True = NO offensive content found (check passes). False = offensive content found (check fails)."
                 ),
                 "has_no_misinformation": types.Schema(
                     type=types.Type.BOOLEAN,
-                    description="For news events: True means NO misinformation found. Omit if not a news event."
-                ),
-                "is_approved": types.Schema(
-                    type=types.Type.BOOLEAN,
-                    description="Overall approval: should this post be published?"
+                    description="For news events: True = NO misinformation found (check passes). Return null/omit if not a news event."
                 ),
                 "reasoning": types.Schema(
                     type=types.Type.STRING,
-                    description="Detailed explanation of the verification decision."
+                    description="Brief explanation of your evaluation for each checklist item."
                 ),
                 "issues_found": types.Schema(
                     type=types.Type.ARRAY,
                     items=types.Schema(type=types.Type.STRING),
-                    description="List of specific issues found. Empty if no issues."
+                    description="List of specific issues found. Empty array if no issues."
                 )
             },
-            required=["has_no_offensive_content", "is_approved", "reasoning", "issues_found"]
+            required=["has_no_offensive_content", "reasoning", "issues_found"]
         )
 
         try:
@@ -327,11 +324,35 @@ class VerifierAgent:
             import json
             result_data = json.loads(response.text)
 
+            # Extract checklist results
+            has_source_link_if_news = result_data.get("has_source_link_if_news")
+            has_no_offensive_content = result_data["has_no_offensive_content"]
+            has_no_misinformation = result_data.get("has_no_misinformation")
+
+            # Compute is_approved deterministically from checklist results
+            # Approved if ALL applicable checks pass:
+            # - has_no_offensive_content must be True
+            # - has_source_link_if_news must be True or None (not applicable)
+            # - has_no_misinformation must be True or None (not applicable)
+            is_approved = (
+                has_no_offensive_content == True and
+                (has_source_link_if_news is None or has_source_link_if_news == True) and
+                (has_no_misinformation is None or has_no_misinformation == True)
+            )
+
+            logger.debug(
+                "Computed approval from checklist",
+                has_no_offensive_content=has_no_offensive_content,
+                has_source_link_if_news=has_source_link_if_news,
+                has_no_misinformation=has_no_misinformation,
+                is_approved=is_approved
+            )
+
             return VerifierChecklistInput(
-                has_source_link_if_news=result_data.get("has_source_link_if_news"),
-                has_no_offensive_content=result_data["has_no_offensive_content"],
-                has_no_misinformation=result_data.get("has_no_misinformation"),
-                is_approved=result_data["is_approved"],
+                has_source_link_if_news=has_source_link_if_news,
+                has_no_offensive_content=has_no_offensive_content,
+                has_no_misinformation=has_no_misinformation,
+                is_approved=is_approved,
                 reasoning=result_data["reasoning"],
                 issues_found=result_data.get("issues_found", [])
             )
