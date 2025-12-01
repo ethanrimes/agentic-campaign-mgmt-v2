@@ -76,8 +76,7 @@ class CommentResponderRunner:
         if fetch_instagram_first and platform != "facebook":
             try:
                 instagram_results = await check_instagram_comments(
-                    business_asset_id=self.business_asset_id,
-                    max_media=20
+                    business_asset_id=self.business_asset_id
                 )
                 results["instagram_fetch"] = {
                     "success": instagram_results.get("success", False),

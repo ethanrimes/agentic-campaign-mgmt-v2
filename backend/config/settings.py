@@ -89,6 +89,9 @@ class Settings(BaseSettings):
     # Deduplicator configuration (how many recent canonical seeds to compare against)
     deduplicator_canonical_seeds_limit: int = 10
 
+    # Instagram comment checking
+    instagram_comments_max_media: int = 10  # Max recent posts to check for comments
+
     # Publishing
     publishing_check_interval: int = 6  # hours
 
