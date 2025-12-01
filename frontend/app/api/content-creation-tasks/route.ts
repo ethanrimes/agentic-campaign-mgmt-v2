@@ -17,6 +17,7 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams
     const business_asset_id = searchParams.get('business_asset_id')
     const seed_id = searchParams.get('seed_id')
+    const seed_type = searchParams.get('seed_type')
 
     if (!business_asset_id) {
       return NextResponse.json(
@@ -30,8 +31,14 @@ export async function GET(request: NextRequest) {
     queryParams.set('select', '*')
     queryParams.set('business_asset_id', `eq.${business_asset_id}`)
 
-    if (seed_id) {
-      queryParams.set('content_seed_id', `eq.${seed_id}`)
+    if (seed_id && seed_type) {
+      // Use the correct column based on seed type
+      const seedColumn = seed_type === 'news_event'
+        ? 'news_event_seed_id'
+        : seed_type === 'trend'
+        ? 'trend_seed_id'
+        : 'ungrounded_seed_id'
+      queryParams.set(seedColumn, `eq.${seed_id}`)
     }
 
     queryParams.set('order', 'created_at.desc')

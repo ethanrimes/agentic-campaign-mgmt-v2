@@ -30,7 +30,7 @@ export default function SeedModal({ seed, seedType, postCount, onClose }: SeedMo
       try {
         setLoading(true)
         const [tasksData, postsData] = await Promise.all([
-          getContentCreationTasksBySeed(seed.id, selectedAsset.id),
+          getContentCreationTasksBySeed(seed.id, seedType, selectedAsset.id),
           getCompletedPostsBySeed(seed.id, seedType, selectedAsset.id),
         ])
         setTasks(tasksData)

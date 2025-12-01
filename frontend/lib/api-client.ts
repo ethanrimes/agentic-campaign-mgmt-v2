@@ -98,11 +98,13 @@ export async function getCompletedPost(id: string, business_asset_id: string): P
 // Content Creation Tasks
 export async function getContentCreationTasksBySeed(
   seedId: string,
+  seedType: 'news_event' | 'trend' | 'ungrounded',
   business_asset_id: string
 ): Promise<ContentCreationTask[]> {
   const response = await fetch(buildApiUrl('/api/content-creation-tasks', {
     business_asset_id,
-    seed_id: seedId
+    seed_id: seedId,
+    seed_type: seedType
   }))
   if (!response.ok) {
     throw new Error('Failed to fetch content creation tasks')

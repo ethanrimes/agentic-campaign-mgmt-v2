@@ -28,7 +28,7 @@ export default function TrendSeedCard({ seed }: TrendSeedCardProps) {
       try {
         setLoading(true)
         const [tasksData, postsData] = await Promise.all([
-          getContentCreationTasksBySeed(seed.id, selectedAsset.id),
+          getContentCreationTasksBySeed(seed.id, 'trend', selectedAsset.id),
           getCompletedPostsBySeed(seed.id, 'trend', selectedAsset.id),
         ])
         setTasks(tasksData)

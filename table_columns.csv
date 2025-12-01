@@ -56,7 +56,6 @@ ingested_events,start_time,timestamp with time zone,YES,
 ingested_events,end_time,timestamp with time zone,YES,
 ingested_events,location,text,NO,
 ingested_events,description,text,NO,
-ingested_events,sources,jsonb,YES,'[]'::jsonb
 ingested_events,created_at,timestamp with time zone,YES,now()
 ingested_events,ingested_by,text,NO,
 ingested_events,processed,boolean,NO,false
@@ -94,7 +93,6 @@ news_event_seeds,start_time,timestamp with time zone,YES,
 news_event_seeds,end_time,timestamp with time zone,YES,
 news_event_seeds,location,text,NO,
 news_event_seeds,description,text,NO,
-news_event_seeds,sources,jsonb,YES,'[]'::jsonb
 news_event_seeds,created_at,timestamp with time zone,YES,now()
 news_event_seeds,business_asset_id,text,NO,
 platform_comments,id,uuid,NO,uuid_generate_v4()
