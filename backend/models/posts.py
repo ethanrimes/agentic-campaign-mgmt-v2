@@ -80,6 +80,16 @@ class CompletedPost(BaseModel):
     scheduled_posting_time: Optional[datetime] = Field(
         None, description="When this post should be published (NULL means publish immediately)"
     )
+
+    # Verification group support (for cross-platform media sharing)
+    verification_group_id: Optional[UUID] = Field(
+        None,
+        description="Groups posts that share media for unified verification. NULL means standalone post."
+    )
+    is_verification_primary: bool = Field(
+        default=True,
+        description="TRUE = this post will be verified. FALSE = inherits verification from primary post in group."
+    )
     published_at: Optional[datetime] = Field(
         None, description="When the post was published to the platform"
     )

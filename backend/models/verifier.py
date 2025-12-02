@@ -28,7 +28,13 @@ class VerifierResponse(BaseModel):
 
     # Foreign key to the post being verified
     completed_post_id: UUID = Field(
-        ..., description="ID of the completed post being verified"
+        ..., description="ID of the completed post being verified (primary post)"
+    )
+
+    # Verification group support (for cross-platform media sharing)
+    verification_group_id: Optional[UUID] = Field(
+        None,
+        description="Links to verification group. When set, result applies to all posts in the group."
     )
 
     # Overall verification result

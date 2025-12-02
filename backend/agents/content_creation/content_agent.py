@@ -9,7 +9,7 @@ or separate media based on the share_media_across_platforms config setting.
 
 from pathlib import Path
 from typing import Dict, Any, List, Literal, Optional
-from uuid import UUID
+from uuid import UUID, uuid4
 from datetime import datetime, timezone, timedelta
 from pydantic import BaseModel, Field
 from langchain.agents import create_agent
@@ -281,8 +281,15 @@ class ContentCreationAgent:
         """
         Create both Instagram and Facebook posts from a unified post output.
 
-        If share_media is True, both posts use the same media IDs.
-        If share_media is False, generates separate media for each platform.
+        If share_media is True:
+          - Both posts use the same media IDs
+          - Both posts share a verification_group_id
+          - Instagram post is primary (will be verified)
+          - Facebook post is secondary (inherits verification result)
+
+        If share_media is False:
+          - Each post is standalone (no verification group)
+          - Both posts are primary (both verified separately)
         """
         posts = []
         media_uuids = [UUID(media_id) for media_id in unified_post.media_ids] if unified_post.media_ids else []
@@ -310,7 +317,11 @@ class ContentCreationAgent:
         else:
             base_scheduled_time = await self._calculate_scheduled_time("instagram")
 
-        # Create Instagram post
+        # Generate verification group ID if sharing media
+        # When sharing, IG is primary (verified), FB is secondary (inherits result)
+        verification_group_id = uuid4() if self.share_media else None
+
+        # Create Instagram post (always primary)
         ig_post = CompletedPost(
             business_asset_id=self.business_asset_id,
             task_id=task.id,
@@ -323,7 +334,9 @@ class ContentCreationAgent:
             media_ids=media_uuids,
             location=unified_post.location,
             hashtags=unified_post.hashtags,
-            scheduled_posting_time=base_scheduled_time
+            scheduled_posting_time=base_scheduled_time,
+            verification_group_id=verification_group_id,
+            is_verification_primary=True  # IG is always primary
         )
         created_ig = await self.posts_repo.create(ig_post)
         posts.append(created_ig.model_dump(mode="json"))
@@ -331,7 +344,9 @@ class ContentCreationAgent:
             "Instagram post created",
             post_id=str(created_ig.id),
             post_type=ig_post_type,
-            shared_media=self.share_media
+            shared_media=self.share_media,
+            verification_group_id=str(verification_group_id) if verification_group_id else None,
+            is_primary=True
         )
 
         # Create Facebook post
@@ -341,6 +356,9 @@ class ContentCreationAgent:
         # If not sharing media, we would need to generate new media here
         # For now, we use the same media IDs (actual media re-generation would require agent re-run)
         fb_media_uuids = media_uuids  # Same media if sharing
+
+        # FB is secondary when sharing media (inherits verification), primary when not sharing
+        fb_is_primary = not self.share_media
 
         fb_post = CompletedPost(
             business_asset_id=self.business_asset_id,
@@ -354,7 +372,9 @@ class ContentCreationAgent:
             media_ids=fb_media_uuids,
             location=unified_post.location,
             hashtags=unified_post.hashtags,
-            scheduled_posting_time=fb_scheduled_time
+            scheduled_posting_time=fb_scheduled_time,
+            verification_group_id=verification_group_id,
+            is_verification_primary=fb_is_primary
         )
         created_fb = await self.posts_repo.create(fb_post)
         posts.append(created_fb.model_dump(mode="json"))
@@ -362,7 +382,9 @@ class ContentCreationAgent:
             "Facebook post created",
             post_id=str(created_fb.id),
             post_type=fb_post_type,
-            shared_media=self.share_media
+            shared_media=self.share_media,
+            verification_group_id=str(verification_group_id) if verification_group_id else None,
+            is_primary=fb_is_primary
         )
 
         return posts
