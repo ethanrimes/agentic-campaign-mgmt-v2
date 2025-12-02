@@ -121,14 +121,17 @@ class PlannerAgent:
             limit=settings.planner_ungrounded_seeds_limit
         )
 
-        # Get latest insights
-        latest_insights = await self.insights_repo.get_latest(self.business_asset_id)
+        # Get recent insights (configurable limit, handles fewer available gracefully)
+        recent_insights = await self.insights_repo.get_recent(
+            self.business_asset_id,
+            limit=settings.planner_insights_limit
+        )
 
         context = {
             "news_seeds": news_seeds,
             "trend_seeds": trend_seeds,
             "ungrounded_seeds": ungrounded_seeds,
-            "insights": latest_insights,
+            "insights": recent_insights,  # Now a list of reports
             "week_start": self._get_next_monday().isoformat()
         }
 
@@ -178,13 +181,18 @@ Available Content Seeds:
             input_text += f"{i}. {getattr(seed, 'idea', 'Unnamed')} (ID: {seed.id})\n"
             input_text += f"   Format: {getattr(seed, 'format', 'unknown')}\n\n"
 
-        # Add insights
-        if context.get('insights'):
-            insights = context['insights']
-            input_text += f"\n** Latest Insights **\n"
-            input_text += f"Summary: {getattr(insights, 'summary', 'No summary')}\n"
-            findings = getattr(insights, 'findings', '')
-            input_text += f"Findings: {findings[:300] if findings else 'No findings'}...\n\n"
+        # Add insights (now supports multiple reports)
+        insights_list = context.get('insights', [])
+        if insights_list:
+            input_text += f"\n** Recent Insights ({len(insights_list)} report{'s' if len(insights_list) != 1 else ''}) **\n"
+            for i, insights in enumerate(insights_list, 1):
+                created_at = getattr(insights, 'created_at', 'Unknown date')
+                input_text += f"\n--- Report {i} (from {created_at}) ---\n"
+                input_text += f"Summary: {getattr(insights, 'summary', 'No summary')}\n"
+                findings = getattr(insights, 'findings', '')
+                input_text += f"Findings: {findings[:300] if findings else 'No findings'}...\n"
+        else:
+            input_text += f"\n** Recent Insights **\nNo insights reports available yet.\n"
 
         input_text += f"""
 Based on this context, create a strategic weekly content plan.

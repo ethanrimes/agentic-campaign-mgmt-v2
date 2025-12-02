@@ -57,7 +57,6 @@ export default function VerifierReportCard({ report, defaultExpanded = false }: 
     <div className="space-y-3">
       <p className="text-sm text-gray-700 leading-relaxed line-clamp-2">{report.reasoning}</p>
       <div className="flex flex-wrap items-center gap-2">
-        <ChecklistItem label="Source Links" value={report.has_source_link_if_news} />
         <ChecklistItem label="No Offensive Content" value={report.has_no_offensive_content} />
         <ChecklistItem label="No Misinformation" value={report.has_no_misinformation} />
       </div>
@@ -125,20 +124,6 @@ export default function VerifierReportCard({ report, defaultExpanded = false }: 
             Verification Checklist
           </h4>
           <div className="space-y-3">
-            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-              <span className="text-sm font-medium text-gray-700">Source Links Included (News)</span>
-              {report.has_source_link_if_news === null ? (
-                <span className="text-xs bg-gray-100 text-gray-500 px-2 py-1 rounded-full">N/A</span>
-              ) : report.has_source_link_if_news ? (
-                <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full flex items-center gap-1">
-                  <CheckCircle2 className="w-3 h-3" /> Pass
-                </span>
-              ) : (
-                <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full flex items-center gap-1">
-                  <XCircle className="w-3 h-3" /> Fail
-                </span>
-              )}
-            </div>
             <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
               <span className="text-sm font-medium text-gray-700">No Offensive Content</span>
               {report.has_no_offensive_content ? (

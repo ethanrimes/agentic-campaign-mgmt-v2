@@ -5,8 +5,8 @@
 import { useState, useEffect } from 'react'
 import ExpandableCard from '@/components/common/ExpandableCard'
 import SeedTimeline from './SeedTimeline'
-import { formatRelativeTime } from '@/lib/utils'
-import { Hash, User } from 'lucide-react'
+import { formatRelativeTime, formatDateTime } from '@/lib/utils'
+import { Hash, User, Activity } from 'lucide-react'
 import type { TrendSeed } from '@/types'
 import { getContentCreationTasksBySeed, getCompletedPostsBySeed } from '@/lib/api-client'
 import { useBusinessAsset } from '@/lib/business-asset-context'
@@ -42,6 +42,8 @@ export default function TrendSeedCard({ seed }: TrendSeedCardProps) {
     loadData()
   }, [seed.id, isExpanded, selectedAsset])
 
+  const toolCallCount = seed.tool_calls?.length || 0
+
   const preview = (
     <div className="space-y-3">
       <p className="text-sm line-clamp-2 text-gray-700">{seed.description}</p>
@@ -54,6 +56,12 @@ export default function TrendSeedCard({ seed }: TrendSeedCardProps) {
         {seed.hashtags.length > 5 && (
           <span className="text-xs bg-gray-100 text-gray-700 px-3 py-1.5 rounded-full font-medium">
             +{seed.hashtags.length - 5} more
+          </span>
+        )}
+        {toolCallCount > 0 && (
+          <span className="flex items-center gap-1.5 bg-green-50 text-green-700 px-3 py-1.5 rounded-full text-xs font-medium border border-green-100">
+            <Activity className="w-3.5 h-3.5" />
+            {toolCallCount} tool calls
           </span>
         )}
       </div>
@@ -119,6 +127,48 @@ export default function TrendSeedCard({ seed }: TrendSeedCardProps) {
                       View post →
                     </a>
                   )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Tool Calls */}
+        {seed.tool_calls && seed.tool_calls.length > 0 && (
+          <div>
+            <h4 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
+              <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-500 rounded-lg flex items-center justify-center text-white text-xs font-bold">
+                {seed.tool_calls.length}
+              </div>
+              Tool Executions
+            </h4>
+            <div className="space-y-3">
+              {seed.tool_calls.map((call, i) => (
+                <div key={i} className="group p-4 bg-white rounded-xl border border-gray-200 shadow-soft hover:shadow-glow hover:border-purple-200 transition-all overflow-hidden">
+                  <div className="flex items-start justify-between mb-3">
+                    <span className="inline-flex items-center gap-2 text-sm font-bold text-gray-900 bg-gradient-to-r from-purple-50 to-pink-50 px-3 py-1.5 rounded-lg border border-purple-100">
+                      {call.tool_name}
+                    </span>
+                    <span className="text-xs text-gray-500 font-medium">
+                      {formatDateTime(call.timestamp)}
+                    </span>
+                  </div>
+
+                  {/* Arguments */}
+                  <div className="mb-3">
+                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Arguments:</p>
+                    <pre className="text-xs text-gray-700 bg-gray-50 p-3 rounded-lg border border-gray-200 overflow-x-auto font-mono">
+                      {JSON.stringify(call.arguments, null, 2)}
+                    </pre>
+                  </div>
+
+                  {/* Result */}
+                  <div>
+                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Result:</p>
+                    <pre className="text-xs text-gray-700 bg-gradient-to-br from-green-50 to-emerald-50 p-3 rounded-lg border border-green-100 overflow-x-auto max-h-40 font-mono">
+                      {JSON.stringify(call.result, null, 2)}
+                    </pre>
+                  </div>
                 </div>
               ))}
             </div>

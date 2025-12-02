@@ -31,9 +31,11 @@ class VerifierAgent:
     Content safety verifier agent.
 
     Uses Gemini 2.5 Flash to verify posts against a safety checklist:
-    - Source link verification (for news events)
     - Offensive content detection
     - Misinformation detection (for news events)
+
+    Note: Source links are now deterministically appended by the content agent,
+    so we no longer need to verify their presence.
     """
 
     MODEL = "models/gemini-2.5-flash"
@@ -244,7 +246,6 @@ class VerifierAgent:
             business_asset_id=self.business_asset_id,
             completed_post_id=post_id,
             is_approved=response.is_approved,
-            has_source_link_if_news=response.has_source_link_if_news,
             has_no_offensive_content=response.has_no_offensive_content,
             has_no_misinformation=response.has_no_misinformation,
             reasoning=response.reasoning,
@@ -282,20 +283,17 @@ class VerifierAgent:
         """
         # Build the schema using types.Schema objects (required by Gemini SDK)
         # Note: is_approved is NOT in the schema - we compute it deterministically from the checklist results
+        # Note: has_source_link_if_news is removed since links are now deterministically appended by content agent
         response_schema = types.Schema(
             type=types.Type.OBJECT,
             properties={
-                "has_source_link_if_news": types.Schema(
-                    type=types.Type.BOOLEAN,
-                    description="For news events: does the post include source URL(s)? Return null/omit if not a news event."
-                ),
                 "has_no_offensive_content": types.Schema(
                     type=types.Type.BOOLEAN,
                     description="True = NO offensive content found (check passes). False = offensive content found (check fails)."
                 ),
                 "has_no_misinformation": types.Schema(
                     type=types.Type.BOOLEAN,
-                    description="For news events: True = NO misinformation found (check passes). Return null/omit if not a news event."
+                    description="For news events: True = NO misinformation found (check passes). Return null/omit if not a news event. Note: misspellings do NOT count as misinformation."
                 ),
                 "reasoning": types.Schema(
                     type=types.Type.STRING,
@@ -325,31 +323,27 @@ class VerifierAgent:
             result_data = json.loads(response.text)
 
             # Extract checklist results
-            has_source_link_if_news = result_data.get("has_source_link_if_news")
             has_no_offensive_content = result_data["has_no_offensive_content"]
             has_no_misinformation = result_data.get("has_no_misinformation")
 
             # Compute is_approved deterministically from checklist results
             # Approved if ALL applicable checks pass:
             # - has_no_offensive_content must be True
-            # - has_source_link_if_news must be True or None (not applicable)
             # - has_no_misinformation must be True or None (not applicable)
+            # Note: has_source_link_if_news is no longer checked since links are deterministically appended
             is_approved = (
                 has_no_offensive_content == True and
-                (has_source_link_if_news is None or has_source_link_if_news == True) and
                 (has_no_misinformation is None or has_no_misinformation == True)
             )
 
             logger.debug(
                 "Computed approval from checklist",
                 has_no_offensive_content=has_no_offensive_content,
-                has_source_link_if_news=has_source_link_if_news,
                 has_no_misinformation=has_no_misinformation,
                 is_approved=is_approved
             )
 
             return VerifierChecklistInput(
-                has_source_link_if_news=has_source_link_if_news,
                 has_no_offensive_content=has_no_offensive_content,
                 has_no_misinformation=has_no_misinformation,
                 is_approved=is_approved,
@@ -361,7 +355,6 @@ class VerifierAgent:
             logger.error("Gemini API call failed", error=str(e))
             # Return a failed verification on error
             return VerifierChecklistInput(
-                has_source_link_if_news=None,
                 has_no_offensive_content=False,
                 has_no_misinformation=None,
                 is_approved=False,

@@ -105,7 +105,7 @@ export default function InstagramPage() {
           </p>
         </div>
       ) : (
-        <InstagramPostGrid posts={posts} />
+        <InstagramPostGrid posts={posts} accountName={selectedAsset.name} />
       )}
     </div>
   )

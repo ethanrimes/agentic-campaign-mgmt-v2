@@ -26,6 +26,7 @@ export interface TrendSeed {
   hashtags: string[]
   posts: any[]
   users: any[]
+  tool_calls: ToolCall[]
   created_at: string
   created_by: string
 }
@@ -108,7 +109,6 @@ export interface VerifierResponse {
   business_asset_id: string
   completed_post_id: string
   is_approved: boolean
-  has_source_link_if_news: boolean | null
   has_no_offensive_content: boolean
   has_no_misinformation: boolean | null
   reasoning: string

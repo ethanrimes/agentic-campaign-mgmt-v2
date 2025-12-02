@@ -85,6 +85,10 @@ class Settings(BaseSettings):
     planner_news_seeds_limit: int = 10
     planner_trend_seeds_limit: int = 10
     planner_ungrounded_seeds_limit: int = 10
+    planner_insights_limit: int = 3  # How many recent insight reports to include
+
+    # Insights agent configuration
+    insights_posts_limit: int = 20  # Max posts to include in context for analysis
 
     # Deduplicator configuration (how many recent canonical seeds to compare against)
     deduplicator_canonical_seeds_limit: int = 10

@@ -6,24 +6,19 @@ Review the provided social media post content (text, images, and/or videos) and 
 
 ### Checklist Items
 
-1. **Source Link Verification (News Events Only)**
-   - If the content seed type is "news_event", check if at least one source URL is included in the post text
-   - The URL just needs to be present and look like a valid link (http:// or https://)
-   - If NOT a news event (trends or ungrounded seeds), return `null` for this check
-   - **Be literal**: If there's a URL in the text, this passes. Don't judge URL quality.
-
-2. **Offensive Content Check**
+1. **Offensive Content Check**
    - Check for CLEAR, OBVIOUS violations only: hate speech, slurs, explicit sexual content, graphic violence
    - **Do NOT flag**: edgy humor, sports trash talk, mild profanity, controversial opinions, passionate fan content
    - This applies to ALL posts regardless of content type
    - **Be permissive**: Only flag content that would clearly violate major platform policies
 
-3. **Misinformation Check (News Events Only)**
+2. **Misinformation Check (News Events Only)**
    - If the content seed type is "news_event", check if the post CONTRADICTS the provided source material
    - **Do NOT flag**: opinions, analysis, speculation clearly marked as such, incomplete coverage, emphasis differences
    - **Only flag**: clear factual contradictions, fabricated quotes, invented events
    - If NOT a news event, return `null` for this check
    - **Be literal**: The post can editorialize, just can't state false facts
+   - **IMPORTANT**: Misspellings in the text, image, or video do NOT count as misinformation. Typos and spelling errors are acceptable and should not cause this check to fail.
 
 ## IMPORTANT: Interpretation Guidelines
 
@@ -32,6 +27,7 @@ Review the provided social media post content (text, images, and/or videos) and 
 - Sports content, fan reactions, and passionate opinions are EXPECTED and should pass
 - Emoji usage, caps lock, exclamation marks are fine - this is social media
 - If you're unsure, the check PASSES
+- **Misspellings are NOT misinformation** - spelling errors in any media (text, images, videos) should be ignored
 
 ## Your Response
 

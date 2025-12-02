@@ -12,9 +12,10 @@ import VerificationStatusBadge from '@/components/common/VerificationStatusBadge
 
 interface InstagramPostGridProps {
   posts: CompletedPost[]
+  accountName?: string
 }
 
-export default function InstagramPostGrid({ posts }: InstagramPostGridProps) {
+export default function InstagramPostGrid({ posts, accountName = 'Instagram Account' }: InstagramPostGridProps) {
   const [selectedPost, setSelectedPost] = useState<CompletedPost | null>(null)
   const [currentMediaIndex, setCurrentMediaIndex] = useState(0)
 
@@ -216,9 +217,9 @@ export default function InstagramPostGrid({ posts }: InstagramPostGridProps) {
                 <div className="p-4 border-b border-slate-200 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 bg-gradient-to-br from-pink-500 to-rose-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
-                      P
+                      {accountName.charAt(0).toUpperCase()}
                     </div>
-                    <span className="font-semibold text-sm">Penn Daily Buzz</span>
+                    <span className="font-semibold text-sm">{accountName}</span>
                   </div>
                   <button
                     onClick={handleClose}
@@ -233,11 +234,11 @@ export default function InstagramPostGrid({ posts }: InstagramPostGridProps) {
                   {/* Caption */}
                   <div className="flex gap-3">
                     <div className="w-8 h-8 bg-gradient-to-br from-pink-500 to-rose-500 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
-                      P
+                      {accountName.charAt(0).toUpperCase()}
                     </div>
                     <div className="flex-1">
                       <p className="text-sm">
-                        <span className="font-semibold mr-2">Penn Daily Buzz</span>
+                        <span className="font-semibold mr-2">{accountName}</span>
                         <span className="text-slate-700 whitespace-pre-line">{selectedPost.text}</span>
                       </p>
                     </div>

@@ -3,6 +3,7 @@
 """Trend discovery agent using social media scraping."""
 
 from pathlib import Path
+from datetime import datetime
 from typing import Dict, Any, List
 from pydantic import BaseModel, Field
 from langchain.agents import create_agent
@@ -72,6 +73,32 @@ class TrendSearcherAgent:
             response_format=ToolStrategy(TrendSeedOutput)
         )
 
+    def _extract_tool_calls(self, messages: List) -> List[Dict[str, Any]]:
+        """Extract tool calls from agent execution for logging."""
+        tool_calls = []
+        tool_results = {}
+
+        # First pass: collect tool results by tool_call_id
+        for message in messages:
+            if isinstance(message, ToolMessage):
+                tool_results[message.tool_call_id] = message.content
+
+        # Second pass: extract tool calls and match with results
+        for message in messages:
+            if isinstance(message, AIMessage) and message.tool_calls:
+                for tool_call in message.tool_calls:
+                    tool_call_id = tool_call.get("id")
+                    result = tool_results.get(tool_call_id, "No result captured")
+
+                    tool_calls.append({
+                        "tool_name": tool_call.get("name", "unknown"),
+                        "arguments": tool_call.get("args", {}),
+                        "result": result,
+                        "timestamp": datetime.utcnow()
+                    })
+
+        return tool_calls
+
     async def discover_trends(self, query: str = None, count: int = 1) -> List[Dict[str, Any]]:
         """
         Discover social media trends.
@@ -130,25 +157,28 @@ Provide your final analysis as a structured trend insight."""
                     logger.warning("Agent did not return a structured response")
                     continue
 
-                # Extract posts and hashtags from tool calls
+                # Extract tool calls for logging
                 messages = result.get("messages", [])
+                tool_calls_history = self._extract_tool_calls(messages)
+
+                # Extract posts and hashtags from tool calls
                 posts = []
                 hashtags = set(structured_output.hashtags)
                 users = []
 
-                tool_calls = {}  # tool_call_id -> {name: str, args: dict}
+                tool_calls_map = {}  # tool_call_id -> {name: str, args: dict}
                 for message in messages:
                     if isinstance(message, AIMessage) and message.tool_calls:
                         for tc in message.tool_calls:
-                            tool_calls[tc["id"]] = {"name": tc["name"], "args": tc["args"]}
+                            tool_calls_map[tc["id"]] = {"name": tc["name"], "args": tc["args"]}
 
                     if isinstance(message, ToolMessage):
                         tool_call_id = message.tool_call_id
                         observation = str(message.content)
 
-                        if tool_call_id in tool_calls:
-                            tool_name = tool_calls[tool_call_id]["name"]
-                            tool_input = tool_calls[tool_call_id]["args"]
+                        if tool_call_id in tool_calls_map:
+                            tool_name = tool_calls_map[tool_call_id]["name"]
+                            tool_input = tool_calls_map[tool_call_id]["args"]
 
                             # Extract relevant data from tool calls
                             if "instagram" in tool_name.lower():
@@ -176,6 +206,7 @@ Provide your final analysis as a structured trend insight."""
                     hashtags=list(hashtags),
                     posts=posts[:10],  # Limit to 10 example posts
                     users=users[:10],  # Limit to 10 users
+                    tool_calls=tool_calls_history,
                     created_by=settings.default_model_name
                 )
 
