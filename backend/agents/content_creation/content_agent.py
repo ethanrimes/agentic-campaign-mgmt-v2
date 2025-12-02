@@ -19,14 +19,19 @@ from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
 from backend.config.settings import settings
 from backend.config.prompts import get_global_system_prompt
-from backend.tools import create_media_generation_tools
 from backend.database.repositories.content_creation_tasks import ContentCreationTaskRepository
 from backend.database.repositories.completed_posts import CompletedPostRepository
 from backend.database.repositories.news_event_seeds import NewsEventSeedRepository
 from backend.database.repositories.trend_seeds import TrendSeedsRepository
 from backend.database.repositories.ungrounded_seeds import UngroundedSeedRepository
+from backend.database.repositories.media import MediaRepository
 from backend.models.posts import CompletedPost
+from backend.models.media import Image, Video
+from backend.services.wavespeed.image_generator import ImageGenerator
+from backend.services.wavespeed.video_generator import VideoGenerator
+from backend.services.supabase.storage import StorageService
 from backend.utils import get_logger
+import asyncio
 
 logger = get_logger(__name__)
 
@@ -37,6 +42,28 @@ AI_DISCLOSURE_FOOTNOTE = "\n\n✨ AI-assisted"
 NEWS_SOURCE_LINK_FORMAT = "\n\n🔗 Read more: {url}"
 
 
+class MediaGenerationSpec(BaseModel):
+    """
+    Specification for a single media generation request.
+
+    The agent outputs these specs, and we call the services deterministically.
+    """
+    media_type: Literal["image", "video"] = Field(
+        ..., description="Type of media to generate"
+    )
+    prompt: str = Field(
+        ..., description="The prompt to use for generating this media"
+    )
+    # Optional parameters for image generation
+    size: Optional[str] = Field(
+        None, description="Image size (e.g., '1024*1024', '1024*1350'). Defaults to 1024*1024."
+    )
+    # Optional parameters for video generation
+    orientation: Optional[Literal["landscape", "portrait"]] = Field(
+        None, description="Video orientation. Defaults to 'portrait' for reels."
+    )
+
+
 class UnifiedPostOutput(BaseModel):
     """
     A unified post output that will be used to create posts on both platforms.
@@ -44,14 +71,18 @@ class UnifiedPostOutput(BaseModel):
     Each UnifiedPostOutput creates:
     - For image/video/carousel formats: 1 Instagram post + 1 Facebook post (2 total)
     - For text_only format: 1 Facebook post only
+
+    Media is NOT directly specified here - instead, provide media_specs which
+    describe what media should be generated. The system will call the generation
+    services and attach the resulting media IDs automatically.
     """
     format_type: Literal["image", "video", "carousel", "text_only"] = Field(
-        ..., description="Type of content format (carousel requires 2-10 images)"
+        ..., description="Type of content format (carousel requires 2-10 image specs)"
     )
     text: str = Field(..., description="The full caption/text for the post")
-    media_ids: List[str] = Field(
+    media_specs: List[MediaGenerationSpec] = Field(
         default_factory=list,
-        description="List of Media IDs (UUIDs) from the media generation tools. Extract 'Media ID' values from tool responses, NOT URLs."
+        description="Specifications for media to generate. For 'image': 1 spec. For 'video': 1 spec. For 'carousel': 2-10 image specs."
     )
     location: Optional[str] = Field(None, description="Optional location tag")
     hashtags: List[str] = Field(default_factory=list, description="List of hashtags (without # symbol)")
@@ -86,6 +117,7 @@ class ContentCreationAgent:
         self.news_repo = NewsEventSeedRepository()
         self.trend_repo = TrendSeedsRepository()
         self.ungrounded_repo = UngroundedSeedRepository()
+        self.media_repo = MediaRepository()
 
         # Determine media sharing mode
         self.share_media = share_media if share_media is not None else settings.share_media_across_platforms
@@ -102,20 +134,127 @@ class ContentCreationAgent:
             temperature=0.7,  # Moderate-high for creative content
         )
 
-        # Create tools
-        self.tools = create_media_generation_tools(self.business_asset_id)
-
+        # No tools needed - agent outputs structured media specs, we call services deterministically
         self.agent_executor = create_agent(
             model=self.llm,
-            tools=self.tools,
+            tools=[],  # No tools - agent outputs specs, we call services
             system_prompt=f"{self.global_prompt}\n\n{self.agent_prompt}",
             response_format=ToolStrategy(AgentResponse)
         )
+
+        # Initialize media generation services
+        self.image_generator = ImageGenerator()
+        self.video_generator = VideoGenerator()
+        self.storage_service = StorageService()
 
         logger.info(
             "ContentCreationAgent initialized",
             share_media=self.share_media
         )
+
+    async def _generate_media_from_spec(self, spec: MediaGenerationSpec) -> UUID:
+        """
+        Generate media from a MediaGenerationSpec and return the media ID.
+
+        This is called deterministically after the agent outputs its specs.
+        """
+        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+        file_id = uuid4().hex[:8]
+
+        if spec.media_type == "image":
+            # Generate image
+            size = spec.size or "1024*1024"
+            logger.info("Generating image from spec", prompt=spec.prompt[:50], size=size)
+
+            image_bytes = await self.image_generator.generate(spec.prompt, size)
+
+            # Upload to storage
+            filename = f"{timestamp}_{file_id}.png"
+            storage_path = f"ai-generated/images/{filename}"
+            public_url = await self.storage_service.upload_media(
+                storage_path, image_bytes, "image/png"
+            )
+
+            # Save to database
+            image = Image(
+                business_asset_id=self.business_asset_id,
+                storage_path=storage_path,
+                public_url=public_url,
+                prompt=spec.prompt,
+                file_size=len(image_bytes),
+                mime_type="image/png"
+            )
+            saved = await self.media_repo.create_image(image)
+            logger.info("Image generated", media_id=str(saved.id))
+            return saved.id
+
+        elif spec.media_type == "video":
+            # Generate video
+            orientation = spec.orientation or "portrait"
+            size_map = {"landscape": "1280*720", "portrait": "720*1280"}
+            size = size_map.get(orientation, "720*1280")
+            logger.info("Generating video from spec", prompt=spec.prompt[:50], orientation=orientation)
+
+            video_bytes = await self.video_generator.generate(spec.prompt, size)
+
+            # Upload to storage
+            filename = f"{timestamp}_{file_id}.mp4"
+            storage_path = f"ai-generated/videos/{filename}"
+            public_url = await self.storage_service.upload_media(
+                storage_path, video_bytes, "video/mp4"
+            )
+
+            # Save to database
+            video = Video(
+                business_asset_id=self.business_asset_id,
+                storage_path=storage_path,
+                public_url=public_url,
+                prompt=spec.prompt,
+                file_size=len(video_bytes),
+                mime_type="video/mp4"
+            )
+            saved = await self.media_repo.create_video(video)
+            logger.info("Video generated", media_id=str(saved.id))
+            return saved.id
+
+        else:
+            raise ValueError(f"Unknown media type: {spec.media_type}")
+
+    async def _generate_all_media_for_post(self, unified_post: UnifiedPostOutput) -> List[UUID]:
+        """
+        Generate all media for a unified post from its specs.
+
+        For efficiency, generates images in parallel (carousels), but videos sequentially.
+        Returns list of media IDs in the same order as the specs.
+        """
+        if not unified_post.media_specs:
+            return []
+
+        # Separate image and video specs (images can be parallelized)
+        image_specs = [(i, s) for i, s in enumerate(unified_post.media_specs) if s.media_type == "image"]
+        video_specs = [(i, s) for i, s in enumerate(unified_post.media_specs) if s.media_type == "video"]
+
+        # Pre-allocate result array
+        results: List[Optional[UUID]] = [None] * len(unified_post.media_specs)
+
+        # Generate images in parallel
+        if image_specs:
+            image_tasks = [self._generate_media_from_spec(spec) for _, spec in image_specs]
+            image_results = await asyncio.gather(*image_tasks, return_exceptions=True)
+
+            for (idx, _), result in zip(image_specs, image_results):
+                if isinstance(result, Exception):
+                    logger.error("Failed to generate image", error=str(result))
+                    raise result
+                results[idx] = result
+
+        # Generate videos sequentially (more resource intensive)
+        for idx, spec in video_specs:
+            result = await self._generate_media_from_spec(spec)
+            results[idx] = result
+
+        # Filter out any None values (shouldn't happen if no errors)
+        return [r for r in results if r is not None]
 
     async def _calculate_scheduled_time(self, platform: Literal["facebook", "instagram"]) -> datetime:
         """
@@ -224,33 +363,42 @@ class ContentCreationAgent:
                     if hasattr(first_source, 'url'):
                         source_url = str(first_source.url)
 
-            # Convert unified posts to platform-specific posts
+            # Process each unified post: generate media, then create platform posts
             posts = []
             scheduled_times = task.scheduled_times or []
             post_index = 0
 
             for unified_post in structured_output.posts:
                 try:
+                    # Step 1: Generate all media from specs (deterministically)
+                    logger.info(
+                        "Generating media for post",
+                        format_type=unified_post.format_type,
+                        num_specs=len(unified_post.media_specs)
+                    )
+                    media_ids = await self._generate_all_media_for_post(unified_post)
+                    logger.info("Media generated", num_media=len(media_ids))
+
                     # Get scheduled time from task (if available) or calculate
                     scheduled_time_str = scheduled_times[post_index] if post_index < len(scheduled_times) else None
 
-                    # Create platform-specific posts based on format type
+                    # Step 2: Create platform-specific posts based on format type
                     if unified_post.format_type == "text_only":
                         # Text-only creates only Facebook post
                         fb_posts = await self._create_fb_only_post(
-                            task, unified_post, source_url, scheduled_time_str
+                            task, unified_post, media_ids, source_url, scheduled_time_str
                         )
                         posts.extend(fb_posts)
                     elif unified_post.format_type == "carousel":
                         # Carousel creates both IG carousel + FB carousel posts
                         carousel_posts = await self._create_carousel_posts(
-                            task, unified_post, source_url, scheduled_time_str
+                            task, unified_post, media_ids, source_url, scheduled_time_str
                         )
                         posts.extend(carousel_posts)
                     else:
                         # Image/video creates both IG + FB posts
                         dual_posts = await self._create_dual_platform_posts(
-                            task, unified_post, source_url, scheduled_time_str
+                            task, unified_post, media_ids, source_url, scheduled_time_str
                         )
                         posts.extend(dual_posts)
 
@@ -281,6 +429,7 @@ class ContentCreationAgent:
         self,
         task,
         unified_post: UnifiedPostOutput,
+        media_ids: List[UUID],
         source_url: Optional[str],
         scheduled_time_str: Optional[str]
     ) -> List[Dict[str, Any]]:
@@ -298,7 +447,7 @@ class ContentCreationAgent:
           - Both posts are primary (both verified separately)
         """
         posts = []
-        media_uuids = [UUID(media_id) for media_id in unified_post.media_ids] if unified_post.media_ids else []
+        media_uuids = media_ids
 
         # Determine post types based on format
         if unified_post.format_type == "image":
@@ -399,6 +548,7 @@ class ContentCreationAgent:
         self,
         task,
         unified_post: UnifiedPostOutput,
+        media_ids: List[UUID],
         source_url: Optional[str],
         scheduled_time_str: Optional[str]
     ) -> List[Dict[str, Any]]:
@@ -409,7 +559,7 @@ class ContentCreationAgent:
         Similar to dual platform posts but uses instagram_carousel and facebook_feed post types.
         """
         posts = []
-        media_uuids = [UUID(media_id) for media_id in unified_post.media_ids] if unified_post.media_ids else []
+        media_uuids = media_ids
 
         # Validate carousel has enough images
         if len(media_uuids) < 2:
@@ -419,7 +569,7 @@ class ContentCreationAgent:
             )
             # Fall back to single image post if not enough images
             unified_post.format_type = "image"
-            return await self._create_dual_platform_posts(task, unified_post, source_url, scheduled_time_str)
+            return await self._create_dual_platform_posts(task, unified_post, media_ids, source_url, scheduled_time_str)
 
         if len(media_uuids) > 10:
             logger.warning(
@@ -509,11 +659,13 @@ class ContentCreationAgent:
         self,
         task,
         unified_post: UnifiedPostOutput,
+        media_ids: List[UUID],
         source_url: Optional[str],
         scheduled_time_str: Optional[str]
     ) -> List[Dict[str, Any]]:
         """
         Create a Facebook-only text post (no Instagram equivalent).
+        Note: media_ids is accepted for API consistency but ignored for text_only posts.
         """
         posts = []
 
@@ -635,9 +787,27 @@ Create unified post outputs for the requested content. Each output creates posts
 For each post, specify:
 1. format_type: "image", "video", "carousel", or "text_only"
 2. text: The caption (will be used for both platforms)
-3. media_ids: List of media IDs from generation tools (for image/video/carousel)
+3. media_specs: List of media generation specifications (prompts for images/videos to generate)
 4. hashtags: List of relevant hashtags
 5. location: Optional location tag
+
+** MEDIA SPECS FORMAT **
+Instead of generating media directly, you specify WHAT media should be generated:
+
+For IMAGE posts, provide 1 media_spec:
+  {{"media_type": "image", "prompt": "A detailed description of the image to generate..."}}
+
+For VIDEO posts, provide 1 media_spec:
+  {{"media_type": "video", "prompt": "A detailed description of the video to generate...", "orientation": "portrait"}}
+
+For CAROUSEL posts, provide 2-10 image media_specs:
+  [
+    {{"media_type": "image", "prompt": "First slide: ..."}},
+    {{"media_type": "image", "prompt": "Second slide: ..."}},
+    ...
+  ]
+
+The system will generate the media from your specs automatically.
 
 Remember:
 - Generate {task.image_posts} image posts (each creates 2 platform posts, 1 image each)
@@ -646,9 +816,9 @@ Remember:
 - Generate {task.text_only_posts} text-only posts (FB only)
 
 For CAROUSEL posts:
-- Must have 2-10 images (generate multiple images with a cohesive theme)
+- Provide 2-10 image specs with a cohesive theme
 - Great for listicles, step-by-step guides, multiple angles of same topic
-- All images should tell a story or follow a theme
+- All image prompts should tell a story or follow a theme
 """
 
         return context
