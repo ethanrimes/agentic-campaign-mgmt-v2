@@ -22,10 +22,11 @@ class ContentSeedAllocation(BaseModel):
     Uses unified format-based allocation:
     - image_posts: Each creates 1 IG image + 1 FB feed post (2 posts total)
     - video_posts: Each creates 1 IG reel + 1 FB video post (2 posts total)
+    - carousel_posts: Each creates 1 IG carousel + 1 FB carousel (2 posts total, multiple images)
     - text_only_posts: FB-only text posts (no Instagram equivalent)
 
     Note: text_only_posts should only be used in allocations where
-    image_posts=0 and video_posts=0 (separate seed allocations).
+    image_posts=0, video_posts=0, and carousel_posts=0 (separate seed allocations).
     """
 
     seed_id: UUID = Field(..., description="Reference to content seed (any type)")
@@ -43,6 +44,11 @@ class ContentSeedAllocation(BaseModel):
         default=0,
         ge=0,
         description="Number of video posts (each creates 1 IG reel + 1 FB video post)",
+    )
+    carousel_posts: int = Field(
+        default=0,
+        ge=0,
+        description="Number of carousel posts (each creates 1 IG carousel + 1 FB carousel with 2-10 images)",
     )
     text_only_posts: int = Field(
         default=0,
@@ -75,24 +81,25 @@ class ContentSeedAllocation(BaseModel):
                 "seed_type": "news_event",
                 "image_posts": 2,
                 "video_posts": 1,
+                "carousel_posts": 1,
                 "text_only_posts": 0,
-                "image_budget": 2,
+                "image_budget": 6,
                 "video_budget": 1,
-                "scheduled_times": ["2025-01-20T10:00:00Z", "2025-01-21T14:00:00Z", "2025-01-22T18:00:00Z"],
+                "scheduled_times": ["2025-01-20T10:00:00Z", "2025-01-21T14:00:00Z", "2025-01-22T18:00:00Z", "2025-01-23T12:00:00Z"],
             }
         }
 
     @property
     def total_posts(self) -> int:
         """Total posts allocated for this seed (counting both platforms)."""
-        # Each image/video post creates 2 posts (IG + FB)
+        # Each image/video/carousel post creates 2 posts (IG + FB)
         # text_only creates 1 post (FB only)
-        return (self.image_posts * 2) + (self.video_posts * 2) + self.text_only_posts
+        return (self.image_posts * 2) + (self.video_posts * 2) + (self.carousel_posts * 2) + self.text_only_posts
 
     @property
     def total_post_units(self) -> int:
         """Total post units (for scheduling purposes - not counting platform duplication)."""
-        return self.image_posts + self.video_posts + self.text_only_posts
+        return self.image_posts + self.video_posts + self.carousel_posts + self.text_only_posts
 
 
 class PlannerOutput(BaseModel):
@@ -142,6 +149,11 @@ class PlannerOutput(BaseModel):
     def total_video_posts(self) -> int:
         """Total video post units across all allocations."""
         return sum(a.video_posts for a in self.allocations)
+
+    @property
+    def total_carousel_posts(self) -> int:
+        """Total carousel post units across all allocations."""
+        return sum(a.carousel_posts for a in self.allocations)
 
     @property
     def total_text_only_posts(self) -> int:

@@ -2,8 +2,8 @@
 
 """Planner output validation against guardrails.
 
-Uses unified format-based validation (image_posts, video_posts, text_only_posts)
-where each image/video post creates both an Instagram and Facebook post.
+Uses unified format-based validation (image_posts, video_posts, carousel_posts, text_only_posts)
+where each image/video/carousel post creates both an Instagram and Facebook post.
 """
 
 from typing import Dict, Any, List, Tuple
@@ -20,6 +20,7 @@ class PlannerValidator:
     Uses unified format counting:
     - Each image_post creates 2 posts (IG + FB)
     - Each video_post creates 2 posts (IG + FB)
+    - Each carousel_post creates 2 posts (IG carousel + FB carousel)
     - Each text_only_post creates 1 post (FB only)
     """
 
@@ -104,11 +105,12 @@ class PlannerValidator:
 
     @staticmethod
     def _calculate_totals(allocations: List[Dict[str, Any]]) -> Dict[str, int]:
-        """Calculate total posts, video_posts, and image_posts from allocations.
+        """Calculate total posts, video_posts, image_posts, and carousel_posts from allocations.
 
         Uses unified format counting:
         - Each image_post creates 2 posts (IG + FB)
         - Each video_post creates 2 posts (IG + FB)
+        - Each carousel_post creates 2 posts (IG carousel + FB carousel)
         - Each text_only_post creates 1 post (FB only)
         """
         totals = {
@@ -116,22 +118,25 @@ class PlannerValidator:
             "post_units": 0,      # Total post units (not counting duplication)
             "image_posts": 0,     # Image post units
             "video_posts": 0,     # Video post units
+            "carousel_posts": 0,  # Carousel post units
             "text_only_posts": 0  # Text-only post units (FB only)
         }
 
         for allocation in allocations:
             image_posts = allocation.get("image_posts", 0)
             video_posts = allocation.get("video_posts", 0)
+            carousel_posts = allocation.get("carousel_posts", 0)
             text_only_posts = allocation.get("text_only_posts", 0)
 
             # Count post units
             totals["image_posts"] += image_posts
             totals["video_posts"] += video_posts
+            totals["carousel_posts"] += carousel_posts
             totals["text_only_posts"] += text_only_posts
-            totals["post_units"] += image_posts + video_posts + text_only_posts
+            totals["post_units"] += image_posts + video_posts + carousel_posts + text_only_posts
 
-            # Count total platform posts (each image/video creates 2, text_only creates 1)
-            totals["posts"] += (image_posts * 2) + (video_posts * 2) + text_only_posts
+            # Count total platform posts (each image/video/carousel creates 2, text_only creates 1)
+            totals["posts"] += (image_posts * 2) + (video_posts * 2) + (carousel_posts * 2) + text_only_posts
 
         return totals
 
@@ -140,7 +145,7 @@ class PlannerValidator:
         """Validate a single allocation."""
         errors = []
 
-        # Check required fields
+        # Check required fields (carousel_posts is optional for backwards compatibility, defaults to 0)
         required_fields = [
             "seed_id",
             "seed_type",
@@ -168,6 +173,7 @@ class PlannerValidator:
         count_fields = [
             "image_posts",
             "video_posts",
+            "carousel_posts",
             "text_only_posts",
             "image_budget",
             "video_budget"
@@ -183,17 +189,18 @@ class PlannerValidator:
         # Validate text_only isolation: text_only_posts should only be in separate allocations
         image_posts = allocation.get("image_posts", 0)
         video_posts = allocation.get("video_posts", 0)
+        carousel_posts = allocation.get("carousel_posts", 0)
         text_only_posts = allocation.get("text_only_posts", 0)
 
-        if text_only_posts > 0 and (image_posts > 0 or video_posts > 0):
+        if text_only_posts > 0 and (image_posts > 0 or video_posts > 0 or carousel_posts > 0):
             errors.append(
-                f"Allocation {index}: text_only_posts cannot be mixed with image_posts or video_posts. "
+                f"Allocation {index}: text_only_posts cannot be mixed with image_posts, video_posts, or carousel_posts. "
                 f"Use separate allocations for text-only content."
             )
 
         # Validate scheduled_times count matches post units (if provided)
         scheduled_times = allocation.get("scheduled_times", [])
-        post_units = image_posts + video_posts + text_only_posts
+        post_units = image_posts + video_posts + carousel_posts + text_only_posts
         if scheduled_times and len(scheduled_times) != post_units:
             errors.append(
                 f"Allocation {index}: scheduled_times count ({len(scheduled_times)}) "
