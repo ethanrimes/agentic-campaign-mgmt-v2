@@ -43,7 +43,6 @@ def verify(business_asset_id: str, post_id: str):
         click.echo(f"❌ Post REJECTED")
 
     click.echo(f"\n📋 Checklist Results:")
-    click.echo(f"   - Source link (if news): {result.get('has_source_link_if_news', 'N/A')}")
     click.echo(f"   - No offensive content: {result['has_no_offensive_content']}")
     click.echo(f"   - No misinformation (if news): {result.get('has_no_misinformation', 'N/A')}")
 

@@ -3,7 +3,7 @@
 """Instagram posting service."""
 
 import asyncio
-from typing import List
+from typing import List, Optional
 from backend.utils import get_logger, PublishingError
 from .base import MetaBaseClient
 
@@ -58,7 +58,7 @@ class InstagramPublisher(MetaBaseClient):
 
         raise PublishingError(f"Container processing timed out after {max_polls * poll_interval} seconds")
 
-    async def post_image(self, image_url: str, caption: str) -> str:
+    async def post_image(self, image_url: str, caption: str) -> Optional[str]:
         """
         Post a single image to Instagram.
 
@@ -67,11 +67,15 @@ class InstagramPublisher(MetaBaseClient):
             caption: Post caption
 
         Returns:
-            Instagram media ID
+            Instagram media ID, or None if no image URL provided
 
         Raises:
             PublishingError: If posting fails
         """
+        if not image_url:
+            logger.info("Skipping image post - no image URL provided")
+            return None
+
         logger.info("Posting image to Instagram", caption=caption[:50])
 
         try:
@@ -106,7 +110,7 @@ class InstagramPublisher(MetaBaseClient):
         except Exception as e:
             raise PublishingError(f"Failed to post image: {e}")
 
-    async def post_carousel(self, image_urls: List[str], caption: str) -> str:
+    async def post_carousel(self, image_urls: List[str], caption: str) -> Optional[str]:
         """
         Post a carousel to Instagram.
 
@@ -115,11 +119,15 @@ class InstagramPublisher(MetaBaseClient):
             caption: Post caption
 
         Returns:
-            Instagram media ID
+            Instagram media ID, or None if no image URLs provided
 
         Raises:
             PublishingError: If posting fails
         """
+        if not image_urls:
+            logger.info("Skipping carousel post - no image URLs provided")
+            return None
+
         logger.info("Posting carousel to Instagram", num_images=len(image_urls))
 
         try:
@@ -165,7 +173,7 @@ class InstagramPublisher(MetaBaseClient):
         except Exception as e:
             raise PublishingError(f"Failed to post carousel: {e}")
 
-    async def post_reel(self, video_url: str, caption: str) -> str:
+    async def post_reel(self, video_url: str, caption: str) -> Optional[str]:
         """
         Post a reel to Instagram.
 
@@ -174,11 +182,15 @@ class InstagramPublisher(MetaBaseClient):
             caption: Reel caption
 
         Returns:
-            Instagram media ID
+            Instagram media ID, or None if no video URL provided
 
         Raises:
             PublishingError: If posting fails
         """
+        if not video_url:
+            logger.info("Skipping reel post - no video URL provided")
+            return None
+
         logger.info("Posting reel to Instagram", caption=caption[:50])
 
         try:

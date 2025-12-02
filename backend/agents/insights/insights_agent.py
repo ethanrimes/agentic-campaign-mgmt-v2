@@ -166,7 +166,8 @@ Include specific numbers from your tool calls to support your conclusions.
 
         context = f"Total Posts: {len(posts)}\n\n"
 
-        for i, post in enumerate(posts[:20], 1):  # Limit to 20 for context size
+        limit = settings.insights_posts_limit
+        for i, post in enumerate(posts[:limit], 1):
             platform = post.get("platform", "unknown")
             platform_post_id = post.get("platform_post_id")
             post_type = post.get("post_type", "unknown")
@@ -180,8 +181,8 @@ Include specific numbers from your tool calls to support your conclusions.
             context += f"   Published: {published_at}\n"
             context += f"   Text: {text}...\n\n"
 
-        if len(posts) > 20:
-            context += f"... and {len(posts) - 20} more posts\n"
+        if len(posts) > limit:
+            context += f"... and {len(posts) - limit} more posts\n"
 
         return context
 

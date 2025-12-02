@@ -28,6 +28,9 @@ logger = get_logger(__name__)
 # AI disclosure footnote - appended to all posts deterministically
 AI_DISCLOSURE_FOOTNOTE = "\n\n✨ AI-assisted"
 
+# Source link format - appended to news event posts deterministically
+NEWS_SOURCE_LINK_FORMAT = "\n\n🔗 Read more: {url}"
+
 
 class PostOutput(BaseModel):
     """A structured social media post."""
@@ -180,6 +183,15 @@ class ContentCreationAgent:
                 logger.warning("Agent did not return a structured response")
                 raise Exception("Agent did not return structured posts")
 
+            # Get source URL for news events (to append deterministically)
+            source_url = None
+            if task.content_seed_type == "news_event" and seed:
+                if hasattr(seed, 'sources') and seed.sources:
+                    # Use first source URL
+                    first_source = seed.sources[0]
+                    if hasattr(first_source, 'url'):
+                        source_url = str(first_source.url)
+
             # Save posts to database
             posts = []
             for post_data in structured_output.posts:
@@ -191,8 +203,13 @@ class ContentCreationAgent:
                     # Calculate scheduled posting time
                     scheduled_time = await self._calculate_scheduled_time(post_data.platform)
 
+                    # Deterministically append source link for news event posts
+                    post_text = post_data.text
+                    if source_url:
+                        post_text += NEWS_SOURCE_LINK_FORMAT.format(url=source_url)
+
                     # Deterministically append AI disclosure footnote to post text
-                    post_text = post_data.text + AI_DISCLOSURE_FOOTNOTE
+                    post_text = post_text + AI_DISCLOSURE_FOOTNOTE
 
                     # The seed reference is deterministically copied from the task
                     # This ensures posts always reference the same seed as the task

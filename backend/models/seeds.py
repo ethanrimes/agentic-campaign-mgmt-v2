@@ -161,6 +161,10 @@ class TrendSeed(BaseModel):
         default_factory=list,
         description="Relevant users/accounts (optional)",
     )
+    tool_calls: List[dict] = Field(
+        default_factory=list,
+        description="Tool calls made by the agent during trend discovery",
+    )
     created_at: datetime = Field(
         default_factory=datetime.utcnow,
         description="Timestamp when trend was discovered",
@@ -184,6 +188,7 @@ class TrendSeed(BaseModel):
                 ],
                 "posts": [],
                 "users": [],
+                "tool_calls": [],
                 "created_at": "2025-01-16T14:22:00Z",
                 "created_by": "gpt-4o-mini",
             }

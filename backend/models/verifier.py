@@ -16,9 +16,11 @@ class VerifierResponse(BaseModel):
     A verification response from the content safety verifier LLM.
 
     Stores the result of verifying a completed post for:
-    - Source link inclusion (for news events)
     - Offensive content detection
     - Misinformation detection (for news events)
+
+    Note: Source link verification was removed as links are now deterministically
+    appended by the content agent.
     """
 
     id: UUID = Field(default_factory=uuid4, description="Unique verifier response ID")
@@ -35,10 +37,6 @@ class VerifierResponse(BaseModel):
     )
 
     # Individual checklist results
-    has_source_link_if_news: Optional[bool] = Field(
-        None,
-        description="Whether news event posts include source links (NULL for non-news content)"
-    )
     has_no_offensive_content: bool = Field(
         ..., description="Whether the content passes offensive content check"
     )
@@ -77,10 +75,9 @@ class VerifierResponse(BaseModel):
                 "business_asset_id": "penndailybuzz",
                 "completed_post_id": "c9d0e1f2-a3b4-1c2d-6e7f-8a9b0c1d2e3f",
                 "is_approved": True,
-                "has_source_link_if_news": True,
                 "has_no_offensive_content": True,
                 "has_no_misinformation": True,
-                "reasoning": "The post accurately reports the SEPTA fare increase with proper source attribution. No offensive content detected. Information matches the provided sources.",
+                "reasoning": "The post accurately reports the SEPTA fare increase. No offensive content detected. Information matches the provided sources.",
                 "issues_found": [],
                 "model": "gemini-2.5-flash",
                 "created_at": "2025-01-18T19:00:00Z"
@@ -93,19 +90,18 @@ class VerifierChecklistInput(BaseModel):
     """
     Input structure for the verifier LLM's structured output.
     Used to parse the LLM's response.
+
+    Note: has_source_link_if_news was removed as links are now deterministically
+    appended by the content agent.
     """
 
-    has_source_link_if_news: Optional[bool] = Field(
-        None,
-        description="For news events: does the post include source URL(s)? Set to null if not a news event."
-    )
     has_no_offensive_content: bool = Field(
         ...,
         description="Does the content (text, images, videos) contain any hateful, offensive, or inappropriate material? True means NO offensive content found."
     )
     has_no_misinformation: Optional[bool] = Field(
         None,
-        description="For news events: does the content accurately represent the source material without misinformation? Set to null if not a news event. True means NO misinformation found."
+        description="For news events: does the content accurately represent the source material without misinformation? Set to null if not a news event. True means NO misinformation found. Note: misspellings do NOT count as misinformation."
     )
     is_approved: bool = Field(
         ...,
