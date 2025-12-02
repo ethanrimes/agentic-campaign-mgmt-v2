@@ -28,6 +28,7 @@ class FacebookPageInsight(BaseModel):
 class FacebookPostInsight(BaseModel):
     """Post/photo-level engagement metrics."""
     post_id: str = Field(..., description="Facebook post ID")
+    clicks: int = Field(0, description="Total post clicks")
     reactions_like: int = Field(0, description="Total like reactions")
     reactions_love: int = Field(0, description="Total love reactions")
     reactions_wow: int = Field(0, description="Total wow reactions")
@@ -39,21 +40,17 @@ class FacebookPostInsight(BaseModel):
 
 
 class FacebookVideoInsight(BaseModel):
-    """Video/Reel-level metrics."""
+    """Video/Reel-level metrics from /{video_id}/video_insights endpoint."""
     video_id: str = Field(..., description="Facebook video ID")
-    total_views: int = Field(0, description="Total video views")
-    unique_views: int = Field(0, description="Unique video views")
-    autoplayed_views: int = Field(0, description="Autoplayed views")
-    clicked_to_play_views: int = Field(0, description="Clicked to play views")
-    organic_views: int = Field(0, description="Organic views")
-    paid_views: int = Field(0, description="Paid views")
-    complete_views: int = Field(0, description="Complete views (100%)")
-    complete_views_unique: int = Field(0, description="Unique complete views")
+    total_views: int = Field(0, description="Total video views (blue_reels_play_count)")
+    unique_views: int = Field(0, description="Unique video views (post_impressions_unique)")
     avg_time_watched_ms: int = Field(0, description="Average watch time in milliseconds")
     total_time_watched_ms: int = Field(0, description="Total watch time in milliseconds")
     # Reels-specific
-    reels_total_plays: Optional[int] = Field(None, description="FB Reels total plays")
+    reels_total_plays: Optional[int] = Field(None, description="FB Reels total plays (includes replays)")
     reels_replay_count: Optional[int] = Field(None, description="FB Reels replay count")
+    # Social actions (comments, shares, reactions)
+    reactions_by_type: Dict[str, Any] = Field(default_factory=dict, description="Social actions breakdown")
 
 
 # ============================================================================
@@ -64,6 +61,7 @@ class InstagramMediaInsight(BaseModel):
     """Instagram media (post/reel/story) insights."""
     media_id: str = Field(..., description="Instagram media ID")
     media_type: Literal["image", "video", "carousel", "reel", "story"] = Field(..., description="Type of media")
+    permalink: Optional[str] = Field(None, description="Direct link to the Instagram post")
     reach: int = Field(0, description="Unique accounts reached")
     views: int = Field(0, description="Total views/displays")
     total_interactions: int = Field(0, description="Total interactions (likes + comments + saves + shares)")

@@ -311,6 +311,43 @@ class CompletedPostRepository(BaseRepository[CompletedPost]):
             {"verification_status": verification_status}
         )
 
+    async def get_recent_published_by_platform(
+        self, business_asset_id: str, platform: Literal["facebook", "instagram"], limit: int = 10
+    ) -> List[CompletedPost]:
+        """
+        Get recent PUBLISHED posts for a platform (for insights analysis).
+
+        Args:
+            business_asset_id: Business asset ID to filter by
+            platform: Platform to filter by
+            limit: Maximum number of posts to return
+        """
+        try:
+            from backend.database import get_supabase_admin_client
+            client = await get_supabase_admin_client()
+            result = (
+                await client.table(self.table_name)
+                .select("*")
+                .eq("business_asset_id", business_asset_id)
+                .eq("platform", platform)
+                .eq("status", "published")
+                .not_.is_("platform_post_id", "null")
+                .order("published_at", desc=True)
+                .limit(limit)
+                .execute()
+            )
+            return [self.model_class(**item) for item in result.data]
+        except Exception as e:
+            from backend.utils import get_logger
+            logger = get_logger(__name__)
+            logger.error(
+                "Failed to get recent published posts for platform",
+                business_asset_id=business_asset_id,
+                platform=platform,
+                error=str(e),
+            )
+            return []
+
     async def get_posts_since(self, business_asset_id: str, cutoff_date) -> List[CompletedPost]:
         """
         Get all posts created since a specific datetime (for insights analysis).
