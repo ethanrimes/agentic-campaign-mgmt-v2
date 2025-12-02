@@ -71,54 +71,56 @@ export default function Home() {
       <section className="relative py-20 overflow-hidden">
         {/* Animated Background Blobs */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <motion.div 
-            animate={{ 
+          <motion.div
+            animate={{
               x: [0, 100, 0],
               y: [0, -50, 0],
               scale: [1, 1.2, 1]
             }}
             transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-            className="absolute -top-[20%] -left-[10%] w-[600px] h-[600px] bg-primary-200/30 dark:bg-primary-900/20 rounded-full blur-3xl" 
+            className="absolute -top-[20%] -left-[10%] w-[600px] h-[600px] bg-primary-200/30 dark:bg-primary-900/20 rounded-full blur-3xl"
           />
-          <motion.div 
-            animate={{ 
+          <motion.div
+            animate={{
               x: [0, -100, 0],
               y: [0, 50, 0],
               scale: [1, 1.1, 1]
             }}
             transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
-            className="absolute top-[20%] -right-[10%] w-[500px] h-[500px] bg-purple-200/30 dark:bg-purple-900/20 rounded-full blur-3xl" 
+            className="absolute top-[20%] -right-[10%] w-[500px] h-[500px] bg-purple-200/30 dark:bg-purple-900/20 rounded-full blur-3xl"
           />
         </div>
 
         <div className="relative container mx-auto px-4 text-center max-w-4xl">
-          <motion.h1 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1, duration: 0.6 }}
-            className="text-6xl md:text-7xl font-bold tracking-tight mb-6 text-slate-900 dark:text-white"
-          >
-            Socially Automated
-          </motion.h1>
-          
-          <motion.p 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2, duration: 0.6 }}
-            className="text-2xl md:text-3xl font-light text-foreground mb-8"
-          >
-            An Agentic Engagement Engine
-          </motion.p>
-          
-          <motion.p 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, duration: 0.6 }}
-            className="text-lg text-muted-foreground leading-relaxed max-w-2xl mx-auto"
-          >
-            An adaptive, learning, end-to-end framework for managing cross-platform social media campaigns
-            with intelligent automation, strategic insights, and seamless execution.
-          </motion.p>
+          <div className="relative bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl rounded-3xl p-12 border border-slate-200 dark:border-slate-700 shadow-2xl">
+            <motion.h1
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1, duration: 0.6 }}
+              className="text-6xl md:text-7xl font-bold tracking-tight mb-6 text-slate-900 dark:text-white"
+            >
+              Socially Automated
+            </motion.h1>
+
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2, duration: 0.6 }}
+              className="text-2xl md:text-3xl font-light text-foreground mb-8"
+            >
+              An Agentic Engagement Engine
+            </motion.p>
+
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3, duration: 0.6 }}
+              className="text-lg text-muted-foreground leading-relaxed max-w-2xl mx-auto"
+            >
+              An adaptive, learning, end-to-end framework for managing cross-platform social media campaigns
+              with intelligent automation, strategic insights, and seamless execution.
+            </motion.p>
+          </div>
         </div>
       </section>
 
@@ -128,8 +130,8 @@ export default function Home() {
           <div className="w-1 h-8 bg-gradient-to-b from-blue-500 to-purple-500 rounded-full"></div>
           <h2 className="text-3xl font-bold text-slate-900 dark:text-white">System Architecture</h2>
         </div>
-        
-        <motion.div 
+
+        <motion.div
           initial={{ opacity: 0, y: 40 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}
@@ -138,7 +140,7 @@ export default function Home() {
         >
           {/* Glow effect behind diagram */}
           <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-purple-500/5 blur-3xl -z-10"></div>
-          
+
           <ArchitectureDiagram />
         </motion.div>
       </section>
@@ -150,7 +152,7 @@ export default function Home() {
           <h2 className="text-3xl font-bold text-slate-900 dark:text-white">Core Capabilities</h2>
         </div>
 
-        <motion.div 
+        <motion.div
           variants={container}
           initial="hidden"
           whileInView="show"
@@ -177,10 +179,10 @@ export default function Home() {
 
       {/* Technical Overview */}
       <section className="container mx-auto px-4">
-         <div className="glass-panel p-8 md:p-12 bg-white/90 dark:bg-slate-900/90">
+        <div className="glass-panel p-8 md:p-12 bg-white/90 dark:bg-slate-900/90">
           <div className="max-w-4xl mx-auto">
             <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-8 text-center">How It Works</h2>
-            
+
             <div className="space-y-12">
               <div className="flex flex-col md:flex-row gap-8 items-start">
                 <div className="flex-shrink-0 w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 font-bold text-xl">1</div>

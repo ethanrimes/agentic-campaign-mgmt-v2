@@ -2,11 +2,12 @@
 
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, ChevronLeft, ChevronRight, Calendar, ExternalLink, Play, Sparkles, Heart, MessageCircle, Send, Bookmark } from 'lucide-react'
 import type { CompletedPost } from '@/types'
-import { formatDateTime } from '@/lib/utils'
+import { formatDateTime, formatRelativeTime } from '@/lib/utils'
 import Link from 'next/link'
 import VerificationStatusBadge from '@/components/common/VerificationStatusBadge'
 
@@ -18,6 +19,17 @@ interface InstagramPostGridProps {
 export default function InstagramPostGrid({ posts, accountName = 'Instagram Account' }: InstagramPostGridProps) {
   const [selectedPost, setSelectedPost] = useState<CompletedPost | null>(null)
   const [currentMediaIndex, setCurrentMediaIndex] = useState(0)
+  const searchParams = useSearchParams()
+  const highlightPostId = searchParams.get('post')
+
+  useEffect(() => {
+    if (highlightPostId && posts.length > 0) {
+      const postToHighlight = posts.find(p => p.id === highlightPostId)
+      if (postToHighlight) {
+        setSelectedPost(postToHighlight)
+      }
+    }
+  }, [highlightPostId, posts])
 
   const handlePostClick = (post: CompletedPost) => {
     setSelectedPost(post)
@@ -48,7 +60,7 @@ export default function InstagramPostGrid({ posts, accountName = 'Instagram Acco
         {posts.map((post, index) => {
           const previewMedia = post.media_urls && post.media_urls.length > 0 ? post.media_urls[0] : null
           const isReel = post.post_type === 'instagram_reel' ||
-                         (previewMedia && (previewMedia.includes('.mp4') || previewMedia.includes('video')))
+            (previewMedia && (previewMedia.includes('.mp4') || previewMedia.includes('video')))
 
           return (
             <motion.div
@@ -107,20 +119,19 @@ export default function InstagramPostGrid({ posts, accountName = 'Instagram Acco
               {post.media_urls && post.media_urls.length > 1 && (
                 <div className="absolute top-2 right-2">
                   <svg className="w-5 h-5 text-white drop-shadow-lg" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M22 8c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8zm-2 0l-8 5-8-5h16zm0 12H4V10l8 5 8-5v10z"/>
+                    <path d="M22 8c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8zm-2 0l-8 5-8-5h16zm0 12H4V10l8 5 8-5v10z" />
                   </svg>
                 </div>
               )}
 
               {/* Status badge */}
               <div className="absolute bottom-2 left-2 z-10">
-                <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wide backdrop-blur-md ${
-                  post.status === 'published'
-                    ? 'bg-green-500/80 text-white'
-                    : post.status === 'pending'
+                <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wide backdrop-blur-md ${post.status === 'published'
+                  ? 'bg-green-500/80 text-white'
+                  : post.status === 'pending'
                     ? 'bg-amber-500/80 text-white'
                     : 'bg-red-500/80 text-white'
-                }`}>
+                  }`}>
                   {post.status}
                 </span>
               </div>
@@ -152,7 +163,7 @@ export default function InstagramPostGrid({ posts, accountName = 'Instagram Acco
                 {selectedPost.media_urls && selectedPost.media_urls.length > 0 ? (
                   <>
                     {selectedPost.media_urls[currentMediaIndex].includes('.mp4') ||
-                     selectedPost.media_urls[currentMediaIndex].includes('video') ? (
+                      selectedPost.media_urls[currentMediaIndex].includes('video') ? (
                       <video
                         src={selectedPost.media_urls[currentMediaIndex]}
                         controls
@@ -192,11 +203,10 @@ export default function InstagramPostGrid({ posts, accountName = 'Instagram Acco
                             <button
                               key={index}
                               onClick={() => setCurrentMediaIndex(index)}
-                              className={`w-1.5 h-1.5 rounded-full transition-all shadow-sm ${
-                                index === currentMediaIndex
-                                  ? 'bg-white w-2 h-2'
-                                  : 'bg-white/50'
-                              }`}
+                              className={`w-1.5 h-1.5 rounded-full transition-all shadow-sm ${index === currentMediaIndex
+                                ? 'bg-white w-2 h-2'
+                                : 'bg-white/50'
+                                }`}
                             />
                           ))}
                         </div>
@@ -244,7 +254,7 @@ export default function InstagramPostGrid({ posts, accountName = 'Instagram Acco
                         <span className="font-semibold mr-2 text-slate-900 dark:text-white">{accountName}</span>
                         <span className="text-slate-800 dark:text-slate-200 whitespace-pre-line">{selectedPost.text}</span>
                       </p>
-                      
+
                       {/* Hashtags */}
                       {selectedPost.hashtags && selectedPost.hashtags.length > 0 && (
                         <div className="mt-2 flex flex-wrap gap-1">
@@ -258,7 +268,7 @@ export default function InstagramPostGrid({ posts, accountName = 'Instagram Acco
                           ))}
                         </div>
                       )}
-                      
+
                       <p className="text-xs text-slate-500 mt-2 uppercase">{formatRelativeTime(selectedPost.created_at)}</p>
                     </div>
                   </div>
@@ -290,7 +300,7 @@ export default function InstagramPostGrid({ posts, accountName = 'Instagram Acco
                     </div>
                     <Bookmark className="w-6 h-6 cursor-pointer hover:text-slate-500 transition-colors" />
                   </div>
-                  
+
                   <div className="text-xs text-slate-500 uppercase font-medium">
                     {selectedPost.published_at
                       ? formatDateTime(selectedPost.published_at)

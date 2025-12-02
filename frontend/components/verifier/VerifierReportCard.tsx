@@ -45,8 +45,8 @@ export default function VerifierReportCard({ report, defaultExpanded = false }: 
     return (
       <div className={cn(
         "flex items-center gap-2.5 p-3 rounded-lg border transition-colors",
-        value 
-          ? "bg-green-50/50 dark:bg-green-900/10 border-green-100 dark:border-green-800/50 text-green-700 dark:text-green-300" 
+        value
+          ? "bg-green-50/50 dark:bg-green-900/10 border-green-100 dark:border-green-800/50 text-green-700 dark:text-green-300"
           : "bg-red-50/50 dark:bg-red-900/10 border-red-100 dark:border-red-800/50 text-red-700 dark:text-red-300"
       )}>
         {value ? <CheckCircle2 className="w-5 h-5 shrink-0" /> : <XCircle className="w-5 h-5 shrink-0" />}
@@ -68,9 +68,9 @@ export default function VerifierReportCard({ report, defaultExpanded = false }: 
             <X className="w-3 h-3" /> Unsafe
           </span>
         )}
-        
+
         {report.has_no_misinformation !== null && (
-           report.has_no_misinformation ? (
+          report.has_no_misinformation ? (
             <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded border border-green-100 dark:border-green-800">
               <Check className="w-3 h-3" /> Factual
             </span>
@@ -188,20 +188,20 @@ export default function VerifierReportCard({ report, defaultExpanded = false }: 
               <h4 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center gap-2">
                 <Sparkles className="w-3 h-3" /> Target Content
               </h4>
-              <Link 
-                href={`/${post.platform === 'facebook' ? 'facebook' : 'instagram'}`}
+              <Link
+                href={`/${post.platform === 'facebook' ? 'facebook' : 'instagram'}?post=${post.id}`}
                 className="text-xs font-medium text-primary-600 dark:text-primary-400 hover:underline flex items-center gap-1"
               >
                 View full post <ExternalLink className="w-3 h-3" />
               </Link>
             </div>
-            
+
             <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
               <div className="flex items-center gap-2 mb-3">
                 <span className={cn(
                   "text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wide",
-                  post.platform === 'facebook' 
-                    ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300" 
+                  post.platform === 'facebook'
+                    ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
                     : "bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300"
                 )}>
                   {post.platform}

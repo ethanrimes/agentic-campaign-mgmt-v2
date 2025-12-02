@@ -80,8 +80,26 @@ export default function VerificationStatusBadge({
 
   if (isClickable) {
     return (
-      <Link href={`/verifier?post=${postId}`} onClick={(e) => e.stopPropagation()}>
-        {badgeContent}
+      <Link
+        href={`/verifier?post=${postId}`}
+        onClick={(e) => e.stopPropagation()}
+        className="group relative inline-block"
+      >
+        <span
+          className={cn(
+            'flex items-center rounded-full font-medium border transition-all',
+            sizeClasses[size],
+            config.bg,
+            config.text,
+            config.border,
+            'cursor-pointer',
+            className
+          )}
+        >
+          <Icon className={iconSize[size]} />
+          <span className="group-hover:hidden">{config.label}</span>
+          <span className="hidden group-hover:inline underline decoration-dotted underline-offset-2">View Report</span>
+        </span>
       </Link>
     )
   }
