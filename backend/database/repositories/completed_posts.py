@@ -105,6 +105,54 @@ class CompletedPostRepository(BaseRepository[CompletedPost]):
             )
             return []
 
+    async def get_pending_verified_posts(
+        self, business_asset_id: str, platform: Literal["facebook", "instagram"], limit: int = 100
+    ) -> List[CompletedPost]:
+        """
+        Get all pending verified posts, ignoring scheduled_posting_time.
+
+        Used by publish_pending.py script to force-publish posts regardless of schedule.
+
+        Returns posts where:
+        - business_asset_id matches
+        - status = 'pending'
+        - verification_status = 'verified'
+        - platform matches
+
+        Ordered by scheduled_posting_time (earliest first).
+
+        Args:
+            business_asset_id: Business asset ID to filter by
+            platform: Platform to filter by
+            limit: Maximum number of posts to return
+        """
+        try:
+            from backend.database import get_supabase_admin_client
+            client = await get_supabase_admin_client()
+
+            result = (
+                await client.table(self.table_name)
+                .select("*")
+                .eq("business_asset_id", business_asset_id)
+                .eq("platform", platform)
+                .eq("status", "pending")
+                .eq("verification_status", "verified")
+                .order("scheduled_posting_time", desc=False)
+                .limit(limit)
+                .execute()
+            )
+            return [self.model_class(**item) for item in result.data]
+        except Exception as e:
+            from backend.utils import get_logger
+            logger = get_logger(__name__)
+            logger.error(
+                "Failed to get pending verified posts",
+                business_asset_id=business_asset_id,
+                platform=platform,
+                error=str(e),
+            )
+            return []
+
     async def get_all_pending_posts(
         self, business_asset_id: str, platform: Optional[Literal["facebook", "instagram"]] = None
     ) -> List[CompletedPost]:
