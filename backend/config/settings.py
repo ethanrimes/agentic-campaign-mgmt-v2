@@ -87,8 +87,10 @@ class Settings(BaseSettings):
     planner_ungrounded_seeds_limit: int = 10
     planner_insights_limit: int = 3  # How many recent insight reports to include
 
-    # Insights agent configuration
-    insights_posts_limit: int = 20  # Max posts to include in context for analysis
+    # Insights agent configuration (context stuffing approach)
+    insights_facebook_posts_limit: int = 10  # Max Facebook posts to include in context
+    insights_instagram_posts_limit: int = 10  # Max Instagram posts to include in context
+    insights_account_metrics_days: int = 14  # Days of account-level metrics to fetch
 
     # Deduplicator configuration (how many recent canonical seeds to compare against)
     deduplicator_canonical_seeds_limit: int = 10
