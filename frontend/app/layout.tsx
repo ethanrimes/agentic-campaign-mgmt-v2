@@ -19,7 +19,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className="smooth-scroll">
+    <html lang="en" className="smooth-scroll light">
       <body className={inter.className}>
         <BusinessAssetProvider>
           <div className="min-h-screen">
