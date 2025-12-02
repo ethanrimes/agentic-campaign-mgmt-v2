@@ -113,9 +113,7 @@ class SchedulingConfig:
     NEWS_PIPELINE_INTERVAL_HOURS = 12  # News ingestion + deduplication
     TREND_DISCOVERY_INTERVAL_HOURS = 24  # Trend discovery
     UNGROUNDED_GENERATION_INTERVAL_HOURS = 12  # Ungrounded idea generation
-
-    # Analysis and planning (cron)
-    PLANNING_PIPELINE_HOUR = 2  # Daily at 2 AM
+    PLANNING_PIPELINE_INTERVAL_HOURS = 6  # Insights + planner + content creation
 
 
 SCHEDULING_CONFIG = SchedulingConfig()
@@ -427,7 +425,7 @@ def create_scheduler():
     scheduler.add_job(
         run_planning_pipeline,
         'interval',
-        hours=12,
+        hours=SCHEDULING_CONFIG.PLANNING_PIPELINE_INTERVAL_HOURS,
         id='planning_pipeline',
         name='Planning Pipeline (Insights + Planner + Content Creation)',
         max_instances=1,
