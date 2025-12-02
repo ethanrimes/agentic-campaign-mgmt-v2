@@ -1,209 +1,228 @@
 // frontend/app/page.tsx
 
-import { Brain, Network, TrendingUp, Target, Users, RefreshCw } from 'lucide-react'
+'use client'
+
+import { Brain, Network, TrendingUp, Target, Users, RefreshCw, ArrowRight, Sparkles } from 'lucide-react'
 import ArchitectureDiagram from '@/components/home/ArchitectureDiagram'
+import { motion } from 'framer-motion'
 
 export default function Home() {
   const contributions = [
     {
-      title: 'Fully Autonomous Multi-Agent Pipeline',
+      title: 'Autonomous Pipeline',
       description:
-        'A coordinated network of specialized agents handles ingestion, planning, creation, and publishing — turning social media management into a true end-to-end autonomous system.',
+        'End-to-end agents handle ingestion, planning, creation, and publishing.',
       icon: Brain,
-      color: 'from-blue-600 to-cyan-600',
+      color: 'text-blue-600',
+      bg: 'bg-blue-50 dark:bg-blue-900/20',
     },
     {
-      title: 'Closed-Loop Learning System',
+      title: 'Closed-Loop Learning',
       description:
-        'The Insights Agent continuously evaluates real campaign results and feeds structured insight reports back into planning and ideation, making each cycle smarter than the last.',
+        'Insights Agent evaluates real performance to refine future strategy.',
       icon: RefreshCw,
-      color: 'from-purple-600 to-pink-600',
+      color: 'text-green-600',
+      bg: 'bg-green-50 dark:bg-green-900/20',
     },
     {
-      title: 'High-Fidelity Cross-Platform Intelligence',
+      title: 'Cross-Platform',
       description:
-        'Unifies data from Facebook and Instagram into a single knowledge layer, enabling platform-aware strategy, richer analytics, and more effective content decisions.',
+        'Unified intelligence across Facebook and Instagram.',
       icon: TrendingUp,
-      color: 'from-green-600 to-emerald-600',
+      color: 'text-purple-600',
+      bg: 'bg-purple-50 dark:bg-purple-900/20',
     },
     {
-      title: 'Scalable Parallel Campaigns',
+      title: 'Scalable Campaigns',
       description:
-        'Designed for multi-brand and multi-campaign operation, with content seeds, plans, and content lifecycles that can be segmented and scaled with minimal additional overhead.',
+        'Multi-brand operation with segmented content seeds and plans.',
       icon: Target,
-      color: 'from-orange-600 to-red-600',
+      color: 'text-orange-600',
+      bg: 'bg-orange-50 dark:bg-orange-900/20',
     },
     {
-      title: 'Transparent Human-In-The-Loop Control',
+      title: 'Human-in-the-Loop',
       description:
-        'The Living Knowledge Base UI exposes every seed, decision, and output so humans can audit, override, or co-create with the agents at any point in the workflow.',
+        'Complete visibility into end-to-end operations, allowing humans to inspect, audit, and guide agent decisions at every step.',
       icon: Users,
-      color: 'from-cyan-600 to-blue-600',
+      color: 'text-cyan-600',
+      bg: 'bg-cyan-50 dark:bg-cyan-900/20',
     },
   ]
 
+  const container = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  }
+
+  const item = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0 }
+  }
+
   return (
-    <div className="max-w-7xl mx-auto space-y-16">
+    <div className="space-y-24 pb-20 pt-12">
       {/* Hero Section */}
-      <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-cyan-100/30 via-blue-100/20 to-slate-100/30 rounded-3xl blur-3xl"></div>
-        <div className="relative text-center py-16 px-6">
-          <div className="flex items-center justify-center gap-3 mb-6">
-            <div className="relative">
-              <Network className="w-16 h-16 text-cyan-600" />
-              <div className="absolute inset-0 blur-xl bg-cyan-400 opacity-40 animate-pulse-slow"></div>
-            </div>
-          </div>
-          <h1 className="text-6xl md:text-7xl font-bold mb-6 text-slate-900">
+      <section className="relative py-20 overflow-hidden">
+        {/* Animated Background Blobs */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <motion.div 
+            animate={{ 
+              x: [0, 100, 0],
+              y: [0, -50, 0],
+              scale: [1, 1.2, 1]
+            }}
+            transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+            className="absolute -top-[20%] -left-[10%] w-[600px] h-[600px] bg-primary-200/30 dark:bg-primary-900/20 rounded-full blur-3xl" 
+          />
+          <motion.div 
+            animate={{ 
+              x: [0, -100, 0],
+              y: [0, 50, 0],
+              scale: [1, 1.1, 1]
+            }}
+            transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+            className="absolute top-[20%] -right-[10%] w-[500px] h-[500px] bg-purple-200/30 dark:bg-purple-900/20 rounded-full blur-3xl" 
+          />
+        </div>
+
+        <div className="relative container mx-auto px-4 text-center max-w-4xl">
+          <motion.h1 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1, duration: 0.6 }}
+            className="text-6xl md:text-7xl font-bold tracking-tight mb-6 text-slate-900 dark:text-white"
+          >
             Socially Automated
-          </h1>
-          <p className="text-2xl font-semibold text-slate-700 mb-4">
+          </motion.h1>
+          
+          <motion.p 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2, duration: 0.6 }}
+            className="text-2xl md:text-3xl font-light text-foreground mb-8"
+          >
             An Agentic Engagement Engine
-          </p>
-          <p className="text-lg md:text-xl text-slate-600 max-w-4xl mx-auto leading-relaxed">
-            An adaptive, learning, end-to-end agentic framework for managing cross-platform social media campaigns
+          </motion.p>
+          
+          <motion.p 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3, duration: 0.6 }}
+            className="text-lg text-muted-foreground leading-relaxed max-w-2xl mx-auto"
+          >
+            An adaptive, learning, end-to-end framework for managing cross-platform social media campaigns
             with intelligent automation, strategic insights, and seamless execution.
-          </p>
+          </motion.p>
         </div>
-      </div>
-
-      {/* Architecture Diagram */}
-      <section>
-        <ArchitectureDiagram />
       </section>
 
-      {/* High Level Overview */}
-      <section className="bg-white rounded-2xl shadow-xl p-8 border border-slate-200">
-        <h2 className="text-3xl font-bold text-slate-900 mb-8 text-center">High-Level Overview</h2>
-        <div className="prose prose-slate max-w-none">
-          <div className="text-slate-700 leading-relaxed space-y-6">
-            {/* Description */}
-            <div>
-              <h3 className="text-2xl font-bold text-slate-900 mb-3">Description</h3>
-              <p>
-                This system is a <strong className="font-bold text-slate-950">fully autonomous, end-to-end agentic framework</strong> that continuously ingests knowledge, learns from outcomes, and produces high-performance, cross-platform social media campaigns with minimal human intervention.
-              </p>
-              <p>
-                Each agent in the system optimizes for <strong className="font-bold text-slate-950">maximum user engagement</strong> within a defined target audience and is instructed to execute its specialized task at the highest possible level to support this overall goal.
-              </p>
-            </div>
+      {/* System Architecture */}
+      <section className="container mx-auto px-4">
+        <div className="flex items-center gap-4 mb-8">
+          <div className="w-1 h-8 bg-gradient-to-b from-blue-500 to-purple-500 rounded-full"></div>
+          <h2 className="text-3xl font-bold text-slate-900 dark:text-white">System Architecture</h2>
+        </div>
+        
+        <motion.div 
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-100px" }}
+          transition={{ duration: 0.8 }}
+          className="relative"
+        >
+          {/* Glow effect behind diagram */}
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-purple-500/5 blur-3xl -z-10"></div>
+          
+          <ArchitectureDiagram />
+        </motion.div>
+      </section>
 
-            {/* Living Knowledge Base */}
-            <div>
-              <h3 className="text-2xl font-bold text-slate-900 mb-3">Living Knowledge Base</h3>
-              <p>
-                At the center of the system is the <strong className="font-bold text-slate-950">Living Knowledge Base</strong> — a continuously updated, fully inspectable record of every content seed, data source, insight, post, and decision made by the framework. It provides complete transparency into agent reasoning, supports human-in-the-loop collaboration, and serves as the core intelligence source powering all downstream decision-making.
-              </p>
-            </div>
+      {/* Key Features Grid */}
+      <section className="container mx-auto px-4">
+        <div className="flex items-center gap-4 mb-12">
+          <div className="w-1 h-8 bg-gradient-to-b from-green-500 to-cyan-500 rounded-full"></div>
+          <h2 className="text-3xl font-bold text-slate-900 dark:text-white">Core Capabilities</h2>
+        </div>
 
-            {/* Knowledge Ingestion & Ideation */}
-            <div>
-              <h3 className="text-2xl font-bold text-slate-900 mb-3">Knowledge Ingestion & Ideation</h3>
-              <p>
-                All posts produced by the system originate from "content seeds." These seeds exist in three categories, each with its own ingestion pipeline.
+        <motion.div 
+          variants={container}
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true }}
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+        >
+          {contributions.map((feature, index) => (
+            <motion.div
+              key={index}
+              variants={item}
+              className="glass-panel p-6 hover:border-primary/30 group bg-white/80 dark:bg-slate-900/80"
+            >
+              <div className={`w-12 h-12 rounded-2xl ${feature.bg} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}>
+                <feature.icon className={`w-6 h-6 ${feature.color}`} />
+              </div>
+              <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">{feature.title}</h3>
+              <p className="text-muted-foreground leading-relaxed">
+                {feature.description}
               </p>
-              <ul className="list-disc pl-6 space-y-3 text-slate-950">
-                <li className="text-slate-950">
-                  <strong className="font-bold text-slate-950">News Event Seeds</strong> are derived from contemporary events relevant to the target audience. They originate from deep internet research performed by <strong className="font-bold text-slate-950">Perplexity Sonar</strong> and <strong className="font-bold text-slate-950">ChatGPT Deep Research</strong> agents, which surface emerging stories, consolidate sources, and generate high-quality structured event objects.
-                </li>
-                <li className="text-slate-950">
-                  <strong className="font-bold text-slate-950">Trend Seeds</strong> capture viral formats, hashtags, patterns, and content archetypes from Facebook and Instagram. The <strong className="font-bold text-slate-950">Trend Research Agent</strong>, equipped with high-volume scraping and exploration tools, analyzes real-time social data to identify platform-native trends and opportunities.
-                </li>
-                <li className="text-slate-950">
-                  <strong className="font-bold text-slate-950">Ungrounded Seeds</strong> are creative, non-news, non-trend conceptual prompts generated by a dedicated ideation agent. These seeds broaden the creative landscape and enable content that is not dependent on external events.
-                </li>
-              </ul>
-              <p>
-                All seeds undergo <strong className="font-bold text-slate-950">deduplication, consolidation, and validation</strong> before entering the knowledge base.
-              </p>
-            </div>
+            </motion.div>
+          ))}
+        </motion.div>
+      </section>
 
-            {/* Adaptive Learning */}
-            <div>
-              <h3 className="text-2xl font-bold text-slate-900 mb-3">Adaptive Learning</h3>
-              <p>
-                The <strong className="font-bold text-slate-950">Insights Agent</strong> periodically analyzes engagement metrics and audience behavior from live posts. It reviews comments, performance data, and platform interactions to produce structured, timestamped insight reports. These insights directly shape future strategy, ensuring the system continuously adapts and improves.
-              </p>
-            </div>
+      {/* Technical Overview */}
+      <section className="container mx-auto px-4">
+         <div className="glass-panel p-8 md:p-12 bg-white/90 dark:bg-slate-900/90">
+          <div className="max-w-4xl mx-auto">
+            <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-8 text-center">How It Works</h2>
+            
+            <div className="space-y-12">
+              <div className="flex flex-col md:flex-row gap-8 items-start">
+                <div className="flex-shrink-0 w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 font-bold text-xl">1</div>
+                <div>
+                  <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-3">Knowledge Ingestion</h3>
+                  <p className="text-muted-foreground leading-relaxed">
+                    The system starts by absorbing the world. <strong>Perplexity Sonar</strong> and <strong>Deep Research</strong> agents scour the web for news events, while <strong>Trend Researchers</strong> analyze social platforms for viral patterns. All of this is deduplicated and stored in the Living Knowledge Base.
+                  </p>
+                </div>
+              </div>
 
-            {/* Planning & Publishing Pipeline */}
-            <div>
-              <h3 className="text-2xl font-bold text-slate-900 mb-3">Planning & Publishing Pipeline</h3>
-              <p>
-                The <strong className="font-bold text-slate-950">Planner Agent</strong> synthesizes seeds, insights, and budget constraints to generate a weekly content plan. It determines:
-              </p>
-              <ul className="list-disc pl-6 space-y-2 text-primary-950">
-                <li className="text-slate-700">which seeds to activate</li>
-                <li className="text-slate-700">how many posts to produce per seed</li>
-                <li className="text-slate-700">media distribution across videos, images, reels, carousels, and text posts</li>
-                <li className="text-slate-700">whether the plan meets global constraints and platform requirements</li>
-              </ul>
-              <p>
-                Once the plan is finalized, multiple <strong className="font-bold text-slate-950">Content Creation Agents</strong> collaboratively produce all required media and copy, drawing context directly from the Living Knowledge Base. Media is generated through image/video production services, stored in Supabase, and prepared in platform-specific formats.
-              </p>
-              <p>
-                Before publishing, all completed posts pass through the <strong className="font-bold text-slate-950">Content Verifier Agent</strong>. This safety verification layer reviews each post's text and generated media, comparing against source materials to ensure:
-              </p>
-              <ul className="list-disc pl-6 space-y-2 text-primary-950">
-                <li className="text-slate-700">no offensive content (hate speech, slurs, explicit material)</li>
-                <li className="text-slate-700">factual accuracy for news-based posts against original sources</li>
-              </ul>
-              <p>
-                Only verified posts proceed to the <strong className="font-bold text-slate-950">automated publishers</strong> for Instagram and Facebook, which post the content according to schedule. All resulting performance data is fed back into the knowledge base, enabling <strong className="font-bold text-slate-950">continuous closed-loop strategic refinement</strong>.
-              </p>
-            </div>
+              <div className="flex flex-col md:flex-row gap-8 items-start">
+                <div className="flex-shrink-0 w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 font-bold text-xl">2</div>
+                <div>
+                  <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-3">Strategic Planning</h3>
+                  <p className="text-muted-foreground leading-relaxed">
+                    The <strong>Planner Agent</strong> acts as the editor-in-chief. It reviews available content seeds, checks budget constraints, and consults past performance insights to build a balanced weekly content calendar that maximizes engagement.
+                  </p>
+                </div>
+              </div>
 
-            {/* Interactive Comment Responding */}
-            <div>
-              <h3 className="text-2xl font-bold text-slate-900 mb-3">Interactive Comment Responding</h3>
-              <p>
-                A <strong className="font-bold text-slate-950">Facebook Webhook</strong> monitors comment activity on the page's feed. When a comment is posted, it is logged and forwarded to the <strong className="font-bold text-slate-950">Comment Responder Agent</strong>.
-              </p>
-              <p>
-                Instagram, rather than a webhook, uses periodic polling to detect new comments, which are similarly logged and routed.
-              </p>
-              <p>
-                The <strong className="font-bold text-slate-950">Comment Responder Agent</strong> considers the comment, the corresponding post's content and metadata, and any prior discussion on the thread, then generates a thoughtful and contextually relevant response for the user.
-              </p>
+              <div className="flex flex-col md:flex-row gap-8 items-start">
+                <div className="flex-shrink-0 w-12 h-12 rounded-full bg-pink-100 dark:bg-pink-900/30 flex items-center justify-center text-pink-600 font-bold text-xl">3</div>
+                <div>
+                  <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-3">Creation & Verification</h3>
+                  <p className="text-muted-foreground leading-relaxed">
+                    Specialized <strong>Content Creator Agents</strong> generate high-fidelity media and copy. Before anything goes live, the <strong>Verifier Agent</strong> performs a rigorous multimodal safety check to ensure brand safety and factual accuracy.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-col md:flex-row gap-8 items-start">
+                <div className="flex-shrink-0 w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600 font-bold text-xl">4</div>
+                <div>
+                  <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-3">Active Engagement</h3>
+                  <p className="text-muted-foreground leading-relaxed">
+                    Post-publishing, the system stays awake. Webhooks and pollers detect user comments immediately, and the <strong>Comment Responder Agent</strong> engages with the community in real-time, driving further reach and loyalty.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* Important Contributions */}
-      <section className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl shadow-2xl p-12 border border-slate-700">
-        <h2 className="text-4xl font-bold text-white mb-4 text-center">Important Contributions</h2>
-        <p className="text-slate-300 text-center mb-12 text-lg max-w-3xl mx-auto">
-          This system represents a significant advancement in autonomous social media management,
-          combining cutting-edge AI agents with strategic analytics and seamless platform integration.
-        </p>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {contributions.slice(0, 3).map((contribution, index) => (
-            <div
-              key={index}
-              className="group p-6 bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700 hover:border-cyan-500 transition-all duration-300 hover:shadow-xl hover:shadow-cyan-500/20"
-            >
-              <div className={`inline-flex p-4 rounded-xl bg-gradient-to-br ${contribution.color} mb-4 group-hover:scale-110 transition-transform duration-300`}>
-                <contribution.icon className="w-8 h-8 text-white" />
-              </div>
-              <h3 className="text-xl font-bold text-white mb-3">{contribution.title}</h3>
-              <p className="text-slate-300 leading-relaxed">{contribution.description}</p>
-            </div>
-          ))}
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8 max-w-4xl mx-auto">
-          {contributions.slice(3).map((contribution, index) => (
-            <div
-              key={index}
-              className="group p-6 bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700 hover:border-cyan-500 transition-all duration-300 hover:shadow-xl hover:shadow-cyan-500/20"
-            >
-              <div className={`inline-flex p-4 rounded-xl bg-gradient-to-br ${contribution.color} mb-4 group-hover:scale-110 transition-transform duration-300`}>
-                <contribution.icon className="w-8 h-8 text-white" />
-              </div>
-              <h3 className="text-xl font-bold text-white mb-3">{contribution.title}</h3>
-              <p className="text-slate-300 leading-relaxed">{contribution.description}</p>
-            </div>
-          ))}
         </div>
       </section>
     </div>

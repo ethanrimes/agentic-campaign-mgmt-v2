@@ -114,13 +114,13 @@ const nodeDescriptions: Record<string, { title: string; description: string; det
   'insights-agent': {
     title: 'Insights Agent',
     description:
-      'Analyzes cross-platform engagement metrics to generate timestamped insight reports that directly inform future planning and ideation.',
+      'Your strategic eye on performance. This agent studies audience behavior across platforms to tell you exactly what’s resonating and why, turning raw numbers into actionable advice.',
     details: [
-      'Calls Facebook and Instagram metric tools to gather performance data',
-      'Identifies patterns in what worked, what failed, and why',
-      'Summarizes audience behavior, content archetype performance, and timing effects',
-      'Writes structured insight reports back into the knowledge base',
-      'Closes the feedback loop for continuous strategic refinement',
+      'Translates complex metrics into clear, plain-English strategy',
+      'Identifies winning formats and best times to post',
+      'Learns from every interaction to make the next campaign smarter',
+      'Delivers weekly performance breakdowns directly to the knowledge base',
+      'Ensures you never make the same mistake twice',
     ],
   },
   'planner-agent': {
@@ -210,65 +210,64 @@ const nodeDescriptions: Record<string, { title: string; description: string; det
   'verifier': {
     title: 'Content Verifier Agent',
     description:
-      'Safety verification agent that reviews completed posts (text and all generated media) before publishing, comparing against source materials to ensure content quality and accuracy.',
+      'The final line of defense. Before any post goes live, this agent reviews every pixel and word to ensure it meets brand standards, is factually accurate, and is safe for your audience.',
     details: [
-      'Evaluates posts for offensive content (hate speech, slurs, explicit content)',
-      'Checks news-based posts against source materials for factual accuracy',
-      'Reviews both text captions and generated images/videos',
-      'Uses Gemini 2.5 Flash for multimodal content analysis',
-      'Automatically updates verification status for cross-platform post groups',
-      'Implementation: @backend/agents/verifier/',
+      'Protects your brand reputation by catching potential issues early',
+      'Fact-checks news-related content against trusted sources',
+      'Scans images and video for quality and brand alignment',
+      'Provides a "second pair of eyes" on every single piece of content',
+      'Gives you confidence that everything published is polished and safe',
     ],
   },
 }
 
 
-// Category colors
+// Category colors updated for new palette
 const categoryColors = {
   Ideation: {
-    bg: 'bg-blue-100',
-    border: 'border-blue-500',
-    text: 'text-blue-900',
+    bg: 'bg-blue-50 dark:bg-blue-900/20',
+    border: 'border-blue-500 dark:border-blue-400',
+    text: 'text-blue-900 dark:text-blue-100',
     edgeColor: '#3b82f6',
   },
   Utilities: {
-    bg: 'bg-slate-200',
-    border: 'border-slate-600',
-    text: 'text-slate-900',
+    bg: 'bg-slate-50 dark:bg-slate-800/50',
+    border: 'border-slate-400 dark:border-slate-500',
+    text: 'text-foreground',
     edgeColor: '#64748b',
   },
   'API Integrations': {
-    bg: 'bg-green-100',
-    border: 'border-green-600',
-    text: 'text-green-900',
+    bg: 'bg-green-50 dark:bg-green-900/20',
+    border: 'border-green-500 dark:border-green-400',
+    text: 'text-green-900 dark:text-green-100',
     edgeColor: '#16a34a',
   },
   Generation: {
-    bg: 'bg-yellow-100',
-    border: 'border-yellow-500',
-    text: 'text-yellow-900',
+    bg: 'bg-yellow-50 dark:bg-yellow-900/20',
+    border: 'border-yellow-500 dark:border-yellow-400',
+    text: 'text-yellow-900 dark:text-yellow-100',
     edgeColor: '#eab308',
   },
   Analysis: {
-    bg: 'bg-orange-100',
-    border: 'border-orange-500',
-    text: 'text-orange-900',
+    bg: 'bg-orange-50 dark:bg-orange-900/20',
+    border: 'border-orange-500 dark:border-orange-400',
+    text: 'text-orange-900 dark:text-orange-100',
     edgeColor: '#f97316',
   },
   'Knowledge Base': {
-    bg: 'bg-gradient-to-br from-purple-100 to-pink-100',
-    border: 'border-purple-500',
-    text: 'text-purple-900',
+    bg: 'bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/40 dark:to-pink-900/40',
+    border: 'border-purple-500 dark:border-purple-400',
+    text: 'text-purple-900 dark:text-purple-100',
     edgeColor: '#8b5cf6',
   },
 }
 
 // Modal component
-function NodeModal({ 
-  isOpen, 
-  onClose, 
-  nodeData 
-}: { 
+function NodeModal({
+  isOpen,
+  onClose,
+  nodeData
+}: {
   isOpen: boolean
   onClose: () => void
   nodeData: { title: string; description: string; details: string[] } | null
@@ -276,40 +275,40 @@ function NodeModal({
   if (!isOpen || !nodeData) return null
 
   return (
-    <div 
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+    <div
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
       onClick={onClose}
     >
-      <div 
-        className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto"
+      <div
+        className="glass-panel max-w-2xl w-full max-h-[80vh] overflow-y-auto shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-6">
           <div className="flex justify-between items-start mb-4">
-            <h2 className="text-2xl font-bold text-slate-900">{nodeData.title}</h2>
+            <h2 className="text-2xl font-bold text-foreground">{nodeData.title}</h2>
             <button
               onClick={onClose}
-              className="text-slate-400 hover:text-slate-600 transition-colors"
+              className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
             >
               <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
           </div>
-          
-          <p className="text-slate-700 mb-6 leading-relaxed">
+
+          <p className="text-foreground mb-6 leading-relaxed">
             {nodeData.description}
           </p>
-          
+
           <div>
-            <h3 className="text-lg font-semibold text-slate-900 mb-3">Key Features</h3>
+            <h3 className="text-lg font-semibold text-foreground mb-3">Key Features</h3>
             <ul className="space-y-2">
               {nodeData.details.map((detail, index) => (
                 <li key={index} className="flex items-start">
                   <svg className="w-5 h-5 text-green-500 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
-                  <span className="text-slate-600">{detail}</span>
+                  <span className="text-muted-foreground">{detail}</span>
                 </li>
               ))}
             </ul>
@@ -326,28 +325,28 @@ function CustomNode({ data, id }: { data: any; id: string }) {
 
   return (
     <div
-      className={`px-4 py-3 shadow-lg rounded-xl border-2 ${colors.bg} ${colors.border} min-w-[180px] transition-all hover:shadow-xl cursor-pointer hover:scale-105`}
+      className={`px-4 py-3 shadow-lg rounded-xl border ${colors.bg} ${colors.border} min-w-[180px] transition-all hover:shadow-glow hover:scale-105 backdrop-blur-sm`}
       onClick={() => data.onClick?.(id)}
     >
       <Handle
         type="target"
         position={Position.Top}
-        style={{ background: '#555' }}
+        style={{ background: 'transparent', border: 'none' }}
       />
-      
+
       <div className={`text-sm font-bold ${colors.text} text-center`}>
         {data.label}
       </div>
       {data.subtitle && (
-        <div className="text-xs text-slate-600 text-center mt-1 italic">
+        <div className="text-xs text-muted-foreground text-center mt-1 italic">
           {data.subtitle}
         </div>
       )}
-      
+
       <Handle
         type="source"
         position={Position.Bottom}
-        style={{ background: '#555' }}
+        style={{ background: 'transparent', border: 'none' }}
       />
     </div>
   )
@@ -372,7 +371,7 @@ const createInitialNodes = (onNodeClick: (id: string) => void): Node[] => [
     position: { x: 0, y: 0 },
     data: { label: 'Facebook data API', category: 'API Integrations', onClick: onNodeClick },
   },
-  
+
   // Rank 1: Research Tools
   {
     id: 'perplexity',
@@ -386,7 +385,7 @@ const createInitialNodes = (onNodeClick: (id: string) => void): Node[] => [
     position: { x: 0, y: 0 },
     data: { label: 'ChatGPT o4-mini Deep Research', category: 'Ideation', onClick: onNodeClick },
   },
-  
+
   // Rank 2: Processors & Comment Monitoring
   {
     id: 'trend-researcher',
@@ -418,7 +417,7 @@ const createInitialNodes = (onNodeClick: (id: string) => void): Node[] => [
     position: { x: 0, y: 0 },
     data: { label: 'Instagram Comment Checker', category: 'Utilities', onClick: onNodeClick },
   },
-  
+
   // Rank 3: Knowledge Base (Center)
   {
     id: 'knowledge-base',
@@ -431,7 +430,7 @@ const createInitialNodes = (onNodeClick: (id: string) => void): Node[] => [
       onClick: onNodeClick
     },
   },
-  
+
   // Rank 4: Generation & Analysis
   {
     id: 'planner-agent',
@@ -445,7 +444,7 @@ const createInitialNodes = (onNodeClick: (id: string) => void): Node[] => [
     position: { x: 0, y: 0 },
     data: { label: 'Guardrails', category: 'Utilities', onClick: onNodeClick },
   },
-  
+
   // Rank 5: Content Creation & Comment Response
   {
     id: 'content-creator',
@@ -482,14 +481,14 @@ const createInitialNodes = (onNodeClick: (id: string) => void): Node[] => [
 ]
 
 // Standardized grey color for all edges
-const EDGE_COLOR = '#64748b'
-const EDGE_STYLE = { strokeWidth: 2.5, stroke: EDGE_COLOR }
+const EDGE_COLOR = '#94a3b8' // slate-400
+const EDGE_STYLE = { strokeWidth: 2, stroke: EDGE_COLOR }
 const EDGE_MARKER = { type: MarkerType.ArrowClosed, color: EDGE_COLOR }
 const EDGE_LABEL_STYLE = {
-  labelStyle: { fontSize: 10, fill: '#1e293b', fontWeight: 600 },
-  labelBgStyle: { fill: '#ffffff', fillOpacity: 0.95 },
+  labelStyle: { fontSize: 10, fill: '#0f172a', fontWeight: 600 },
+  labelBgStyle: { fill: '#f8fafc', fillOpacity: 0.9 },
   labelBgPadding: [6, 3] as [number, number],
-  labelBgBorderRadius: 3,
+  labelBgBorderRadius: 6,
 }
 
 const initialEdges: Edge[] = [
@@ -510,7 +509,7 @@ const initialEdges: Edge[] = [
     style: EDGE_STYLE,
     markerEnd: EDGE_MARKER,
   },
-  
+
   // Research Tools → Event Deduplicator
   {
     id: 'e-perplexity-dedup',
@@ -528,7 +527,7 @@ const initialEdges: Edge[] = [
     style: EDGE_STYLE,
     markerEnd: EDGE_MARKER,
   },
-  
+
   // Processors → Knowledge Base
   {
     id: 'e-trend-kb',
@@ -560,7 +559,7 @@ const initialEdges: Edge[] = [
     markerEnd: EDGE_MARKER,
     ...EDGE_LABEL_STYLE,
   },
-  
+
   // Knowledge Base ↔ Planner Agent
   {
     id: 'e-kb-planner',
@@ -582,7 +581,7 @@ const initialEdges: Edge[] = [
     markerEnd: EDGE_MARKER,
     ...EDGE_LABEL_STYLE,
   },
-  
+
   // Planner ↔ Guardrails
   {
     id: 'e-planner-guardrails',
@@ -602,7 +601,7 @@ const initialEdges: Edge[] = [
     markerEnd: EDGE_MARKER,
     ...EDGE_LABEL_STYLE,
   },
-  
+
   // Knowledge Base → Content Creator
   {
     id: 'e-kb-creator',
@@ -612,7 +611,7 @@ const initialEdges: Edge[] = [
     style: EDGE_STYLE,
     markerEnd: EDGE_MARKER,
   },
-  
+
   // Content Creator → Meta Graph API
   {
     id: 'e-creator-meta',
@@ -624,7 +623,7 @@ const initialEdges: Edge[] = [
     markerEnd: EDGE_MARKER,
     ...EDGE_LABEL_STYLE,
   },
-  
+
   // Meta Graph API → Insights Agent
   {
     id: 'e-meta-insights',
@@ -636,7 +635,7 @@ const initialEdges: Edge[] = [
     markerEnd: EDGE_MARKER,
     ...EDGE_LABEL_STYLE,
   },
-  
+
   // Insights Agent → Knowledge Base
   {
     id: 'e-insights-kb',
@@ -800,26 +799,26 @@ export default function ArchitectureDiagram() {
 
   return (
     <>
-      <div className="relative w-full bg-white rounded-2xl shadow-xl p-6 border border-slate-200">
-        <h3 className="text-2xl font-bold text-slate-900 mb-4 text-center">System Architecture</h3>
+      <div className="glass-panel p-6 w-full">
+        <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-4 text-center">System Architecture</h3>
 
         {/* Legend */}
         <div className="flex flex-wrap gap-3 mb-4 justify-center">
           {Object.entries(categoryColors).map(([category, colors]) => (
             <div key={category} className="flex items-center gap-2">
               <div className={`w-4 h-4 rounded border-2 ${colors.bg} ${colors.border}`}></div>
-              <span className="text-xs text-slate-600">{category}</span>
+              <span className="text-xs text-slate-600 dark:text-slate-300">{category}</span>
             </div>
           ))}
         </div>
 
         {/* Instruction */}
-        <p className="text-center text-sm text-slate-500 mb-4">
+        <p className="text-center text-sm text-slate-500 dark:text-slate-400 mb-4">
           Click on any node to learn more about it
         </p>
 
         {/* ReactFlow Diagram */}
-        <div className="w-full h-[900px] border-2 border-slate-200 rounded-xl overflow-hidden bg-gradient-to-br from-slate-50 to-white">
+        <div className="w-full h-[900px] rounded-xl overflow-hidden bg-slate-50/50 dark:bg-slate-900/30 border border-slate-200 dark:border-slate-700">
           <ReactFlow
             nodes={nodes}
             edges={edges}
@@ -843,8 +842,8 @@ export default function ArchitectureDiagram() {
             nodesConnectable={false}
             elementsSelectable={true}
           >
-            <Background color="#cbd5e1" gap={16} size={1} />
-            <Controls />
+            <Background color="#cbd5e1" gap={16} size={1} className="opacity-50" />
+            <Controls className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 fill-slate-900 dark:fill-white" />
           </ReactFlow>
         </div>
       </div>

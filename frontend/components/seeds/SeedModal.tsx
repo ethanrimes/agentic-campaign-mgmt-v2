@@ -53,73 +53,75 @@ export default function SeedModal({ seed, seedType, postCount, onClose }: SeedMo
   return (
     <AnimatePresence>
       <motion.div
-        className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={onClose}
       >
         <motion.div
-          className="bg-white rounded-2xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col"
-          initial={{ scale: 0.9, y: 20 }}
-          animate={{ scale: 1, y: 0 }}
-          exit={{ scale: 0.9, y: 20 }}
+          className="glass-panel w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl"
+          initial={{ scale: 0.95, y: 20, opacity: 0 }}
+          animate={{ scale: 1, y: 0, opacity: 1 }}
+          exit={{ scale: 0.95, y: 20, opacity: 0 }}
+          transition={{ type: "spring", duration: 0.5 }}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="p-6 border-b border-slate-200 flex items-start justify-between">
+          <div className="p-6 border-b border-slate-200/50 dark:border-slate-700/50 flex items-start justify-between bg-white/50 dark:bg-slate-900/50 backdrop-blur-md">
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-2">
-                <h2 className="text-2xl font-bold text-slate-900">{seedName}</h2>
+                <h2 className="text-2xl font-bold text-slate-900 dark:text-white">{seedName}</h2>
                 {postCount > 0 && (
-                  <div className="bg-gradient-to-br from-green-500 to-emerald-600 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg">
+                  <div className="bg-gradient-to-r from-green-500 to-emerald-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm">
                     {postCount} {postCount === 1 ? 'post' : 'posts'}
                   </div>
                 )}
               </div>
-              <p className="text-sm text-slate-600">
+              <p className="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                <Clock className="w-3.5 h-3.5" />
                 Created {formatRelativeTime(seed.created_at)}
                 {(trendSeed || ungroundedSeed) && ` • ${(trendSeed?.created_by || ungroundedSeed?.created_by)}`}
               </p>
             </div>
             <button
               onClick={onClose}
-              className="text-slate-400 hover:text-slate-600 transition-colors p-2 hover:bg-slate-100 rounded-lg"
+              className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg"
             >
               <X className="w-6 h-6" />
             </button>
           </div>
 
           {/* Content */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          <div className="flex-1 overflow-y-auto p-8 space-y-8 bg-white/40 dark:bg-slate-900/40">
             {/* News Event Seed Content */}
             {newsEventSeed && (
               <>
                 {/* Description */}
-                <div className="p-4 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl border border-blue-100">
-                  <h4 className="text-sm font-bold text-gray-900 mb-2 flex items-center gap-2">
-                    <div className="w-1 h-4 bg-gradient-to-b from-blue-500 to-cyan-500 rounded-full"></div>
+                <div className="p-6 rounded-2xl bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800">
+                  <h4 className="text-sm font-bold text-blue-900 dark:text-blue-100 mb-3 flex items-center gap-2">
+                    <div className="w-1 h-4 bg-blue-500 rounded-full"></div>
                     Description
                   </h4>
-                  <p className="text-gray-700 leading-relaxed">{newsEventSeed.description}</p>
+                  <p className="text-slate-700 dark:text-slate-300 leading-relaxed text-lg">{newsEventSeed.description}</p>
                 </div>
 
                 {/* Event Details */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="p-4 bg-white rounded-xl border border-gray-200 shadow-soft">
-                    <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-2">
-                      <MapPin className="w-4 h-4 text-blue-600" />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="p-5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
+                    <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                      <MapPin className="w-4 h-4 text-blue-500" />
                       Location
                     </h4>
-                    <p className="text-gray-900 font-medium">{newsEventSeed.location}</p>
+                    <p className="text-slate-900 dark:text-white font-medium">{newsEventSeed.location}</p>
                   </div>
                   {newsEventSeed.start_time && (
-                    <div className="p-4 bg-white rounded-xl border border-gray-200 shadow-soft">
-                      <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-2">
-                        <Calendar className="w-4 h-4 text-purple-600" />
+                    <div className="p-5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
+                      <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                        <Calendar className="w-4 h-4 text-purple-500" />
                         Date
                       </h4>
-                      <p className="text-gray-900 font-medium">
+                      <p className="text-slate-900 dark:text-white font-medium">
                         {formatDate(newsEventSeed.start_time)}
                         {newsEventSeed.end_time && ` - ${formatDate(newsEventSeed.end_time)}`}
                       </p>
@@ -130,30 +132,30 @@ export default function SeedModal({ seed, seedType, postCount, onClose }: SeedMo
                 {/* Sources */}
                 {newsEventSeed.sources && newsEventSeed.sources.length > 0 && (
                   <div>
-                    <h4 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
-                      <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-secondary-500 rounded-lg flex items-center justify-center text-white text-xs font-bold">
+                    <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                      <div className="w-6 h-6 bg-primary-500 rounded-lg flex items-center justify-center text-white text-xs font-bold">
                         {newsEventSeed.sources.length}
                       </div>
                       Research Sources
                     </h4>
                     <div className="space-y-3">
                       {newsEventSeed.sources.map((source, index) => (
-                        <div key={index} className="group p-4 bg-white rounded-xl border border-gray-200 shadow-soft hover:shadow-glow hover:border-primary-200 transition-all">
-                          <div className="flex items-start justify-between gap-3 mb-3">
+                        <div key={index} className="group p-4 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-primary-300 dark:hover:border-primary-700 transition-colors">
+                          <div className="flex items-start justify-between gap-3 mb-2">
                             <a
                               href={source.url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-sm text-primary-600 hover:text-primary-700 font-semibold flex items-center gap-2 truncate group-hover:underline"
+                              className="text-sm text-primary-600 dark:text-primary-400 font-semibold flex items-center gap-2 truncate hover:underline"
                             >
                               {new URL(source.url).hostname}
-                              <ExternalLink className="w-3.5 h-3.5 flex-shrink-0 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                              <ExternalLink className="w-3.5 h-3.5 flex-shrink-0" />
                             </a>
-                            <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full whitespace-nowrap font-medium">
+                            <span className="text-xs bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-2 py-1 rounded-full whitespace-nowrap font-medium">
                               {source.found_by}
                             </span>
                           </div>
-                          <p className="text-sm text-gray-700 leading-relaxed">{source.key_findings}</p>
+                          <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">{source.key_findings}</p>
                         </div>
                       ))}
                     </div>
@@ -166,26 +168,26 @@ export default function SeedModal({ seed, seedType, postCount, onClose }: SeedMo
             {trendSeed && (
               <>
                 {/* Description */}
-                <div className="p-4 bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl border border-purple-100">
-                  <h4 className="text-sm font-bold text-gray-900 mb-2 flex items-center gap-2">
-                    <div className="w-1 h-4 bg-gradient-to-b from-purple-500 to-pink-500 rounded-full"></div>
+                <div className="p-6 rounded-2xl bg-purple-50/50 dark:bg-purple-900/10 border border-purple-100 dark:border-purple-800">
+                  <h4 className="text-sm font-bold text-purple-900 dark:text-purple-100 mb-3 flex items-center gap-2">
+                    <div className="w-1 h-4 bg-purple-500 rounded-full"></div>
                     Trend Analysis
                   </h4>
-                  <p className="text-gray-700 leading-relaxed whitespace-pre-line">{trendSeed.description}</p>
+                  <p className="text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line text-lg">{trendSeed.description}</p>
                 </div>
 
                 {/* Hashtags */}
                 {trendSeed.hashtags && trendSeed.hashtags.length > 0 && (
                   <div>
-                    <h4 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
-                      <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center text-white text-xs">
+                    <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                      <div className="w-6 h-6 bg-purple-500 rounded-lg flex items-center justify-center text-white text-xs">
                         #
                       </div>
                       Hashtags ({trendSeed.hashtags.length})
                     </h4>
                     <div className="flex flex-wrap gap-2">
                       {trendSeed.hashtags.map((tag, i) => (
-                        <span key={i} className="text-sm bg-gradient-to-r from-purple-50 to-pink-50 text-purple-700 px-4 py-2 rounded-full border border-purple-100 font-medium">
+                        <span key={i} className="text-sm bg-white dark:bg-slate-800 text-purple-600 dark:text-purple-400 px-4 py-2 rounded-full border border-purple-100 dark:border-purple-900 font-medium shadow-sm">
                           #{tag}
                         </span>
                       ))}
@@ -199,37 +201,39 @@ export default function SeedModal({ seed, seedType, postCount, onClose }: SeedMo
             {ungroundedSeed && (
               <>
                 {/* Full Idea */}
-                <div className="p-4 bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl border border-amber-100">
-                  <h4 className="text-sm font-bold text-gray-900 mb-2 flex items-center gap-2">
-                    <div className="w-1 h-4 bg-gradient-to-b from-amber-500 to-orange-500 rounded-full"></div>
+                <div className="p-6 rounded-2xl bg-amber-50/50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-800">
+                  <h4 className="text-sm font-bold text-amber-900 dark:text-amber-100 mb-3 flex items-center gap-2">
+                    <div className="w-1 h-4 bg-amber-500 rounded-full"></div>
                     Idea
                   </h4>
-                  <p className="text-gray-700 leading-relaxed">{ungroundedSeed.idea}</p>
+                  <p className="text-slate-700 dark:text-slate-300 leading-relaxed text-lg">{ungroundedSeed.idea}</p>
                 </div>
 
                 {/* Format & Details */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="p-4 bg-white rounded-xl border border-gray-200 shadow-soft">
-                    <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-2">
-                      <FileText className="w-4 h-4 text-amber-600" />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="p-5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
+                    <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-amber-500" />
                       Format
                     </h4>
-                    <p className="text-gray-900 font-medium">{ungroundedSeed.format}</p>
+                    <p className="text-slate-900 dark:text-white font-medium">{ungroundedSeed.format}</p>
                   </div>
-                  <div className="p-4 bg-white rounded-xl border border-gray-200 shadow-soft col-span-full">
-                    <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Details</h4>
-                    <p className="text-gray-700 leading-relaxed whitespace-pre-line">{ungroundedSeed.details}</p>
+                  <div className="p-5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm col-span-full">
+                    <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">Details</h4>
+                    <p className="text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line">{ungroundedSeed.details}</p>
                   </div>
                 </div>
               </>
             )}
 
             {/* Content Timeline */}
-            <SeedTimeline
-              tasks={tasks}
-              posts={posts}
-              loading={loading}
-            />
+            <div className="pt-8 border-t border-slate-200 dark:border-slate-700">
+              <SeedTimeline
+                tasks={tasks}
+                posts={posts}
+                loading={loading}
+              />
+            </div>
           </div>
         </motion.div>
       </motion.div>

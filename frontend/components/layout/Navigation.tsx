@@ -6,21 +6,33 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState, useEffect, useRef } from 'react'
 import { cn } from '@/lib/utils'
-import { ChevronDown, Zap, Loader2 } from 'lucide-react'
+import { 
+  ChevronDown, 
+  Zap, 
+  Loader2, 
+  Sparkles, 
+  Calendar, 
+  BarChart3, 
+  ShieldCheck, 
+  Facebook, 
+  Instagram 
+} from 'lucide-react'
 import { useBusinessAsset } from '@/lib/business-asset-context'
+import { motion, AnimatePresence } from 'framer-motion'
 
 const navItems = [
-  { name: 'Content Seeds', href: '/content-seeds' },
-  { name: 'Scheduled Posts', href: '/scheduled-posts' },
-  { name: 'Insight Reports', href: '/insights' },
-  { name: 'Verifier Reports', href: '/verifier' },
-  { name: 'Facebook', href: '/facebook' },
-  { name: 'Instagram', href: '/instagram' },
+  { name: 'Seeds', href: '/content-seeds', icon: Sparkles },
+  { name: 'Schedule', href: '/scheduled-posts', icon: Calendar },
+  { name: 'Insights', href: '/insights', icon: BarChart3 },
+  { name: 'Verifier', href: '/verifier', icon: ShieldCheck },
+  { name: 'Facebook', href: '/facebook', icon: Facebook },
+  { name: 'Instagram', href: '/instagram', icon: Instagram },
 ]
 
 export default function Navigation() {
   const pathname = usePathname()
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+  const [isScrolled, setIsScrolled] = useState(false)
   const { selectedAsset, allAssets, setSelectedAsset, isLoading } = useBusinessAsset()
   const dropdownRef = useRef<HTMLDivElement>(null)
 
@@ -36,6 +48,15 @@ export default function Navigation() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
+  // Handle scroll for glass effect intensity
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 20)
+    }
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
   const handleAssetSelect = (assetId: string) => {
     const asset = allAssets.find(a => a.id === assetId)
     if (asset) {
@@ -45,105 +66,142 @@ export default function Navigation() {
   }
 
   return (
-    <nav className="sticky top-0 z-50 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 shadow-lg border-b border-slate-700">
-      <div className="container mx-auto px-6">
-        <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <Link
-            href="/"
-            className="flex items-center gap-3 text-xl font-bold text-white hover:scale-105 transition-transform group"
-          >
-            <div className="relative">
-              <Zap className="w-7 h-7 text-cyan-400 group-hover:text-cyan-300 transition-colors" />
-              <div className="absolute inset-0 blur-md bg-cyan-400 opacity-40 group-hover:opacity-60 transition-opacity"></div>
-            </div>
-            <span className="bg-gradient-to-r from-cyan-400 via-blue-400 to-cyan-400 bg-clip-text text-transparent">
-              Socially Automated
-            </span>
-          </Link>
-
-          {/* Navigation Items */}
-          <div className="flex items-center space-x-1">
-            {navItems.map((item) => {
-              const isActive = pathname.startsWith(item.href)
-
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={cn(
-                    'relative px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200',
-                    isActive
-                      ? 'bg-slate-700 text-white shadow-lg'
-                      : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'
-                  )}
-                >
-                  {item.name}
-                  {isActive && (
-                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-3/4 h-0.5 bg-gradient-to-r from-transparent via-cyan-400 to-transparent"></div>
-                  )}
-                </Link>
-              )
-            })}
-
-            {/* Business Asset Dropdown */}
-            <div className="relative ml-4" ref={dropdownRef}>
-              <button
-                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="flex items-center gap-2 px-4 py-2 bg-slate-700 text-white rounded-lg text-sm font-medium hover:bg-slate-600 transition-all duration-200 min-w-[200px]"
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Loading...</span>
-                  </>
-                ) : (
-                  <>
-                    <span className="truncate">{selectedAsset?.name || 'Select Campaign'}</span>
-                    <ChevronDown className={cn(
-                      "w-4 h-4 transition-transform duration-200 flex-shrink-0",
-                      isDropdownOpen && "rotate-180"
-                    )} />
-                  </>
-                )}
-              </button>
-
-              {isDropdownOpen && !isLoading && (
-                <div className="absolute right-0 mt-2 w-64 bg-slate-800 rounded-lg shadow-xl border border-slate-700 overflow-hidden max-h-96 overflow-y-auto">
-                  <div className="py-1">
-                    {allAssets.length === 0 ? (
-                      <div className="px-4 py-3 text-slate-400 text-sm text-center">
-                        No business assets found
-                      </div>
-                    ) : (
-                      allAssets.map((asset) => (
-                        <button
-                          key={asset.id}
-                          onClick={() => handleAssetSelect(asset.id)}
-                          className={cn(
-                            "w-full px-4 py-2.5 text-left text-sm transition-colors",
-                            selectedAsset?.id === asset.id
-                              ? "bg-slate-700 text-white font-medium"
-                              : "text-slate-300 hover:bg-slate-700 hover:text-white"
-                          )}
-                        >
-                          <div className="flex items-center justify-between">
-                            <span>{asset.name}</span>
-                            {selectedAsset?.id === asset.id && (
-                              <span className="text-cyan-400 text-xs">✓</span>
-                            )}
-                          </div>
-                        </button>
-                      ))
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
+    <div className="fixed top-0 left-0 right-0 z-50 flex justify-center px-4 pt-4 pointer-events-none">
+      <motion.nav 
+        initial={{ y: -100, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ type: 'spring', stiffness: 100, damping: 20 }}
+        className={cn(
+          "pointer-events-auto flex items-center gap-2 px-3 py-2 rounded-full border transition-all duration-300",
+          isScrolled 
+            ? "bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-white/20 shadow-lg" 
+            : "bg-white/50 dark:bg-slate-900/50 backdrop-blur-md border-white/10 shadow-soft"
+        )}
+      >
+        {/* Logo */}
+        <Link
+          href="/"
+          className="flex items-center gap-2 px-3 py-2 mr-2 group"
+        >
+          <div className="relative flex items-center justify-center w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl shadow-lg group-hover:scale-105 transition-transform">
+            <Zap className="w-4 h-4 text-white" />
           </div>
+          <span className="font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary-600 to-purple-600 hidden md:block">
+            SMM
+          </span>
+        </Link>
+
+        {/* Navigation Items */}
+        <div className="flex items-center gap-1">
+          {navItems.map((item) => {
+            const isActive = pathname.startsWith(item.href)
+            const Icon = item.icon
+
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  'relative flex items-center justify-center px-3 py-2 rounded-full transition-all duration-300 group',
+                  isActive
+                    ? 'text-primary-600'
+                    : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
+                )}
+              >
+                {isActive && (
+                  <motion.div
+                    layoutId="nav-active"
+                    className="absolute inset-0 bg-primary-50 dark:bg-primary-900/20 rounded-full"
+                    transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                  />
+                )}
+                <span className="relative flex items-center gap-2 text-sm font-medium z-10">
+                  <Icon className={cn("w-4 h-4 transition-transform group-hover:scale-110", isActive && "stroke-[2.5px]")} />
+                  <span className="hidden lg:inline">{item.name}</span>
+                </span>
+              </Link>
+            )
+          })}
         </div>
-      </div>
-    </nav>
+
+        {/* Divider */}
+        <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-2 hidden sm:block"></div>
+
+        {/* Business Asset Dropdown */}
+        <div className="relative" ref={dropdownRef}>
+          <button
+            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+            className={cn(
+              "flex items-center gap-2 px-3 py-2 rounded-full text-sm font-medium transition-all duration-200 border min-w-[160px]",
+              isDropdownOpen 
+                ? "bg-slate-100 dark:bg-slate-800 border-slate-200" 
+                : "bg-transparent hover:bg-slate-100/50 dark:hover:bg-slate-800/50 border-transparent hover:border-slate-200"
+            )}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin text-primary-500" />
+                <span className="text-slate-500">Loading...</span>
+              </>
+            ) : (
+              <>
+                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                <span className="truncate flex-1 text-left text-slate-700 dark:text-slate-200">
+                  {selectedAsset?.name || 'Select Asset'}
+                </span>
+                <ChevronDown className={cn(
+                  "w-4 h-4 text-slate-400 transition-transform duration-200",
+                  isDropdownOpen && "rotate-180"
+                )} />
+              </>
+            )}
+          </button>
+
+          <AnimatePresence>
+            {isDropdownOpen && !isLoading && (
+              <motion.div
+                initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                transition={{ duration: 0.15 }}
+                className="absolute right-0 mt-2 w-64 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-800 overflow-hidden p-2 z-50"
+              >
+                <div className="px-3 py-2 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider border-b border-slate-100 dark:border-slate-800 mb-1">
+                  Active Campaign
+                </div>
+                <div className="space-y-1 max-h-[300px] overflow-y-auto custom-scrollbar">
+                  {allAssets.length === 0 ? (
+                    <div className="px-3 py-2 text-slate-400 text-sm text-center italic">
+                      No assets found
+                    </div>
+                  ) : (
+                    allAssets.map((asset) => (
+                      <button
+                        key={asset.id}
+                        onClick={() => handleAssetSelect(asset.id)}
+                        className={cn(
+                          "w-full px-3 py-2 rounded-xl text-left text-sm transition-all flex items-center justify-between group",
+                          selectedAsset?.id === asset.id
+                            ? "bg-primary-50 text-primary-700 dark:bg-primary-900/20 dark:text-primary-300"
+                            : "text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800"
+                        )}
+                      >
+                        <span className="font-medium">{asset.name}</span>
+                        {selectedAsset?.id === asset.id && (
+                          <motion.div layoutId="check">
+                            <div className="w-1.5 h-1.5 rounded-full bg-primary-500"></div>
+                          </motion.div>
+                        )}
+                      </button>
+                    ))
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </motion.nav>
+    </div>
   )
 }
