@@ -171,9 +171,9 @@ async def publish_for_business_asset(
         "instagram": {"attempted": 0, "success": 0},
     }
 
-    # Get pending posts ready to publish
-    fb_posts = await repo.get_posts_ready_to_publish(business_asset_id, "facebook", limit)
-    ig_posts = await repo.get_posts_ready_to_publish(business_asset_id, "instagram", limit)
+    # Get all pending verified posts (ignore scheduled time)
+    fb_posts = await repo.get_pending_verified_posts(business_asset_id, "facebook", limit)
+    ig_posts = await repo.get_pending_verified_posts(business_asset_id, "instagram", limit)
 
     # Filter by before_date if specified
     if before_date:
@@ -323,8 +323,8 @@ def main(
             if dry_run:
                 # In dry run mode, just show what would be published
                 repo = CompletedPostRepository()
-                fb_posts = await repo.get_posts_ready_to_publish(asset_id, "facebook", limit)
-                ig_posts = await repo.get_posts_ready_to_publish(asset_id, "instagram", limit)
+                fb_posts = await repo.get_pending_verified_posts(asset_id, "facebook", limit)
+                ig_posts = await repo.get_pending_verified_posts(asset_id, "instagram", limit)
 
                 if before_date:
                     fb_posts = [

@@ -49,5 +49,3 @@ response = client.models.generate_content(
 
 print("\n--- Model Response ---")
 print(response.text)
-# Optional: Print the full response object for debugging
-# print(response)
