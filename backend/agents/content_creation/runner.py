@@ -62,6 +62,9 @@ class ContentCreationRunner:
         """
         Verify created posts.
 
+        Only verifies PRIMARY posts (is_verification_primary=True).
+        Secondary posts in verification groups inherit the result automatically.
+
         Args:
             post_ids: List of post IDs to verify
 
@@ -69,24 +72,56 @@ class ContentCreationRunner:
             Verification summary
         """
         if not self.auto_verify or not post_ids:
-            return {"verified": 0, "approved": 0, "rejected": 0}
+            return {"verified": 0, "posts_affected": 0, "approved": 0, "rejected": 0}
 
         verifier = await self._get_verifier()
+        from backend.database.repositories.completed_posts import CompletedPostRepository
+        posts_repo = CompletedPostRepository()
+
         approved = 0
         rejected = 0
+        primary_count = 0
+        total_affected = 0
 
         for post_id in post_ids:
             try:
+                # Get the post to check if it's primary
+                post = await posts_repo.get_by_id(self.business_asset_id, post_id)
+                if not post:
+                    logger.warning("Post not found for verification", post_id=post_id)
+                    continue
+
+                # Skip non-primary posts (they inherit verification from their primary)
+                if not post.is_verification_primary:
+                    logger.debug(
+                        "Skipping secondary post verification",
+                        post_id=post_id,
+                        verification_group_id=str(post.verification_group_id) if post.verification_group_id else None
+                    )
+                    continue
+
+                primary_count += 1
                 result = await verifier.verify_post(UUID(post_id))
                 if result.is_approved:
                     approved += 1
                 else:
                     rejected += 1
+
+                # Count affected posts (including secondary posts in group)
+                if post.verification_group_id:
+                    group_posts = await posts_repo.get_posts_by_verification_group(
+                        self.business_asset_id, post.verification_group_id
+                    )
+                    total_affected += len(group_posts)
+                else:
+                    total_affected += 1
+
             except Exception as e:
                 logger.error("Error verifying post", post_id=post_id, error=str(e))
 
         return {
-            "verified": len(post_ids),
+            "verified": primary_count,
+            "posts_affected": total_affected,
             "approved": approved,
             "rejected": rejected
         }
@@ -165,6 +200,7 @@ class ContentCreationRunner:
                 tasks_processed=len(results),
                 total_posts=total_posts,
                 verified=verification_results["verified"],
+                posts_affected=verification_results.get("posts_affected", verification_results["verified"]),
                 approved=verification_results["approved"],
                 rejected=verification_results["rejected"]
             )
@@ -221,6 +257,7 @@ class ContentCreationRunner:
                 task_id=task_id,
                 posts_created=len(posts),
                 verified=verification_results["verified"],
+                posts_affected=verification_results.get("posts_affected", verification_results["verified"]),
                 approved=verification_results["approved"],
                 rejected=verification_results["rejected"]
             )

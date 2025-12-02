@@ -242,9 +242,11 @@ class VerifierAgent:
             pass
 
         # Create and save verifier response
+        # Include verification_group_id if the post has one
         verifier_response = VerifierResponse(
             business_asset_id=self.business_asset_id,
             completed_post_id=post_id,
+            verification_group_id=post.verification_group_id,
             is_approved=response.is_approved,
             has_no_offensive_content=response.has_no_offensive_content,
             has_no_misinformation=response.has_no_misinformation,
@@ -256,17 +258,32 @@ class VerifierAgent:
         # Save to database
         saved_response = await self.verifier_repo.create(verifier_response)
 
-        # Update post verification status
+        # Update verification status
         new_status = "verified" if response.is_approved else "rejected"
-        await self.posts_repo.update_verification_status(
-            self.business_asset_id, post_id, new_status
-        )
+
+        # If the post belongs to a verification group, update ALL posts in the group
+        if post.verification_group_id:
+            updated_count = await self.posts_repo.update_verification_status_by_group(
+                self.business_asset_id, post.verification_group_id, new_status
+            )
+            logger.info(
+                "Verification group status updated",
+                verification_group_id=str(post.verification_group_id),
+                posts_updated=updated_count,
+                verification_status=new_status
+            )
+        else:
+            # Standalone post (no group), update just this post
+            await self.posts_repo.update_verification_status(
+                self.business_asset_id, post_id, new_status
+            )
 
         logger.info(
             "Post verification complete",
             post_id=str(post_id),
             is_approved=response.is_approved,
-            verification_status=new_status
+            verification_status=new_status,
+            verification_group_id=str(post.verification_group_id) if post.verification_group_id else None
         )
 
         return saved_response
@@ -383,6 +400,10 @@ async def verify_all_unverified(business_asset_id: str) -> Dict[str, Any]:
     """
     CLI entry point for verifying all unverified posts.
 
+    Only verifies PRIMARY posts (is_verification_primary=True).
+    Secondary posts in verification groups will automatically inherit
+    the verification status from their primary post.
+
     Args:
         business_asset_id: Business asset ID
 
@@ -392,23 +413,25 @@ async def verify_all_unverified(business_asset_id: str) -> Dict[str, Any]:
     agent = VerifierAgent(business_asset_id)
     posts_repo = CompletedPostRepository()
 
-    # Get all unverified posts
-    unverified_posts = await posts_repo.get_unverified_posts(business_asset_id)
+    # Get only unverified PRIMARY posts (secondary posts inherit verification)
+    unverified_posts = await posts_repo.get_unverified_primary_posts(business_asset_id)
 
     if not unverified_posts:
         return {
             "success": True,
             "posts_verified": 0,
+            "posts_affected": 0,
             "approved": 0,
             "rejected": 0,
-            "message": "No unverified posts found"
+            "message": "No unverified primary posts found"
         }
 
-    logger.info(f"Found {len(unverified_posts)} unverified posts")
+    logger.info(f"Found {len(unverified_posts)} unverified primary posts to verify")
 
     approved = 0
     rejected = 0
     errors = 0
+    total_posts_affected = 0
 
     for post in unverified_posts:
         try:
@@ -417,6 +440,16 @@ async def verify_all_unverified(business_asset_id: str) -> Dict[str, Any]:
                 approved += 1
             else:
                 rejected += 1
+
+            # Count how many posts were affected (including secondary posts in group)
+            if post.verification_group_id:
+                group_posts = await posts_repo.get_posts_by_verification_group(
+                    business_asset_id, post.verification_group_id
+                )
+                total_posts_affected += len(group_posts)
+            else:
+                total_posts_affected += 1
+
         except Exception as e:
             logger.error("Error verifying post", post_id=str(post.id), error=str(e))
             errors += 1
@@ -424,6 +457,7 @@ async def verify_all_unverified(business_asset_id: str) -> Dict[str, Any]:
     return {
         "success": True,
         "posts_verified": len(unverified_posts),
+        "posts_affected": total_posts_affected,
         "approved": approved,
         "rejected": rejected,
         "errors": errors

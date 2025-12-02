@@ -294,6 +294,116 @@ class CompletedPostRepository(BaseRepository[CompletedPost]):
             )
             return []
 
+    async def get_unverified_primary_posts(
+        self, business_asset_id: str, limit: int = 50
+    ) -> List[CompletedPost]:
+        """
+        Get all unverified PRIMARY pending posts (for verification groups optimization).
+
+        Only returns posts where is_verification_primary = TRUE.
+        These are the posts that should actually be verified - secondary posts
+        in a verification group will inherit the result.
+
+        Args:
+            business_asset_id: Business asset ID to filter by
+            limit: Maximum number of posts to return
+        """
+        try:
+            from backend.database import get_supabase_admin_client
+            client = await get_supabase_admin_client()
+            result = (
+                await client.table(self.table_name)
+                .select("*")
+                .eq("business_asset_id", business_asset_id)
+                .eq("status", "pending")
+                .eq("verification_status", "unverified")
+                .eq("is_verification_primary", True)
+                .order("created_at", desc=False)
+                .limit(limit)
+                .execute()
+            )
+            return [self.model_class(**item) for item in result.data]
+        except Exception as e:
+            from backend.utils import get_logger
+            logger = get_logger(__name__)
+            logger.error(
+                "Failed to get unverified primary posts",
+                business_asset_id=business_asset_id,
+                error=str(e),
+            )
+            return []
+
+    async def get_posts_by_verification_group(
+        self, business_asset_id: str, verification_group_id: UUID
+    ) -> List[CompletedPost]:
+        """
+        Get all posts in a verification group.
+
+        Args:
+            business_asset_id: Business asset ID to filter by
+            verification_group_id: Verification group ID
+
+        Returns:
+            List of all posts in the verification group
+        """
+        try:
+            from backend.database import get_supabase_admin_client
+            client = await get_supabase_admin_client()
+            result = (
+                await client.table(self.table_name)
+                .select("*")
+                .eq("business_asset_id", business_asset_id)
+                .eq("verification_group_id", str(verification_group_id))
+                .execute()
+            )
+            return [self.model_class(**item) for item in result.data]
+        except Exception as e:
+            from backend.utils import get_logger
+            logger = get_logger(__name__)
+            logger.error(
+                "Failed to get posts by verification group",
+                business_asset_id=business_asset_id,
+                verification_group_id=str(verification_group_id),
+                error=str(e),
+            )
+            return []
+
+    async def update_verification_status_by_group(
+        self, business_asset_id: str, verification_group_id: UUID, verification_status: str
+    ) -> int:
+        """
+        Update verification status for ALL posts in a verification group.
+
+        Args:
+            business_asset_id: Business asset ID to filter by
+            verification_group_id: Verification group ID
+            verification_status: New verification status ('unverified', 'verified', 'rejected')
+
+        Returns:
+            Number of posts updated
+        """
+        try:
+            from backend.database import get_supabase_admin_client
+            client = await get_supabase_admin_client()
+            result = (
+                await client.table(self.table_name)
+                .update({"verification_status": verification_status})
+                .eq("business_asset_id", business_asset_id)
+                .eq("verification_group_id", str(verification_group_id))
+                .execute()
+            )
+            return len(result.data) if result.data else 0
+        except Exception as e:
+            from backend.utils import get_logger
+            logger = get_logger(__name__)
+            logger.error(
+                "Failed to update verification status by group",
+                business_asset_id=business_asset_id,
+                verification_group_id=str(verification_group_id),
+                error=str(e),
+            )
+            return 0
+
     async def update_verification_status(
         self, business_asset_id: str, post_id: UUID, verification_status: str
     ) -> CompletedPost | None:

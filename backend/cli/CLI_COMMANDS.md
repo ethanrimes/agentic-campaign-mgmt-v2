@@ -89,24 +89,39 @@ Run the content planning agent to create weekly content plans.
 
 ```bash
 # Run planner to create content plan
-python -m backend.cli.main planner run --business-asset-id penndailybuzz --max-retries 3
+python -m backend.cli.main planner run --business-asset-id oceankindnesscollective --max-retries 3
 ```
 
 ---
 
 ## Content Creation
 
-Create content from pending tasks.
+Create content from pending tasks. Supports unified format where each image/video post creates both an Instagram and Facebook post.
+
+### Media Sharing Options
+
+- `--share-media`: Reuse the same media across Instagram and Facebook (default). Creates a verification group where only the Instagram post is verified, and Facebook inherits the result.
+- `--no-share-media`: Generate separate media for each platform. Both posts are verified independently.
 
 ```bash
-# Create content for all pending tasks
+# Create content for all pending tasks (default: shares media across platforms)
 python -m backend.cli.main content create-all --business-asset-id penndailybuzz
+
+# Create content with explicit media sharing (reduces verification work)
+python -m backend.cli.main content create-all --business-asset-id oceankindnesscollective --share-media
+
+# Create content with separate media for each platform (both verified independently)
+python -m backend.cli.main content create-all --business-asset-id penndailybuzz --no-share-media
 
 # Create content for all pending tasks (skip verification)
 python -m backend.cli.main content create-all --business-asset-id penndailybuzz --skip-verify
 
 # Create content for a specific task
 python -m backend.cli.main content create --business-asset-id penndailybuzz --task-id <task-uuid>
+
+# Create content for a specific task with media sharing options
+python -m backend.cli.main content create --business-asset-id penndailybuzz --task-id <task-uuid> --share-media
+python -m backend.cli.main content create --business-asset-id penndailybuzz --task-id <task-uuid> --no-share-media
 
 # Create content for a specific task (skip verification)
 python -m backend.cli.main content create --business-asset-id penndailybuzz --task-id <task-uuid> --skip-verify
@@ -121,11 +136,15 @@ python -m backend.cli.main content pending --business-asset-id penndailybuzz --l
 
 Verify content before publishing.
 
+### Verification Groups
+
+When content is created with `--share-media` (the default), Instagram and Facebook posts share a **verification group**. Only the primary post (Instagram) is verified, and the secondary post (Facebook) automatically inherits the result. This reduces verification work by 50% when sharing media.
+
 ```bash
 # Verify a specific post
 python -m backend.cli.main verifier verify --business-asset-id penndailybuzz --post-id <post-uuid>
 
-# Verify all unverified pending posts
+# Verify all unverified pending posts (only verifies primary posts in groups)
 python -m backend.cli.main verifier verify-all --business-asset-id penndailybuzz
 
 # Show verification statistics

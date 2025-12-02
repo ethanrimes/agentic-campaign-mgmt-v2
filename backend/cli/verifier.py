@@ -63,16 +63,22 @@ def verify(business_asset_id: str, post_id: str):
     help='Business asset ID (e.g., penndailybuzz, eaglesnationfanhuddle)'
 )
 def verify_all(business_asset_id: str):
-    """Verify all unverified pending posts"""
+    """Verify all unverified pending posts.
+
+    Only verifies PRIMARY posts. Secondary posts in verification groups
+    (created with --share-media) automatically inherit the verification result.
+    """
     from backend.agents.verifier import verify_all_unverified
 
     logger.info("Verifying all unverified posts", business_asset_id=business_asset_id)
-    click.echo(f"🔍 Verifying all unverified posts for {business_asset_id}...")
+    click.echo(f"🔍 Verifying all unverified primary posts for {business_asset_id}...")
 
     result = asyncio.run(verify_all_unverified(business_asset_id))
 
     click.echo(f"\n✅ Verification Complete")
-    click.echo(f"   Posts verified: {result['posts_verified']}")
+    click.echo(f"   Primary posts verified: {result['posts_verified']}")
+    if result.get('posts_affected', 0) > result['posts_verified']:
+        click.echo(f"   Total posts affected: {result['posts_affected']} (includes secondary posts in groups)")
     click.echo(f"   Approved: {result['approved']}")
     click.echo(f"   Rejected: {result['rejected']}")
     if result.get('errors', 0) > 0:

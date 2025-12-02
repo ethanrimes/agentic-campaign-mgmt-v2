@@ -185,3 +185,41 @@ class VerifierResponseRepository(BaseRepository[VerifierResponse]):
                 "rejected": 0,
                 "approval_rate": 0,
             }
+
+    async def get_by_verification_group(
+        self, business_asset_id: str, verification_group_id: UUID
+    ) -> Optional[VerifierResponse]:
+        """
+        Get the most recent verification response for a verification group.
+
+        Args:
+            business_asset_id: Business asset ID to filter by
+            verification_group_id: Verification group ID
+
+        Returns:
+            Most recent VerifierResponse for the group, or None if not verified
+        """
+        try:
+            client = await get_supabase_admin_client()
+            result = (
+                await client.table(self.table_name)
+                .select("*")
+                .eq("business_asset_id", business_asset_id)
+                .eq("verification_group_id", str(verification_group_id))
+                .order("created_at", desc=True)
+                .limit(1)
+                .execute()
+            )
+
+            if not result.data:
+                return None
+
+            return self.model_class(**result.data[0])
+        except Exception as e:
+            logger.error(
+                "Failed to get verifier response by verification group",
+                business_asset_id=business_asset_id,
+                verification_group_id=str(verification_group_id),
+                error=str(e),
+            )
+            return None

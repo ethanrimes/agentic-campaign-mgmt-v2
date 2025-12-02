@@ -31,10 +31,10 @@ completed_posts,ungrounded_seed_id,uuid,YES,
 completed_posts,business_asset_id,text,NO,
 completed_posts,verification_status,USER-DEFINED,NO,'unverified'::verification_status
 content_creation_tasks,id,uuid,NO,uuid_generate_v4()
-content_creation_tasks,instagram_image_posts,integer,YES,0
-content_creation_tasks,instagram_reel_posts,integer,YES,0
-content_creation_tasks,facebook_feed_posts,integer,YES,0
-content_creation_tasks,facebook_video_posts,integer,YES,0
+content_creation_tasks,instagram_image_posts,integer,YES,
+content_creation_tasks,instagram_reel_posts,integer,YES,
+content_creation_tasks,facebook_feed_posts,integer,YES,
+content_creation_tasks,facebook_video_posts,integer,YES,
 content_creation_tasks,image_budget,integer,YES,0
 content_creation_tasks,video_budget,integer,YES,0
 content_creation_tasks,status,USER-DEFINED,YES,'pending'::task_status
@@ -46,6 +46,10 @@ content_creation_tasks,business_asset_id,text,NO,
 content_creation_tasks,news_event_seed_id,uuid,YES,
 content_creation_tasks,trend_seed_id,uuid,YES,
 content_creation_tasks,ungrounded_seed_id,uuid,YES,
+content_creation_tasks,image_posts,integer,YES,0
+content_creation_tasks,video_posts,integer,YES,0
+content_creation_tasks,text_only_posts,integer,YES,0
+content_creation_tasks,scheduled_times,jsonb,YES,'[]'::jsonb
 ingested_event_sources,id,uuid,NO,uuid_generate_v4()
 ingested_event_sources,ingested_event_id,uuid,NO,
 ingested_event_sources,source_id,uuid,NO,
