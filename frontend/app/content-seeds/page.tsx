@@ -65,7 +65,7 @@ export default function ContentSeedsPage() {
           <div className="flex items-center gap-4 mb-3">
             <div className="relative">
               <div className="w-14 h-14 bg-gradient-to-br from-cyan-600 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg">
-                <Sparkles className="w-7 h-7 text-white" />
+                <Sparkles className="w-7 h-7 text-amber-500 dark:text-white" />
               </div>
               <div className="absolute inset-0 bg-cyan-500 rounded-2xl blur-xl opacity-30"></div>
             </div>

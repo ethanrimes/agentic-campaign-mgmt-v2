@@ -51,7 +51,7 @@ export default function TrendsPage() {
           <div className="flex items-center gap-4 mb-3">
             <div className="relative">
               <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center shadow-lg">
-                <TrendingUp className="w-7 h-7 text-white" />
+                <TrendingUp className="w-7 h-7 text-green-600 dark:text-white" />
               </div>
               <div className="absolute inset-0 bg-purple-500 rounded-2xl blur-xl opacity-30"></div>
             </div>
