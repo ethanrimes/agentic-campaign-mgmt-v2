@@ -42,11 +42,11 @@ class UnifiedPostOutput(BaseModel):
     A unified post output that will be used to create posts on both platforms.
 
     Each UnifiedPostOutput creates:
-    - For image/video formats: 1 Instagram post + 1 Facebook post (2 total)
+    - For image/video/carousel formats: 1 Instagram post + 1 Facebook post (2 total)
     - For text_only format: 1 Facebook post only
     """
-    format_type: Literal["image", "video", "text_only"] = Field(
-        ..., description="Type of content format"
+    format_type: Literal["image", "video", "carousel", "text_only"] = Field(
+        ..., description="Type of content format (carousel requires 2-10 images)"
     )
     text: str = Field(..., description="The full caption/text for the post")
     media_ids: List[str] = Field(
@@ -241,6 +241,12 @@ class ContentCreationAgent:
                             task, unified_post, source_url, scheduled_time_str
                         )
                         posts.extend(fb_posts)
+                    elif unified_post.format_type == "carousel":
+                        # Carousel creates both IG carousel + FB carousel posts
+                        carousel_posts = await self._create_carousel_posts(
+                            task, unified_post, source_url, scheduled_time_str
+                        )
+                        posts.extend(carousel_posts)
                     else:
                         # Image/video creates both IG + FB posts
                         dual_posts = await self._create_dual_platform_posts(
@@ -389,6 +395,116 @@ class ContentCreationAgent:
 
         return posts
 
+    async def _create_carousel_posts(
+        self,
+        task,
+        unified_post: UnifiedPostOutput,
+        source_url: Optional[str],
+        scheduled_time_str: Optional[str]
+    ) -> List[Dict[str, Any]]:
+        """
+        Create both Instagram and Facebook carousel posts from a unified post output.
+
+        Carousels require 2-10 images. Both platforms use the same media IDs.
+        Similar to dual platform posts but uses instagram_carousel and facebook_feed post types.
+        """
+        posts = []
+        media_uuids = [UUID(media_id) for media_id in unified_post.media_ids] if unified_post.media_ids else []
+
+        # Validate carousel has enough images
+        if len(media_uuids) < 2:
+            logger.warning(
+                "Carousel requires at least 2 images, got %d. Falling back to single image post.",
+                len(media_uuids)
+            )
+            # Fall back to single image post if not enough images
+            unified_post.format_type = "image"
+            return await self._create_dual_platform_posts(task, unified_post, source_url, scheduled_time_str)
+
+        if len(media_uuids) > 10:
+            logger.warning(
+                "Carousel supports max 10 images, got %d. Truncating.",
+                len(media_uuids)
+            )
+            media_uuids = media_uuids[:10]
+
+        # Prepare text with source link and AI disclosure
+        post_text = unified_post.text
+        if source_url:
+            post_text += NEWS_SOURCE_LINK_FORMAT.format(url=source_url)
+        post_text += AI_DISCLOSURE_FOOTNOTE
+
+        # Calculate scheduled times if not provided
+        if scheduled_time_str:
+            try:
+                base_scheduled_time = datetime.fromisoformat(scheduled_time_str.replace('Z', '+00:00'))
+            except ValueError:
+                base_scheduled_time = await self._calculate_scheduled_time("instagram")
+        else:
+            base_scheduled_time = await self._calculate_scheduled_time("instagram")
+
+        # Generate verification group ID if sharing media
+        verification_group_id = uuid4() if self.share_media else None
+
+        # Create Instagram carousel post
+        ig_post = CompletedPost(
+            business_asset_id=self.business_asset_id,
+            task_id=task.id,
+            news_event_seed_id=task.news_event_seed_id,
+            trend_seed_id=task.trend_seed_id,
+            ungrounded_seed_id=task.ungrounded_seed_id,
+            platform="instagram",
+            post_type="instagram_carousel",
+            text=post_text,
+            media_ids=media_uuids,
+            location=unified_post.location,
+            hashtags=unified_post.hashtags,
+            scheduled_posting_time=base_scheduled_time,
+            verification_group_id=verification_group_id,
+            is_verification_primary=True
+        )
+        created_ig = await self.posts_repo.create(ig_post)
+        posts.append(created_ig.model_dump(mode="json"))
+        logger.info(
+            "Instagram carousel post created",
+            post_id=str(created_ig.id),
+            num_images=len(media_uuids),
+            shared_media=self.share_media,
+            verification_group_id=str(verification_group_id) if verification_group_id else None
+        )
+
+        # Create Facebook carousel post
+        fb_scheduled_time = base_scheduled_time + timedelta(minutes=30)
+        fb_is_primary = not self.share_media
+
+        fb_post = CompletedPost(
+            business_asset_id=self.business_asset_id,
+            task_id=task.id,
+            news_event_seed_id=task.news_event_seed_id,
+            trend_seed_id=task.trend_seed_id,
+            ungrounded_seed_id=task.ungrounded_seed_id,
+            platform="facebook",
+            post_type="facebook_feed",  # Facebook carousels use feed post type
+            text=post_text,
+            media_ids=media_uuids,
+            location=unified_post.location,
+            hashtags=unified_post.hashtags,
+            scheduled_posting_time=fb_scheduled_time,
+            verification_group_id=verification_group_id,
+            is_verification_primary=fb_is_primary
+        )
+        created_fb = await self.posts_repo.create(fb_post)
+        posts.append(created_fb.model_dump(mode="json"))
+        logger.info(
+            "Facebook carousel post created",
+            post_id=str(created_fb.id),
+            num_images=len(media_uuids),
+            shared_media=self.share_media,
+            verification_group_id=str(verification_group_id) if verification_group_id else None
+        )
+
+        return posts
+
     async def _create_fb_only_post(
         self,
         task,
@@ -497,34 +613,42 @@ Details: {seed.details if hasattr(seed, 'details') else ''}
 """
 
         # Add unified format allocations
+        carousel_posts = getattr(task, 'carousel_posts', 0) or 0
         context += f"""\n
 ** Required Posts (Unified Format) **
 
-IMPORTANT: Use unified format output (format_type: "image", "video", or "text_only")
-Each image/video post you create will automatically be posted to BOTH Instagram and Facebook!
+IMPORTANT: Use unified format output (format_type: "image", "video", "carousel", or "text_only")
+Each image/video/carousel post you create will automatically be posted to BOTH Instagram and Facebook!
 
-- Image Posts: {task.image_posts} (each creates IG image + FB feed)
+- Image Posts: {task.image_posts} (each creates IG image + FB feed, 1 image)
 - Video Posts: {task.video_posts} (each creates IG reel + FB video)
+- Carousel Posts: {carousel_posts} (each creates IG carousel + FB carousel, 2-10 images per carousel)
 - Text-Only Posts: {task.text_only_posts} (FB only)
 
 ** Media Budgets **
-- Maximum Images: {task.image_budget}
+- Maximum Images: {task.image_budget} (this includes images for carousels!)
 - Maximum Videos: {task.video_budget}
 
 ** Instructions **
 Create unified post outputs for the requested content. Each output creates posts on both platforms!
 
 For each post, specify:
-1. format_type: "image", "video", or "text_only"
+1. format_type: "image", "video", "carousel", or "text_only"
 2. text: The caption (will be used for both platforms)
-3. media_ids: List of media IDs from generation tools (for image/video)
+3. media_ids: List of media IDs from generation tools (for image/video/carousel)
 4. hashtags: List of relevant hashtags
 5. location: Optional location tag
 
 Remember:
-- Generate {task.image_posts} image posts (each creates 2 platform posts)
+- Generate {task.image_posts} image posts (each creates 2 platform posts, 1 image each)
 - Generate {task.video_posts} video posts (each creates 2 platform posts)
+- Generate {carousel_posts} carousel posts (each creates 2 platform posts, 2-10 images each)
 - Generate {task.text_only_posts} text-only posts (FB only)
+
+For CAROUSEL posts:
+- Must have 2-10 images (generate multiple images with a cohesive theme)
+- Great for listicles, step-by-step guides, multiple angles of same topic
+- All images should tell a story or follow a theme
 """
 
         return context

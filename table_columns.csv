@@ -30,6 +30,8 @@ completed_posts,trend_seed_id,uuid,YES,
 completed_posts,ungrounded_seed_id,uuid,YES,
 completed_posts,business_asset_id,text,NO,
 completed_posts,verification_status,USER-DEFINED,NO,'unverified'::verification_status
+completed_posts,verification_group_id,uuid,YES,
+completed_posts,is_verification_primary,boolean,NO,true
 content_creation_tasks,id,uuid,NO,uuid_generate_v4()
 content_creation_tasks,instagram_image_posts,integer,YES,
 content_creation_tasks,instagram_reel_posts,integer,YES,

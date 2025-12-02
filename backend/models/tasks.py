@@ -4,8 +4,8 @@
 Content creation task entity.
 Created by the planner agent, consumed by the content creation agent.
 
-Uses unified format-based allocation (image_posts, video_posts, text_only_posts)
-rather than platform-specific allocation. Each image/video post creates both
+Uses unified format-based allocation (image_posts, video_posts, carousel_posts, text_only_posts)
+rather than platform-specific allocation. Each image/video/carousel post creates both
 an Instagram and Facebook post using shared or separate media based on config.
 """
 
@@ -48,6 +48,10 @@ class ContentCreationTask(BaseModel):
     video_posts: int = Field(
         default=0, ge=0,
         description="Number of video posts (each creates 1 IG reel + 1 FB video post)"
+    )
+    carousel_posts: int = Field(
+        default=0, ge=0,
+        description="Number of carousel posts (each creates 1 IG carousel + 1 FB carousel with 2-10 images)"
     )
     text_only_posts: int = Field(
         default=0, ge=0,
@@ -130,7 +134,7 @@ class ContentCreationTask(BaseModel):
     @property
     def total_post_units(self) -> int:
         """Total post units (for scheduling - not counting platform duplication)."""
-        return self.image_posts + self.video_posts + self.text_only_posts
+        return self.image_posts + self.video_posts + self.carousel_posts + self.text_only_posts
 
     @property
     def is_legacy_format(self) -> bool:
@@ -152,10 +156,11 @@ class ContentCreationTask(BaseModel):
                 "ungrounded_seed_id": None,
                 "image_posts": 2,
                 "video_posts": 1,
+                "carousel_posts": 1,
                 "text_only_posts": 0,
-                "image_budget": 2,
+                "image_budget": 6,
                 "video_budget": 1,
-                "scheduled_times": ["2025-01-20T10:00:00Z", "2025-01-21T14:00:00Z", "2025-01-22T18:00:00Z"],
+                "scheduled_times": ["2025-01-20T10:00:00Z", "2025-01-21T14:00:00Z", "2025-01-22T18:00:00Z", "2025-01-23T12:00:00Z"],
                 "status": "pending",
                 "error_message": None,
                 "created_at": "2025-01-18T17:15:00Z",

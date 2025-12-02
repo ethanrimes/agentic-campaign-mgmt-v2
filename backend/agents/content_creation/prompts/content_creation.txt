@@ -36,12 +36,13 @@ You have access to:
 
    **Instagram:**
    - **Image Posts**: High-quality visuals, concise captions, relevant hashtags
-   - **Carousel Posts**: Multi-image storytelling, cohesive theme
+   - **Carousel Posts**: Multi-image storytelling (2-10 images), cohesive theme, swipe-worthy
    - **Reels**: Short-form video (15-90 sec), engaging from first second
    - Optimal image size: 1080x1080 or 1080x1350
 
    **Facebook:**
    - **Feed Posts**: Can be longer-form, include links, more context
+   - **Carousel Posts**: Multi-image posts work great for engagement
    - **Video Posts**: Can be longer than reels (up to several minutes)
    - More conversational tone acceptable
 
@@ -66,64 +67,83 @@ You have access to:
 
 ## Output
 
-For each post, create a CompletedPost object with:
-- `task_id`: The task you're working on
-- `content_seed_id`: The seed this post is based on
-- `content_seed_type`: "news_event", "trend", or "ungrounded"
-- `platform`: "facebook" or "instagram"
-- `post_type`: Specific type (instagram_image, facebook_feed, etc.)
-- `text`: The caption/text
-- `media_urls`: List of Supabase URLs to media
+For each post, create a UnifiedPostOutput with:
+- `format_type`: "image", "video", "carousel", or "text_only"
+- `text`: The caption/text (will be used for both platforms)
+- `media_ids`: List of Media IDs from generation tools (NOT URLs)
 - `location`: Optional location tag
 - `hashtags`: List of hashtags
 
+**FORMAT TYPES:**
+- `image`: Single image post (creates IG image + FB feed)
+- `video`: Video post (creates IG reel + FB video)
+- `carousel`: Multi-image post with 2-10 images (creates IG carousel + FB carousel)
+- `text_only`: Text-only post (FB only, no media)
+
 ## Examples
 
-### Example 1: News Event (SEPTA Fare Increase)
+### Example 1: News Event - Single Image (format_type: "image")
 
-**Instagram Image Post:**
+```json
+{
+  "format_type": "image",
+  "text": "🚊 Heads up, Penn students! SEPTA fares are increasing 15% starting March 2025.\n\nThis is the first hike in 5 years, driven by rising costs and declining ridership.\n\nHow will this affect your commute? Let us know in the comments! 💬",
+  "media_ids": ["a1b2c3d4-e5f6-7890-abcd-ef1234567890"],
+  "location": "Philadelphia, Pennsylvania",
+  "hashtags": ["SEPTA", "Philly", "UPenn", "PublicTransit", "PhillyNews"]
+}
 ```
-Text: "🚊 Heads up, Penn students! SEPTA fares are increasing 15% starting March 2025.
-This is the first hike in 5 years, driven by rising costs and declining ridership.
+This creates: 1 Instagram image post + 1 Facebook feed post (2 total)
 
-How will this affect your commute? Let us know in the comments! 💬
+### Example 2: Trend - Carousel (format_type: "carousel")
 
-#SEPTA #Philly #UPenn #PublicTransit #PhillyNews #PennState #StudentLife"
+```json
+{
+  "format_type": "carousel",
+  "text": "❄️ Penn in winter hits different ✨\n\nSwipe to see why everyone's loving the snowy campus aesthetic right now. From the Quad to College Hall, these views are giving main character energy 📸\n\nWhich spot is your favorite? Drop a 📍 in the comments!",
+  "media_ids": [
+    "img-1-uuid-quad-snow",
+    "img-2-uuid-college-hall",
+    "img-3-uuid-locust-walk",
+    "img-4-uuid-van-pelt",
+    "img-5-uuid-love-statue"
+  ],
+  "location": "University of Pennsylvania",
+  "hashtags": ["UPenn", "PennWinter", "CampusVibes", "DarkAcademia", "WinterVibes"]
+}
+```
+This creates: 1 Instagram carousel + 1 Facebook carousel (2 total, 5 images each)
 
-Media: AI-generated image showing SEPTA train with fare increase overlay
-Location: "Philadelphia, Pennsylvania"
+### Example 3: Ungrounded - Carousel (format_type: "carousel")
+
+```json
+{
+  "format_type": "carousel",
+  "text": "📚 5 hidden study spots that actually slap 💯\n\nTired of the same old library? We asked students for their secret spots and here's what they shared. Each slide = a new fave!\n\nSave this for finals week 🔖",
+  "media_ids": [
+    "spot-1-uuid",
+    "spot-2-uuid",
+    "spot-3-uuid",
+    "spot-4-uuid",
+    "spot-5-uuid"
+  ],
+  "location": null,
+  "hashtags": ["StudyTips", "UPenn", "StudentLife", "StudySpots", "CollegeLife"]
+}
 ```
 
-### Example 2: Trend (Campus Winter Aesthetic)
+### Example 4: Video (format_type: "video")
 
-**Instagram Carousel:**
+```json
+{
+  "format_type": "video",
+  "text": "POV: Walking through campus during golden hour 🌅\n\nThere's something magical about Penn at sunset. Who else loves these vibes?",
+  "media_ids": ["video-uuid-golden-hour"],
+  "location": "Locust Walk",
+  "hashtags": ["UPenn", "GoldenHour", "CampusLife", "CollegeVibes"]
+}
 ```
-Text: "❄️ Penn in winter hits different ✨
-
-Swipe to see why everyone's loving the snowy campus aesthetic right now. From the Quad to College Hall, these views are giving main character energy 📸
-
-Which spot is your favorite? Drop a 📍 in the comments!
-
-#UPenn #PennWinter #CampusVibes #DarkAcademia #WinterVibes #PennState #PhillyWinter"
-
-Media: 5 AI-generated images of campus in winter, varying locations
-Location: "University of Pennsylvania"
-```
-
-### Example 3: Ungrounded (Study Spot Recommendations)
-
-**Instagram Carousel:**
-```
-Text: "📚 5 hidden study spots that actually slap 💯
-
-Tired of the same old library? We asked students for their secret spots and here's what they shared. Each slide = a new fave!
-
-Save this for finals week 🔖
-
-#StudyTips #UPenn #StudentLife #StudySpots #CollegeLife #PennTips #ProductivityHacks"
-
-Media: 5 AI-generated images of different study locations with overlaid text
-```
+This creates: 1 Instagram reel + 1 Facebook video (2 total)
 
 ## Quality Checklist
 
