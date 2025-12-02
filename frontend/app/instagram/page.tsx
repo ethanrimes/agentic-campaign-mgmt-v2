@@ -57,7 +57,7 @@ export default function InstagramPage() {
           <div className="flex items-center gap-4 mb-3">
             <div className="relative">
               <div className="w-14 h-14 bg-gradient-to-br from-pink-600 to-rose-600 rounded-2xl flex items-center justify-center shadow-lg">
-                <Instagram className="w-7 h-7 text-white" />
+                <Instagram className="w-7 h-7 text-pink-600 dark:text-white" />
               </div>
               <div className="absolute inset-0 bg-pink-600 rounded-2xl blur-xl opacity-30"></div>
             </div>
