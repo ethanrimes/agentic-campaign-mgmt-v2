@@ -207,6 +207,19 @@ const nodeDescriptions: Record<string, { title: string; description: string; det
       'Implementation: @backend/agents/comment_responder/',
     ],
   },
+  'verifier': {
+    title: 'Content Verifier Agent',
+    description:
+      'Safety verification agent that reviews completed posts (text and all generated media) before publishing, comparing against source materials to ensure content quality and accuracy.',
+    details: [
+      'Evaluates posts for offensive content (hate speech, slurs, explicit content)',
+      'Checks news-based posts against source materials for factual accuracy',
+      'Reviews both text captions and generated images/videos',
+      'Uses Gemini 2.5 Flash for multimodal content analysis',
+      'Automatically updates verification status for cross-platform post groups',
+      'Implementation: @backend/agents/verifier/',
+    ],
+  },
 }
 
 
@@ -446,6 +459,12 @@ const createInitialNodes = (onNodeClick: (id: string) => void): Node[] => [
     position: { x: 0, y: 0 },
     data: { label: 'Comment Responder', category: 'Generation', onClick: onNodeClick },
   },
+  {
+    id: 'verifier',
+    type: 'custom',
+    position: { x: 0, y: 0 },
+    data: { label: 'Content Verifier', category: 'Analysis', onClick: onNodeClick },
+  },
 
   // Rank 6: Output & Analytics
   {
@@ -672,6 +691,30 @@ const initialEdges: Edge[] = [
     source: 'comment-responder',
     target: 'meta-graph-api',
     label: 'Generated comment replies',
+    type: 'smoothstep',
+    style: EDGE_STYLE,
+    markerEnd: EDGE_MARKER,
+    ...EDGE_LABEL_STYLE,
+  },
+
+  // Content Creator → Verifier
+  {
+    id: 'e-creator-verifier',
+    source: 'content-creator',
+    target: 'verifier',
+    label: 'Posts for verification',
+    type: 'smoothstep',
+    style: EDGE_STYLE,
+    markerEnd: EDGE_MARKER,
+    ...EDGE_LABEL_STYLE,
+  },
+
+  // Verifier → Knowledge Base
+  {
+    id: 'e-verifier-kb',
+    source: 'verifier',
+    target: 'knowledge-base',
+    label: 'Verification results',
     type: 'smoothstep',
     style: EDGE_STYLE,
     markerEnd: EDGE_MARKER,

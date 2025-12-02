@@ -17,6 +17,7 @@ from backend.database.repositories.news_event_seeds import NewsEventSeedReposito
 from backend.database.repositories.trend_seeds import TrendSeedsRepository
 from backend.database.repositories.ungrounded_seeds import UngroundedSeedRepository
 from backend.database.repositories.insights import InsightsRepository
+from backend.database.repositories.completed_posts import CompletedPostRepository
 from backend.models.planner import PlannerOutput
 from backend.utils import get_logger
 
@@ -36,6 +37,7 @@ class PlannerAgent:
         self.trend_repo = TrendSeedsRepository()
         self.ungrounded_repo = UngroundedSeedRepository()
         self.insights_repo = InsightsRepository()
+        self.posts_repo = CompletedPostRepository()
 
         # Load prompts
         prompt_path = Path(__file__).parent / "prompts" / "planner.txt"
@@ -127,11 +129,18 @@ class PlannerAgent:
             limit=settings.planner_insights_limit
         )
 
+        # Get scheduled pending posts to understand current schedule and covered content
+        scheduled_posts = await self.posts_repo.get_scheduled_pending_posts(
+            self.business_asset_id,
+            limit=50
+        )
+
         context = {
             "news_seeds": news_seeds,
             "trend_seeds": trend_seeds,
             "ungrounded_seeds": ungrounded_seeds,
             "insights": recent_insights,  # Now a list of reports
+            "scheduled_posts": scheduled_posts,  # Pending posts in the pipeline
             "week_start": self._get_next_monday().isoformat()
         }
 
@@ -139,7 +148,8 @@ class PlannerAgent:
             "Context gathered",
             news_count=len(news_seeds),
             trend_count=len(trend_seeds),
-            ungrounded_count=len(ungrounded_seeds)
+            ungrounded_count=len(ungrounded_seeds),
+            scheduled_posts_count=len(scheduled_posts)
         )
 
         return context
@@ -193,6 +203,24 @@ Available Content Seeds:
                 input_text += f"Findings: {findings[:300] if findings else 'No findings'}...\n"
         else:
             input_text += f"\n** Recent Insights **\nNo insights reports available yet.\n"
+
+        # Add scheduled posts (verified pending posts in the pipeline)
+        scheduled_posts = context.get('scheduled_posts', [])
+        if scheduled_posts:
+            input_text += f"\n** Scheduled Posts ({len(scheduled_posts)} pending verified posts) **\n"
+            input_text += "These posts are already verified and waiting to be published. Consider:\n"
+            input_text += "1. Schedule gaps - avoid overlapping times\n"
+            input_text += "2. Content already covered - avoid duplicate topics\n\n"
+            for i, post in enumerate(scheduled_posts[:20], 1):
+                platform = getattr(post, 'platform', 'unknown')
+                post_type = getattr(post, 'post_type', 'unknown')
+                scheduled_time = getattr(post, 'scheduled_posting_time', None)
+                text_preview = getattr(post, 'text', '')[:100]
+                input_text += f"{i}. [{platform.upper()}] {post_type}\n"
+                input_text += f"   Scheduled: {scheduled_time or 'Immediate'}\n"
+                input_text += f"   Content: {text_preview}...\n\n"
+        else:
+            input_text += f"\n** Scheduled Posts **\nNo pending verified posts in the pipeline.\n"
 
         input_text += f"""
 Based on this context, create a strategic weekly content plan using UNIFIED FORMAT allocation.

@@ -142,7 +142,14 @@ export default function Home() {
                 Once the plan is finalized, multiple <strong className="font-bold text-slate-950">Content Creation Agents</strong> collaboratively produce all required media and copy, drawing context directly from the Living Knowledge Base. Media is generated through image/video production services, stored in Supabase, and prepared in platform-specific formats.
               </p>
               <p>
-                Finally, <strong className="font-bold text-slate-950">automated publishers</strong> for Instagram and Facebook post the completed content according to schedule. All resulting performance data is fed back into the knowledge base, enabling <strong className="font-bold text-slate-950">continuous closed-loop strategic refinement</strong>.
+                Before publishing, all completed posts pass through the <strong className="font-bold text-slate-950">Content Verifier Agent</strong>. This safety verification layer reviews each post's text and generated media, comparing against source materials to ensure:
+              </p>
+              <ul className="list-disc pl-6 space-y-2 text-primary-950">
+                <li className="text-slate-700">no offensive content (hate speech, slurs, explicit material)</li>
+                <li className="text-slate-700">factual accuracy for news-based posts against original sources</li>
+              </ul>
+              <p>
+                Only verified posts proceed to the <strong className="font-bold text-slate-950">automated publishers</strong> for Instagram and Facebook, which post the content according to schedule. All resulting performance data is fed back into the knowledge base, enabling <strong className="font-bold text-slate-950">continuous closed-loop strategic refinement</strong>.
               </p>
             </div>
 
