@@ -98,6 +98,11 @@ class Settings(BaseSettings):
     # Instagram comment checking
     instagram_comments_max_media: int = 10  # Max recent posts to check for comments
 
+    # Cross-platform media sharing
+    # If True, same media is reused for both Facebook and Instagram posts
+    # If False, separate media is generated for each platform
+    share_media_across_platforms: bool = True
+
     # Publishing
     publishing_check_interval: int = 6  # hours
 

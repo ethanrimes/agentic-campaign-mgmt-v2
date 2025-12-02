@@ -1,6 +1,10 @@
 # backend/agents/content_creation/runner.py
 
-"""Content creation runner for processing tasks."""
+"""Content creation runner for processing tasks.
+
+Supports unified format where each image/video post creates both an Instagram
+and Facebook post, optionally sharing the same media across platforms.
+"""
 
 from typing import Dict, Any, List, Optional
 from uuid import UUID
@@ -17,21 +21,35 @@ class ContentCreationRunner:
 
     Can process all pending tasks or a specific task by ID.
     Automatically verifies posts after creation.
+    Supports share_media override for cross-platform media sharing.
     """
 
-    def __init__(self, business_asset_id: str, auto_verify: bool = True):
+    def __init__(
+        self,
+        business_asset_id: str,
+        auto_verify: bool = True,
+        share_media: Optional[bool] = None
+    ):
         """
         Initialize runner.
 
         Args:
             business_asset_id: Business asset ID for multi-tenancy
             auto_verify: Whether to automatically verify posts after creation (default True)
+            share_media: Override for share_media_across_platforms setting.
+                         If None, uses the config setting.
         """
         self.business_asset_id = business_asset_id
-        self.agent = ContentCreationAgent(business_asset_id)
+        self.share_media = share_media
+        self.agent = ContentCreationAgent(business_asset_id, share_media=share_media)
         self.tasks_repo = ContentCreationTaskRepository()
         self.auto_verify = auto_verify
         self._verifier = None
+
+        logger.info(
+            "ContentCreationRunner initialized",
+            share_media=share_media
+        )
 
     async def _get_verifier(self):
         """Lazily initialize verifier agent."""
@@ -229,30 +247,41 @@ class ContentCreationRunner:
             }
 
 
-async def run_content_creation_all(business_asset_id: str) -> Dict[str, Any]:
+async def run_content_creation_all(
+    business_asset_id: str,
+    share_media: Optional[bool] = None
+) -> Dict[str, Any]:
     """
     CLI entry point for processing all pending tasks.
 
     Args:
         business_asset_id: Business asset ID for multi-tenancy
+        share_media: Override for share_media_across_platforms setting.
+                     If None, uses the config setting.
 
     Returns:
         Summary of results
     """
-    runner = ContentCreationRunner(business_asset_id)
+    runner = ContentCreationRunner(business_asset_id, share_media=share_media)
     return await runner.run_all()
 
 
-async def run_content_creation_single(business_asset_id: str, task_id: str) -> Dict[str, Any]:
+async def run_content_creation_single(
+    business_asset_id: str,
+    task_id: str,
+    share_media: Optional[bool] = None
+) -> Dict[str, Any]:
     """
     CLI entry point for processing a specific task.
 
     Args:
         business_asset_id: Business asset ID for multi-tenancy
         task_id: ID of the task to process
+        share_media: Override for share_media_across_platforms setting.
+                     If None, uses the config setting.
 
     Returns:
         Task results
     """
-    runner = ContentCreationRunner(business_asset_id)
+    runner = ContentCreationRunner(business_asset_id, share_media=share_media)
     return await runner.run_single(task_id)

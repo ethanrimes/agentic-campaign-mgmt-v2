@@ -1,6 +1,10 @@
 # backend/cli/content.py
 
-"""CLI commands for content creation agent."""
+"""CLI commands for content creation agent.
+
+Uses unified format where each image/video post creates both an Instagram
+and Facebook post, optionally sharing the same media across platforms.
+"""
 
 import click
 from uuid import UUID
@@ -28,16 +32,34 @@ def content():
     default=False,
     help='Skip automatic verification of created posts'
 )
-def create_all(business_asset_id: str, skip_verify: bool):
-    """Create content for all pending tasks"""
+@click.option(
+    '--share-media/--no-share-media',
+    default=None,
+    help='Override share_media_across_platforms setting. --share-media reuses media across FB+IG, --no-share-media generates separate media.'
+)
+def create_all(business_asset_id: str, skip_verify: bool, share_media: bool | None):
+    """Create content for all pending tasks using unified format"""
     import asyncio
     from backend.agents.content_creation.runner import ContentCreationRunner
+    from backend.config.settings import settings
 
-    logger.info("Running content creation for all tasks", business_asset_id=business_asset_id)
-    click.echo(f"🎨 Creating content for all pending tasks...")
+    # Determine effective share_media setting
+    effective_share_media = share_media if share_media is not None else settings.share_media_across_platforms
+
+    logger.info(
+        "Running content creation for all tasks",
+        business_asset_id=business_asset_id,
+        share_media=effective_share_media
+    )
+    click.echo(f"🎨 Creating content for all pending tasks (unified format)...")
+    click.echo(f"   Media sharing: {'enabled' if effective_share_media else 'disabled'}")
 
     async def _run():
-        runner = ContentCreationRunner(business_asset_id, auto_verify=not skip_verify)
+        runner = ContentCreationRunner(
+            business_asset_id,
+            auto_verify=not skip_verify,
+            share_media=share_media
+        )
         return await runner.run_all()
 
     result = asyncio.run(_run())
@@ -68,16 +90,35 @@ def create_all(business_asset_id: str, skip_verify: bool):
     default=False,
     help='Skip automatic verification of created posts'
 )
-def create(business_asset_id: str, task_id: str, skip_verify: bool):
-    """Create content for a specific task"""
+@click.option(
+    '--share-media/--no-share-media',
+    default=None,
+    help='Override share_media_across_platforms setting. --share-media reuses media across FB+IG, --no-share-media generates separate media.'
+)
+def create(business_asset_id: str, task_id: str, skip_verify: bool, share_media: bool | None):
+    """Create content for a specific task using unified format"""
     import asyncio
     from backend.agents.content_creation.runner import ContentCreationRunner
+    from backend.config.settings import settings
 
-    logger.info("Creating content for task", business_asset_id=business_asset_id, task_id=task_id)
-    click.echo(f"🎨 Creating content for task: {task_id}")
+    # Determine effective share_media setting
+    effective_share_media = share_media if share_media is not None else settings.share_media_across_platforms
+
+    logger.info(
+        "Creating content for task",
+        business_asset_id=business_asset_id,
+        task_id=task_id,
+        share_media=effective_share_media
+    )
+    click.echo(f"🎨 Creating content for task: {task_id} (unified format)")
+    click.echo(f"   Media sharing: {'enabled' if effective_share_media else 'disabled'}")
 
     async def _run():
-        runner = ContentCreationRunner(business_asset_id, auto_verify=not skip_verify)
+        runner = ContentCreationRunner(
+            business_asset_id,
+            auto_verify=not skip_verify,
+            share_media=share_media
+        )
         return await runner.run_single(task_id)
 
     result = asyncio.run(_run())
