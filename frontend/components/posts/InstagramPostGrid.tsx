@@ -6,7 +6,7 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, ChevronLeft, ChevronRight, Calendar, ExternalLink, Play, Sparkles, Heart, MessageCircle, Send, Bookmark } from 'lucide-react'
 import type { CompletedPost } from '@/types'
-import { formatDateTime } from '@/lib/utils'
+import { formatDateTime, formatRelativeTime } from '@/lib/utils'
 import Link from 'next/link'
 import VerificationStatusBadge from '@/components/common/VerificationStatusBadge'
 
