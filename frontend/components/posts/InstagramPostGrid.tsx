@@ -4,7 +4,7 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, ChevronLeft, ChevronRight, Calendar, ExternalLink, Play, Sparkles } from 'lucide-react'
+import { X, ChevronLeft, ChevronRight, Calendar, ExternalLink, Play, Sparkles, Heart, MessageCircle, Send, Bookmark } from 'lucide-react'
 import type { CompletedPost } from '@/types'
 import { formatDateTime } from '@/lib/utils'
 import Link from 'next/link'
@@ -44,16 +44,19 @@ export default function InstagramPostGrid({ posts, accountName = 'Instagram Acco
   return (
     <>
       {/* Grid View - Instagram profile style */}
-      <div className="grid grid-cols-3 gap-1">
-        {posts.map((post) => {
+      <div className="grid grid-cols-3 gap-1 md:gap-2 lg:gap-4">
+        {posts.map((post, index) => {
           const previewMedia = post.media_urls && post.media_urls.length > 0 ? post.media_urls[0] : null
           const isReel = post.post_type === 'instagram_reel' ||
                          (previewMedia && (previewMedia.includes('.mp4') || previewMedia.includes('video')))
 
           return (
-            <div
+            <motion.div
               key={post.id}
-              className="relative aspect-square bg-slate-100 overflow-hidden cursor-pointer group"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: index * 0.05 }}
+              className="relative aspect-square bg-slate-100 dark:bg-slate-800 overflow-hidden cursor-pointer group"
               onClick={() => handlePostClick(post)}
             >
               {previewMedia ? (
@@ -74,26 +77,29 @@ export default function InstagramPostGrid({ posts, accountName = 'Instagram Acco
                     <img
                       src={previewMedia}
                       alt={post.text.substring(0, 50)}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                     />
                   )}
                 </>
               ) : (
-                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-pink-50 to-rose-100 p-4">
-                  <p className="text-xs text-slate-600 line-clamp-6 text-center">
+                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-pink-50 to-rose-100 dark:from-pink-900/20 dark:to-rose-900/20 p-4">
+                  <p className="text-xs text-slate-600 dark:text-slate-300 line-clamp-6 text-center font-medium">
                     {post.text}
                   </p>
                 </div>
               )}
 
               {/* Hover overlay */}
-              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                <div className="text-white text-center space-y-1">
-                  {post.media_urls && post.media_urls.length > 1 && (
-                    <div className="text-sm font-medium">
-                      {post.media_urls.length} items
-                    </div>
-                  )}
+              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-[2px]">
+                <div className="text-white text-center space-y-2 font-bold flex flex-col items-center">
+                  <div className="flex items-center gap-2">
+                    <Heart className="w-5 h-5 fill-white" />
+                    <span>--</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <MessageCircle className="w-5 h-5 fill-white" />
+                    <span>--</span>
+                  </div>
                 </div>
               </div>
 
@@ -107,26 +113,18 @@ export default function InstagramPostGrid({ posts, accountName = 'Instagram Acco
               )}
 
               {/* Status badge */}
-              <div className="absolute bottom-2 left-2">
-                <div className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+              <div className="absolute bottom-2 left-2 z-10">
+                <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wide backdrop-blur-md ${
                   post.status === 'published'
-                    ? 'bg-green-500 text-white'
+                    ? 'bg-green-500/80 text-white'
                     : post.status === 'pending'
-                    ? 'bg-amber-500 text-white'
-                    : 'bg-red-500 text-white'
+                    ? 'bg-amber-500/80 text-white'
+                    : 'bg-red-500/80 text-white'
                 }`}>
                   {post.status}
-                </div>
+                </span>
               </div>
-              {/* Verification status indicator */}
-              <div className="absolute bottom-2 right-2">
-                <VerificationStatusBadge
-                  status={post.verification_status || 'unverified'}
-                  postId={post.id}
-                  size="sm"
-                />
-              </div>
-            </div>
+            </motion.div>
           )
         })}
       </div>
@@ -135,21 +133,22 @@ export default function InstagramPostGrid({ posts, accountName = 'Instagram Acco
       <AnimatePresence>
         {selectedPost && (
           <motion.div
-            className="fixed inset-0 bg-black/95 flex items-center justify-center z-50 p-4"
+            className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={handleClose}
           >
             <motion.div
-              className="bg-white rounded-lg shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col md:flex-row"
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.9, y: 20 }}
+              className="glass-panel w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col md:flex-row shadow-2xl border-0 ring-1 ring-white/20"
+              initial={{ scale: 0.9, y: 20, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.9, y: 20, opacity: 0 }}
+              transition={{ type: "spring", duration: 0.5 }}
               onClick={(e) => e.stopPropagation()}
             >
               {/* Media Section - Instagram style */}
-              <div className="md:w-3/5 bg-black relative flex items-center justify-center">
+              <div className="md:w-[60%] bg-black relative flex items-center justify-center group">
                 {selectedPost.media_urls && selectedPost.media_urls.length > 0 ? (
                   <>
                     {selectedPost.media_urls[currentMediaIndex].includes('.mp4') ||
@@ -157,43 +156,43 @@ export default function InstagramPostGrid({ posts, accountName = 'Instagram Acco
                       <video
                         src={selectedPost.media_urls[currentMediaIndex]}
                         controls
-                        className="max-w-full max-h-[85vh] object-contain"
+                        className="max-w-full max-h-[60vh] md:max-h-[90vh] object-contain"
                       />
                     ) : (
                       <img
                         src={selectedPost.media_urls[currentMediaIndex]}
                         alt="Post media"
-                        className="max-w-full max-h-[85vh] object-contain"
+                        className="max-w-full max-h-[60vh] md:max-h-[90vh] object-contain"
                       />
                     )}
 
                     {/* Media navigation */}
                     {selectedPost.media_urls.length > 1 && (
                       <>
-                        {currentMediaIndex > 0 && (
+                        <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex justify-between px-4 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button
                             onClick={handlePrevMedia}
-                            className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full p-2 transition-colors"
+                            disabled={currentMediaIndex === 0}
+                            className="bg-white/80 hover:bg-white text-black p-2 rounded-full backdrop-blur-sm disabled:opacity-30 transition-all shadow-lg"
                           >
-                            <ChevronLeft className="w-6 h-6 text-white" />
+                            <ChevronLeft className="w-5 h-5" />
                           </button>
-                        )}
-                        {currentMediaIndex < selectedPost.media_urls.length - 1 && (
                           <button
                             onClick={handleNextMedia}
-                            className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full p-2 transition-colors"
+                            disabled={currentMediaIndex === selectedPost.media_urls.length - 1}
+                            className="bg-white/80 hover:bg-white text-black p-2 rounded-full backdrop-blur-sm disabled:opacity-30 transition-all shadow-lg"
                           >
-                            <ChevronRight className="w-6 h-6 text-white" />
+                            <ChevronRight className="w-5 h-5" />
                           </button>
-                        )}
+                        </div>
 
                         {/* Carousel dots */}
-                        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5">
+                        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-1.5">
                           {selectedPost.media_urls.map((_, index) => (
                             <button
                               key={index}
                               onClick={() => setCurrentMediaIndex(index)}
-                              className={`w-1.5 h-1.5 rounded-full transition-all ${
+                              className={`w-1.5 h-1.5 rounded-full transition-all shadow-sm ${
                                 index === currentMediaIndex
                                   ? 'bg-white w-2 h-2'
                                   : 'bg-white/50'
@@ -205,135 +204,108 @@ export default function InstagramPostGrid({ posts, accountName = 'Instagram Acco
                     )}
                   </>
                 ) : (
-                  <div className="p-8 text-white text-center">
+                  <div className="p-8 text-white/50 text-center">
                     <p>No media available</p>
                   </div>
                 )}
               </div>
 
               {/* Content Section - Instagram comment style */}
-              <div className="md:w-2/5 flex flex-col">
+              <div className="md:w-[40%] flex flex-col bg-white dark:bg-black">
                 {/* Header */}
-                <div className="p-4 border-b border-slate-200 flex items-center justify-between">
+                <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-gradient-to-br from-pink-500 to-rose-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
-                      {accountName.charAt(0).toUpperCase()}
+                    <div className="w-8 h-8 bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-600 p-[2px] rounded-full">
+                      <div className="w-full h-full bg-white dark:bg-black rounded-full flex items-center justify-center overflow-hidden border border-white dark:border-black">
+                        <span className="font-bold text-xs">{accountName.charAt(0).toUpperCase()}</span>
+                      </div>
                     </div>
-                    <span className="font-semibold text-sm">{accountName}</span>
+                    <span className="font-semibold text-sm text-slate-900 dark:text-white">{accountName}</span>
                   </div>
                   <button
                     onClick={handleClose}
-                    className="text-slate-400 hover:text-slate-600 transition-colors"
+                    className="text-slate-900 dark:text-white hover:text-slate-600 transition-colors"
                   >
                     <X className="w-6 h-6" />
                   </button>
                 </div>
 
                 {/* Caption and details */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
                   {/* Caption */}
                   <div className="flex gap-3">
-                    <div className="w-8 h-8 bg-gradient-to-br from-pink-500 to-rose-500 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
-                      {accountName.charAt(0).toUpperCase()}
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm">
-                        <span className="font-semibold mr-2">{accountName}</span>
-                        <span className="text-slate-700 whitespace-pre-line">{selectedPost.text}</span>
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Hashtags */}
-                  {selectedPost.hashtags && selectedPost.hashtags.length > 0 && (
-                    <div className="pl-11">
-                      <div className="flex flex-wrap gap-1">
-                        {selectedPost.hashtags.map((tag, i) => (
-                          <span
-                            key={i}
-                            className="text-sm text-blue-600"
-                          >
-                            #{tag}
-                          </span>
-                        ))}
+                    <div className="w-8 h-8 bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-600 p-[2px] rounded-full flex-shrink-0">
+                      <div className="w-full h-full bg-white dark:bg-black rounded-full flex items-center justify-center overflow-hidden border border-white dark:border-black">
+                        <span className="font-bold text-xs">{accountName.charAt(0).toUpperCase()}</span>
                       </div>
                     </div>
-                  )}
+                    <div className="flex-1">
+                      <p className="text-sm leading-relaxed">
+                        <span className="font-semibold mr-2 text-slate-900 dark:text-white">{accountName}</span>
+                        <span className="text-slate-800 dark:text-slate-200 whitespace-pre-line">{selectedPost.text}</span>
+                      </p>
+                      
+                      {/* Hashtags */}
+                      {selectedPost.hashtags && selectedPost.hashtags.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-1">
+                          {selectedPost.hashtags.map((tag, i) => (
+                            <span
+                              key={i}
+                              className="text-sm text-blue-900 dark:text-blue-100 font-medium cursor-pointer hover:underline"
+                            >
+                              #{tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      
+                      <p className="text-xs text-slate-500 mt-2 uppercase">{formatRelativeTime(selectedPost.created_at)}</p>
+                    </div>
+                  </div>
 
                   {/* Location */}
                   {selectedPost.location && (
-                    <div className="pl-11 text-sm text-slate-600">
-                      {selectedPost.location}
+                    <div className="pl-11 text-xs font-medium text-slate-900 dark:text-white">
+                      📍 {selectedPost.location}
                     </div>
                   )}
 
-                  {/* Music */}
-                  {selectedPost.music && (
-                    <div className="pl-11 text-sm text-slate-600">
-                      Original audio - {selectedPost.music}
-                    </div>
-                  )}
-                </div>
-
-                {/* Footer */}
-                <div className="p-4 border-t border-slate-200 space-y-2">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${
-                      selectedPost.status === 'published'
-                        ? 'bg-green-100 text-green-700'
-                        : selectedPost.status === 'pending'
-                        ? 'bg-amber-100 text-amber-700'
-                        : 'bg-red-100 text-red-700'
-                    }`}>
-                      {selectedPost.status}
-                    </div>
+                  {/* Verification Status */}
+                  <div className="pl-11 pt-2">
                     <VerificationStatusBadge
                       status={selectedPost.verification_status || 'unverified'}
                       postId={selectedPost.id}
-                      size="md"
+                      size="sm"
                     />
                   </div>
-                  <div className="flex items-center gap-2 text-xs text-slate-500">
-                    <Calendar className="w-3.5 h-3.5" />
+                </div>
+
+                {/* Footer Actions */}
+                <div className="border-t border-slate-100 dark:border-slate-800 p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <Heart className="w-6 h-6 cursor-pointer hover:text-slate-500 transition-colors" />
+                      <MessageCircle className="w-6 h-6 cursor-pointer hover:text-slate-500 transition-colors" />
+                      <Send className="w-6 h-6 cursor-pointer hover:text-slate-500 transition-colors" />
+                    </div>
+                    <Bookmark className="w-6 h-6 cursor-pointer hover:text-slate-500 transition-colors" />
+                  </div>
+                  
+                  <div className="text-xs text-slate-500 uppercase font-medium">
                     {selectedPost.published_at
                       ? formatDateTime(selectedPost.published_at)
                       : formatDateTime(selectedPost.created_at)}
                   </div>
-                  {selectedPost.platform_post_url && (
-                    <a
-                      href={selectedPost.platform_post_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2 text-xs text-pink-600 hover:text-pink-700 font-medium"
-                    >
-                      <ExternalLink className="w-3.5 h-3.5" />
-                      View on Instagram
-                    </a>
-                  )}
+
                   {/* Content Seed Link */}
                   {(selectedPost as any).content_seed_id && (
                     <Link
                       href={`/content-seeds?seed=${(selectedPost as any).content_seed_id}&type=${(selectedPost as any).content_seed_type}`}
-                      className="block p-3 bg-gradient-to-br from-cyan-50 to-blue-50 rounded-lg border border-cyan-200 hover:border-cyan-300 hover:shadow-md transition-all"
+                      className="block text-xs text-blue-500 font-semibold mt-2 hover:underline flex items-center gap-1"
                       onClick={handleClose}
                     >
-                      <div className="flex items-center gap-2 text-xs font-semibold text-slate-600 mb-1">
-                        <Sparkles className="w-3.5 h-3.5 text-cyan-600" />
-                        Content Seed
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <span className="text-xs bg-white text-cyan-700 px-2 py-1 rounded border border-cyan-200 inline-block mb-1">
-                            {(selectedPost as any).content_seed_type?.replace(/_/g, ' ') || 'Unknown'}
-                          </span>
-                          {(selectedPost as any).seed_name && (
-                            <p className="text-xs text-slate-700 line-clamp-1">
-                              {(selectedPost as any).seed_name}
-                            </p>
-                          )}
-                        </div>
-                        <ExternalLink className="w-3.5 h-3.5 text-cyan-600 flex-shrink-0" />
-                      </div>
+                      <Sparkles className="w-3 h-3" />
+                      View Original Idea
                     </Link>
                   )}
                 </div>

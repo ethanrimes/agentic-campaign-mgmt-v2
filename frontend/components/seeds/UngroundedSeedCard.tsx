@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react'
 import ExpandableCard from '@/components/common/ExpandableCard'
 import SeedTimeline from './SeedTimeline'
 import { formatRelativeTime } from '@/lib/utils'
-import { FileText } from 'lucide-react'
+import { FileText, Lightbulb, Sparkles } from 'lucide-react'
 import type { UngroundedSeed } from '@/types'
 import { getContentCreationTasksBySeed, getCompletedPostsBySeed } from '@/lib/api-client'
 import { useBusinessAsset } from '@/lib/business-asset-context'
@@ -44,9 +44,9 @@ export default function UngroundedSeedCard({ seed }: UngroundedSeedCardProps) {
 
   const preview = (
     <div className="space-y-3">
-      <p className="text-sm line-clamp-2 text-gray-700">{seed.idea}</p>
+      <p className="text-sm line-clamp-2 text-slate-600 dark:text-slate-300">{seed.idea}</p>
       <div className="flex items-center gap-3">
-        <span className="bg-gradient-to-r from-amber-50 to-orange-50 text-amber-700 px-3 py-1.5 rounded-full text-xs font-medium border border-amber-100">
+        <span className="bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 px-2.5 py-1 rounded-full text-xs font-medium border border-amber-100 dark:border-amber-800">
           {seed.format}
         </span>
       </div>
@@ -59,44 +59,45 @@ export default function UngroundedSeedCard({ seed }: UngroundedSeedCardProps) {
       subtitle={`Created ${formatRelativeTime(seed.created_at)} • ${seed.created_by}`}
       preview={preview}
       badge={
-        <span className="text-xs bg-gradient-to-r from-amber-50 to-orange-50 text-amber-700 px-3 py-1.5 rounded-full font-medium border border-amber-100">
-          {seed.format}
+        <span className="text-xs bg-gradient-to-r from-amber-500 to-orange-500 text-white px-2.5 py-1 rounded-full font-bold shadow-sm flex items-center gap-1">
+          <Lightbulb className="w-3 h-3" />
+          Creative
         </span>
       }
       onExpandChange={setIsExpanded}
     >
-      <div className="space-y-6">
+      <div className="space-y-8 p-2">
         {/* Full Idea */}
-        <div className="p-4 bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl border border-amber-100">
-          <h4 className="text-sm font-bold text-gray-900 mb-2 flex items-center gap-2">
-            <div className="w-1 h-4 bg-gradient-to-b from-amber-500 to-orange-500 rounded-full"></div>
-            Creative Idea
+        <div className="p-6 rounded-2xl bg-gradient-to-br from-amber-50/50 to-orange-50/50 dark:from-amber-900/10 dark:to-orange-900/10 border border-amber-100 dark:border-amber-800/50">
+          <h4 className="text-xs font-bold text-amber-900 dark:text-amber-100 uppercase tracking-wider mb-3 flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-amber-500" />
+            Creative Concept
           </h4>
-          <p className="text-gray-700 leading-relaxed">{seed.idea}</p>
+          <p className="text-slate-700 dark:text-slate-300 leading-relaxed text-lg">{seed.idea}</p>
         </div>
 
-        {/* Format */}
-        <div className="p-4 bg-white rounded-xl border border-gray-200 shadow-soft">
-          <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-2">
-            <FileText className="w-4 h-4 text-amber-600" />
-            Content Format
-          </h4>
-          <span className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-50 to-orange-50 text-amber-700 px-4 py-2 rounded-lg border border-amber-100 font-medium">
-            {seed.format}
-          </span>
-        </div>
-
-        {/* Details */}
-        <div className="p-4 bg-gradient-to-br from-purple-50/50 to-pink-50/50 rounded-xl border border-purple-100/50">
-          <h4 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
-            <div className="w-1 h-4 bg-gradient-to-b from-purple-500 to-pink-500 rounded-full"></div>
-            Creative Direction
-          </h4>
-          <p className="text-gray-700 leading-relaxed whitespace-pre-line">{seed.details}</p>
+        {/* Format & Details */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="md:col-span-1 p-5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50">
+            <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+              <FileText className="w-4 h-4 text-amber-500" />
+              Format
+            </h4>
+            <span className="inline-flex items-center gap-2 bg-white dark:bg-slate-700 text-amber-700 dark:text-amber-300 px-3 py-1.5 rounded-lg border border-amber-100 dark:border-amber-900/30 font-medium shadow-sm">
+              {seed.format}
+            </span>
+          </div>
+          
+          <div className="md:col-span-2 p-5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
+            <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">Execution Details</h4>
+            <p className="text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line">{seed.details}</p>
+          </div>
         </div>
 
         {/* Content Timeline */}
-        <SeedTimeline tasks={tasks} posts={posts} loading={loading} />
+        <div className="pt-6 border-t border-slate-100 dark:border-slate-800">
+          <SeedTimeline tasks={tasks} posts={posts} loading={loading} />
+        </div>
       </div>
     </ExpandableCard>
   )

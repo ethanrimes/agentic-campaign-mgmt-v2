@@ -1,6 +1,7 @@
 # agentic-campaign-mgmt-v2/.gitignore
 .gitignore
 .claude
+.gemini-clipboard
 
 # Environment variables
 .env
