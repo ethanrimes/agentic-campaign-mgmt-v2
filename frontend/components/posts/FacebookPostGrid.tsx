@@ -2,7 +2,8 @@
 
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, ChevronLeft, ChevronRight, Calendar, ExternalLink, Sparkles, MessageCircle, ThumbsUp, Share2 } from 'lucide-react'
 import type { CompletedPost } from '@/types'
@@ -17,6 +18,17 @@ interface FacebookPostGridProps {
 export default function FacebookPostGrid({ posts }: FacebookPostGridProps) {
   const [selectedPost, setSelectedPost] = useState<CompletedPost | null>(null)
   const [currentMediaIndex, setCurrentMediaIndex] = useState(0)
+  const searchParams = useSearchParams()
+  const highlightPostId = searchParams.get('post')
+
+  useEffect(() => {
+    if (highlightPostId && posts.length > 0) {
+      const postToHighlight = posts.find(p => p.id === highlightPostId)
+      if (postToHighlight) {
+        setSelectedPost(postToHighlight)
+      }
+    }
+  }, [highlightPostId, posts])
 
   const handlePostClick = (post: CompletedPost) => {
     setSelectedPost(post)
@@ -80,7 +92,7 @@ export default function FacebookPostGrid({ posts }: FacebookPostGridProps) {
                   </p>
                 </div>
               )}
-              
+
               {/* Overlay Gradient */}
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
@@ -90,19 +102,18 @@ export default function FacebookPostGrid({ posts }: FacebookPostGridProps) {
                   {post.media_urls.length}
                 </div>
               )}
-              
+
               {/* Bottom Info */}
               <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between translate-y-4 group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-300">
-                <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium backdrop-blur-md ${
-                  post.status === 'published'
-                    ? 'bg-green-500/80 text-white'
-                    : post.status === 'pending'
+                <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium backdrop-blur-md ${post.status === 'published'
+                  ? 'bg-green-500/80 text-white'
+                  : post.status === 'pending'
                     ? 'bg-amber-500/80 text-white'
                     : 'bg-red-500/80 text-white'
-                }`}>
+                  }`}>
                   {post.status}
                 </span>
-                
+
                 <VerificationStatusBadge
                   status={post.verification_status || 'unverified'}
                   postId={post.id}
@@ -138,7 +149,7 @@ export default function FacebookPostGrid({ posts }: FacebookPostGridProps) {
                 {selectedPost.media_urls && selectedPost.media_urls.length > 0 ? (
                   <>
                     {selectedPost.media_urls[currentMediaIndex].includes('.mp4') ||
-                     selectedPost.media_urls[currentMediaIndex].includes('video') ? (
+                      selectedPost.media_urls[currentMediaIndex].includes('video') ? (
                       <video
                         src={selectedPost.media_urls[currentMediaIndex]}
                         controls
@@ -171,15 +182,14 @@ export default function FacebookPostGrid({ posts }: FacebookPostGridProps) {
                             <ChevronRight className="w-6 h-6" />
                           </button>
                         </div>
-                        
+
                         <div className="absolute bottom-6 left-1/2 -translate-x-1/2">
                           <div className="flex gap-2">
                             {selectedPost.media_urls.map((_, idx) => (
-                              <div 
+                              <div
                                 key={idx}
-                                className={`w-2 h-2 rounded-full transition-all ${
-                                  idx === currentMediaIndex ? 'bg-white scale-125' : 'bg-white/40'
-                                }`} 
+                                className={`w-2 h-2 rounded-full transition-all ${idx === currentMediaIndex ? 'bg-white scale-125' : 'bg-white/40'
+                                  }`}
                               />
                             ))}
                           </div>
@@ -201,7 +211,7 @@ export default function FacebookPostGrid({ posts }: FacebookPostGridProps) {
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center shadow-md">
                       <svg className="w-6 h-6 text-white fill-current" viewBox="0 0 24 24">
-                        <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.962.925-1.962 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                        <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.962.925-1.962 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
                       </svg>
                     </div>
                     <div>

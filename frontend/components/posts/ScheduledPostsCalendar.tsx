@@ -168,31 +168,28 @@ export default function ScheduledPostsCalendar({ posts }: ScheduledPostsCalendar
               return (
                 <div
                   key={dateKey}
-                  className={`min-h-[120px] p-3 rounded-2xl border transition-all duration-300 ${
-                    isCurrentMonth
+                  className={`min-h-[120px] p-3 rounded-2xl border transition-all duration-300 ${isCurrentMonth
                       ? 'bg-white border-slate-100 shadow-sm hover:shadow-md hover:border-slate-200'
                       : 'bg-slate-50/50 border-transparent opacity-40'
-                  } ${isToday ? 'ring-2 ring-primary-500 ring-offset-2 dark:ring-offset-slate-900 z-10 relative' : ''}`}
+                    } ${isToday ? 'ring-2 ring-primary-500 ring-offset-2 dark:ring-offset-slate-900 z-10 relative' : ''}`}
                 >
-                  <div className={`text-sm font-medium mb-3 ${
-                    isToday 
-                      ? 'text-primary-600 font-bold' 
+                  <div className={`text-sm font-medium mb-3 ${isToday
+                      ? 'text-primary-600 font-bold'
                       : 'text-slate-700'
-                  }`}>
+                    }`}>
                     {format(day, 'd')}
                   </div>
-                  
+
                   <div className="space-y-1.5">
                     {dayPosts.map(post => (
                       <motion.div
                         key={post.id}
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
-                        className={`text-xs px-2 py-1.5 rounded-lg flex items-center gap-2 cursor-pointer shadow-sm border border-transparent hover:border-slate-200 transition-colors ${
-                          post.platform === 'facebook'
+                        className={`text-xs px-2 py-1.5 rounded-lg flex items-center gap-2 cursor-pointer shadow-sm border border-transparent hover:border-slate-200 transition-colors ${post.platform === 'facebook'
                             ? 'bg-blue-50 text-blue-700'
                             : 'bg-pink-50 text-pink-700'
-                        }`}
+                          }`}
                         onClick={() => handlePostClick(post)}
                       >
                         {post.platform === 'facebook' ? (
@@ -201,7 +198,7 @@ export default function ScheduledPostsCalendar({ posts }: ScheduledPostsCalendar
                           <Instagram className="w-3 h-3 flex-shrink-0" />
                         )}
                         <span className="truncate font-medium">
-                          {format(new Date(post.published_at || post.scheduled_posting_time || post.created_at), 'HH:mm')}
+                          {post.text || 'No text'}
                         </span>
                       </motion.div>
                     ))}
@@ -252,7 +249,7 @@ export default function ScheduledPostsCalendar({ posts }: ScheduledPostsCalendar
                 {selectedPost.media_urls && selectedPost.media_urls.length > 0 ? (
                   <>
                     {selectedPost.media_urls[currentMediaIndex].includes('.mp4') ||
-                     selectedPost.media_urls[currentMediaIndex].includes('video') ? (
+                      selectedPost.media_urls[currentMediaIndex].includes('video') ? (
                       <video
                         src={selectedPost.media_urls[currentMediaIndex]}
                         controls
@@ -285,14 +282,13 @@ export default function ScheduledPostsCalendar({ posts }: ScheduledPostsCalendar
                             <ChevronRight className="w-6 h-6" />
                           </button>
                         </div>
-                        
+
                         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
                           {selectedPost.media_urls.map((_, idx) => (
-                            <div 
+                            <div
                               key={idx}
-                              className={`w-1.5 h-1.5 rounded-full transition-all ${
-                                idx === currentMediaIndex ? 'bg-white w-2.5' : 'bg-white/40'
-                              }`} 
+                              className={`w-1.5 h-1.5 rounded-full transition-all ${idx === currentMediaIndex ? 'bg-white w-2.5' : 'bg-white/40'
+                                }`}
                             />
                           ))}
                         </div>
@@ -311,22 +307,20 @@ export default function ScheduledPostsCalendar({ posts }: ScheduledPostsCalendar
               <div className="md:w-[40%] flex flex-col bg-white dark:bg-slate-900">
                 <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex items-start justify-between">
                   <div className="flex items-center gap-3">
-                    <div className={`p-2.5 rounded-xl ${
-                      selectedPost.platform === 'facebook' 
-                        ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400' 
+                    <div className={`p-2.5 rounded-xl ${selectedPost.platform === 'facebook'
+                        ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400'
                         : 'bg-pink-50 text-pink-600 dark:bg-pink-900/20 dark:text-pink-400'
-                    }`}>
+                      }`}>
                       {selectedPost.platform === 'facebook' ? <Facebook className="w-5 h-5" /> : <Instagram className="w-5 h-5" />}
                     </div>
                     <div>
                       <h3 className="font-bold text-slate-900 dark:text-white text-sm">
                         {selectedPost.platform === 'facebook' ? 'Facebook Post' : 'Instagram Post'}
                       </h3>
-                      <div className={`text-xs font-medium px-2 py-0.5 rounded-full inline-block mt-1 ${
-                        selectedPost.status === 'published' ? 'bg-green-100 text-green-700' :
-                        selectedPost.status === 'pending' ? 'bg-amber-100 text-amber-700' :
-                        'bg-red-100 text-red-700'
-                      }`}>
+                      <div className={`text-xs font-medium px-2 py-0.5 rounded-full inline-block mt-1 ${selectedPost.status === 'published' ? 'bg-green-100 text-green-700' :
+                          selectedPost.status === 'pending' ? 'bg-amber-100 text-amber-700' :
+                            'bg-red-100 text-red-700'
+                        }`}>
                         {selectedPost.status}
                       </div>
                     </div>
@@ -385,7 +379,7 @@ export default function ScheduledPostsCalendar({ posts }: ScheduledPostsCalendar
                       </p>
                     </div>
                   </div>
-                  
+
                   <div className="pt-2">
                     <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Verification</h4>
                     <VerificationStatusBadge
