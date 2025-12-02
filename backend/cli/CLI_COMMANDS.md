@@ -214,16 +214,16 @@ python -m backend.cli.main ungrounded generate --business-asset-id penndailybuzz
 python -m backend.cli.main insights analyze --business-asset-id penndailybuzz --days 14
 
 # 3. Create content plan
-python -m backend.cli.main planner run --business-asset-id penndailybuzz --max-retries 3
+python -m backend.cli.main planner run --business-asset-id aifirstnewsreport --max-retries 3
 
 # 4. Generate content
-python -m backend.cli.main content create-all --business-asset-id penndailybuzz
+python -m backend.cli.main content create-all --business-asset-id aifirstnewsreport
 
 # 5. Verify content (if not auto-verified)
-python -m backend.cli.main verifier verify-all --business-asset-id penndailybuzz
+python -m backend.cli.main verifier verify-all --business-asset-id aifirstnewsreport
 
 # 6. Publish content
-python -m backend.cli.main publish all --business-asset-id penndailybuzz
+python -m backend.cli.main publish all --business-asset-id aifirstnewsreport
 
 # 7. Monitor and respond to comments
 python -m backend.cli.main comments check-instagram --business-asset-id penndailybuzz

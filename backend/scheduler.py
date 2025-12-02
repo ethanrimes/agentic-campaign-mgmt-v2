@@ -84,18 +84,25 @@ class SchedulingConfig:
 
     Defines when and how often posts should be published to each platform.
     All times are in hours unless otherwise specified.
+
+    Media Sharing Architecture:
+    - Content creation generates posts with shared media across platforms
+    - Verification only runs on primary posts (Instagram)
+    - Secondary posts (Facebook) inherit verification status automatically
+    - Publishing pipeline: verify -> publish IG -> publish FB
     """
 
     # Publishing frequency (hours between posts)
-    FACEBOOK_POST_INTERVAL_HOURS = 6  # Post to Facebook once per day
-    INSTAGRAM_POST_INTERVAL_HOURS = 6  # Post to Instagram twice per day
+    FACEBOOK_POST_INTERVAL_HOURS = 6  # Post to Facebook every 6 hours
+    INSTAGRAM_POST_INTERVAL_HOURS = 6  # Post to Instagram every 6 hours
 
     # Initial delay before first post (hours from content creation)
-    FACEBOOK_INITIAL_DELAY_HOURS = 0  # Wait 2 hours before first Facebook post
-    INSTAGRAM_INITIAL_DELAY_HOURS = 0  # Wait 1 hour before first Instagram post
+    FACEBOOK_INITIAL_DELAY_HOURS = 0  # No delay for Facebook posts
+    INSTAGRAM_INITIAL_DELAY_HOURS = 0  # No delay for Instagram posts
 
-    # Publishing check frequency (minutes)
-    # How often the publisher scripts should check for posts to publish
+    # Publishing pipeline check frequency (minutes)
+    # How often to run: verification -> facebook publishing -> instagram publishing
+    # The pipeline ensures verification happens before any publishing
     PUBLISH_CHECK_INTERVAL_MINUTES = 30
 
     # Comment management (minutes)
@@ -251,11 +258,33 @@ def run_planning_pipeline():
 
 
 # ============================================================================
+# VERIFICATION JOBS
+# ============================================================================
+
+def run_verification():
+    """Verify all unverified pending posts for all business assets.
+
+    This should run before publishing to ensure only verified content is published.
+    Uses shared media verification groups - only primary posts are verified,
+    secondary posts automatically inherit the verification result.
+    """
+    assets = get_active_business_assets()
+    for asset_id in assets:
+        run_command(
+            ["verifier", "verify-all", "--business-asset-id", asset_id],
+            f"Content Verification - {asset_id}"
+        )
+
+
+# ============================================================================
 # PUBLISHING JOBS
 # ============================================================================
 
 def run_facebook_publishing():
-    """Check for and publish scheduled Facebook posts for all business assets."""
+    """Check for and publish scheduled Facebook posts for all business assets.
+
+    Only publishes posts that have been verified (verification_status='verified').
+    """
     assets = get_active_business_assets()
     for asset_id in assets:
         run_command(
@@ -265,13 +294,32 @@ def run_facebook_publishing():
 
 
 def run_instagram_publishing():
-    """Check for and publish scheduled Instagram posts for all business assets."""
+    """Check for and publish scheduled Instagram posts for all business assets.
+
+    Only publishes posts that have been verified (verification_status='verified').
+    """
     assets = get_active_business_assets()
     for asset_id in assets:
         run_command(
             ["publish", "instagram", "--business-asset-id", asset_id],
             f"Instagram Publishing - {asset_id}"
         )
+
+
+def run_publishing_pipeline():
+    """Run verification then publish to both platforms.
+
+    This pipeline ensures:
+    1. All unverified posts are verified first
+    2. Only verified posts are published
+    3. Media sharing groups are handled correctly (verify once, publish to both)
+    """
+    try:
+        run_verification()
+        run_facebook_publishing()
+        run_instagram_publishing()
+    except Exception as e:
+        logger.error("Publishing pipeline failed", error=str(e))
 
 
 # ============================================================================
@@ -388,28 +436,18 @@ def create_scheduler():
     )
 
     # ========================================================================
-    # PUBLISHING
+    # VERIFICATION & PUBLISHING
     # ========================================================================
 
-    # Facebook publishing - check for scheduled posts at configured interval
+    # Publishing pipeline (verification + facebook + instagram)
+    # Runs verification first, then publishes verified posts to both platforms
+    # This ensures media sharing groups are verified once and published to both
     scheduler.add_job(
-        run_facebook_publishing,
+        run_publishing_pipeline,
         'interval',
         minutes=SCHEDULING_CONFIG.PUBLISH_CHECK_INTERVAL_MINUTES,
-        id='facebook_publishing',
-        name='Facebook Publishing',
-        max_instances=1,
-        coalesce=True,
-        next_run_time=datetime.now()
-    )
-
-    # Instagram publishing - check for scheduled posts at configured interval
-    scheduler.add_job(
-        run_instagram_publishing,
-        'interval',
-        minutes=SCHEDULING_CONFIG.PUBLISH_CHECK_INTERVAL_MINUTES,
-        id='instagram_publishing',
-        name='Instagram Publishing',
+        id='publishing_pipeline',
+        name='Publishing Pipeline (Verify + Publish)',
         max_instances=1,
         coalesce=True,
         next_run_time=datetime.now()
