@@ -22,7 +22,7 @@ export default function ExpandableFacebookPosts({ posts }: ExpandableFacebookPos
     <section>
       <div className="flex items-center gap-3 mb-6">
         <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-md">
-          <FacebookIcon className="w-5 h-5 text-white" />
+          <FacebookIcon className="w-5 h-5 text-blue-600 dark:text-white" />
         </div>
         <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Facebook Posts</h2>
         <span className="text-sm bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 px-3 py-1 rounded-full font-medium border border-blue-100 dark:border-blue-800">

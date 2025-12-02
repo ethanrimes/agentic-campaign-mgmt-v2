@@ -49,7 +49,7 @@ export default function NewsEventsPage() {
         <div className="glass-panel p-8 bg-white/80 dark:bg-slate-900/80">
           <div className="flex items-center gap-4 mb-3">
             <div className="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg">
-              <Globe className="w-7 h-7 text-white" />
+              <Globe className="w-7 h-7 text-blue-600 dark:text-white" />
             </div>
             <div>
               <h1 className="text-3xl font-bold text-slate-900 dark:text-white">
