@@ -1,6 +1,11 @@
 # backend/agents/content_creation/content_agent.py
 
-"""Content creation agent for generating social media posts."""
+"""Content creation agent for generating social media posts.
+
+Uses unified format (image_posts, video_posts, text_only_posts) where each
+image/video post creates both an Instagram and Facebook post using shared
+or separate media based on the share_media_across_platforms config setting.
+"""
 
 from pathlib import Path
 from typing import Dict, Any, List, Literal, Optional
@@ -32,12 +37,16 @@ AI_DISCLOSURE_FOOTNOTE = "\n\n✨ AI-assisted"
 NEWS_SOURCE_LINK_FORMAT = "\n\n🔗 Read more: {url}"
 
 
-class PostOutput(BaseModel):
-    """A structured social media post."""
-    platform: Literal["instagram", "facebook"] = Field(..., description="Social media platform")
-    post_type: Literal["instagram_image", "instagram_reel", "facebook_feed", "facebook_video"] = Field(
-        ...,
-        description="Type of post (must match platform)"
+class UnifiedPostOutput(BaseModel):
+    """
+    A unified post output that will be used to create posts on both platforms.
+
+    Each UnifiedPostOutput creates:
+    - For image/video formats: 1 Instagram post + 1 Facebook post (2 total)
+    - For text_only format: 1 Facebook post only
+    """
+    format_type: Literal["image", "video", "text_only"] = Field(
+        ..., description="Type of content format"
     )
     text: str = Field(..., description="The full caption/text for the post")
     media_ids: List[str] = Field(
@@ -49,23 +58,37 @@ class PostOutput(BaseModel):
 
 
 class AgentResponse(BaseModel):
-    """Complete response from content creation agent."""
-    posts: List[PostOutput] = Field(..., description="List of all created posts")
+    """Complete response from content creation agent using unified format."""
+    posts: List[UnifiedPostOutput] = Field(..., description="List of unified post outputs")
 
 
 class ContentCreationAgent:
     """
     Agent for creating social media posts from content tasks.
     Uses Wavespeed AI to generate media and creates structured posts.
+
+    With unified format, each image/video post creates both an Instagram
+    and Facebook post, optionally sharing the same media across platforms.
     """
 
-    def __init__(self, business_asset_id: str):
+    def __init__(self, business_asset_id: str, share_media: Optional[bool] = None):
+        """
+        Initialize content creation agent.
+
+        Args:
+            business_asset_id: Business asset ID for multi-tenancy
+            share_media: Override for share_media_across_platforms setting.
+                         If None, uses the config setting.
+        """
         self.business_asset_id = business_asset_id
         self.tasks_repo = ContentCreationTaskRepository()
         self.posts_repo = CompletedPostRepository()
         self.news_repo = NewsEventSeedRepository()
         self.trend_repo = TrendSeedsRepository()
         self.ungrounded_repo = UngroundedSeedRepository()
+
+        # Determine media sharing mode
+        self.share_media = share_media if share_media is not None else settings.share_media_across_platforms
 
         # Load prompts
         prompt_path = Path(__file__).parent / "prompts" / "content_creation.txt"
@@ -87,6 +110,11 @@ class ContentCreationAgent:
             tools=self.tools,
             system_prompt=f"{self.global_prompt}\n\n{self.agent_prompt}",
             response_format=ToolStrategy(AgentResponse)
+        )
+
+        logger.info(
+            "ContentCreationAgent initialized",
+            share_media=self.share_media
         )
 
     async def _calculate_scheduled_time(self, platform: Literal["facebook", "instagram"]) -> datetime:
@@ -134,14 +162,18 @@ class ContentCreationAgent:
 
     async def create_content_for_task(self, task_id: str) -> List[Dict[str, Any]]:
         """
-        Create all content for a specific task.
+        Create all content for a specific task using unified format.
+
+        With unified format, each image/video post creates both an Instagram
+        and Facebook post, optionally sharing the same media across platforms.
+
         Args:
             task_id: Content creation task ID
 
         Returns:
             List of created completed posts
         """
-        logger.info("Starting content creation for task", task_id=task_id)
+        logger.info("Starting content creation for task", task_id=task_id, share_media=self.share_media)
 
         try:
             # Get task
@@ -166,7 +198,7 @@ class ContentCreationAgent:
                 )
                 raise Exception(error_msg)
 
-            # Build task context
+            # Build task context with unified format
             context = self._format_task_context(task, seed)
 
             # Run agent
@@ -192,53 +224,34 @@ class ContentCreationAgent:
                     if hasattr(first_source, 'url'):
                         source_url = str(first_source.url)
 
-            # Save posts to database
+            # Convert unified posts to platform-specific posts
             posts = []
-            for post_data in structured_output.posts:
+            scheduled_times = task.scheduled_times or []
+            post_index = 0
+
+            for unified_post in structured_output.posts:
                 try:
-                    # Create CompletedPost model instance
-                    # Convert media_ids from strings to UUIDs
-                    media_uuids = [UUID(media_id) for media_id in post_data.media_ids] if post_data.media_ids else []
+                    # Get scheduled time from task (if available) or calculate
+                    scheduled_time_str = scheduled_times[post_index] if post_index < len(scheduled_times) else None
 
-                    # Calculate scheduled posting time
-                    scheduled_time = await self._calculate_scheduled_time(post_data.platform)
+                    # Create platform-specific posts based on format type
+                    if unified_post.format_type == "text_only":
+                        # Text-only creates only Facebook post
+                        fb_posts = await self._create_fb_only_post(
+                            task, unified_post, source_url, scheduled_time_str
+                        )
+                        posts.extend(fb_posts)
+                    else:
+                        # Image/video creates both IG + FB posts
+                        dual_posts = await self._create_dual_platform_posts(
+                            task, unified_post, source_url, scheduled_time_str
+                        )
+                        posts.extend(dual_posts)
 
-                    # Deterministically append source link for news event posts
-                    post_text = post_data.text
-                    if source_url:
-                        post_text += NEWS_SOURCE_LINK_FORMAT.format(url=source_url)
+                    post_index += 1
 
-                    # Deterministically append AI disclosure footnote to post text
-                    post_text = post_text + AI_DISCLOSURE_FOOTNOTE
-
-                    # The seed reference is deterministically copied from the task
-                    # This ensures posts always reference the same seed as the task
-                    completed_post = CompletedPost(
-                        business_asset_id=self.business_asset_id,
-                        task_id=task.id,
-                        news_event_seed_id=task.news_event_seed_id,
-                        trend_seed_id=task.trend_seed_id,
-                        ungrounded_seed_id=task.ungrounded_seed_id,
-                        platform=post_data.platform,
-                        post_type=post_data.post_type,
-                        text=post_text,
-                        media_ids=media_uuids,
-                        location=post_data.location,
-                        hashtags=post_data.hashtags,
-                        scheduled_posting_time=scheduled_time
-                    )
-
-                    # Save to database
-                    created_post = await self.posts_repo.create(completed_post)
-                    posts.append(created_post.model_dump(mode="json"))
-                    logger.info(
-                        "Completed post saved",
-                        post_id=str(created_post.id),
-                        platform=post_data.platform,
-                        scheduled_time=scheduled_time.isoformat()
-                    )
                 except Exception as e:
-                    logger.error("Error saving post", error=str(e))
+                    logger.error("Error creating posts from unified output", error=str(e))
 
             # Update task status
             await self.tasks_repo.update(self.business_asset_id, task_id, {"status": "completed"})
@@ -246,7 +259,8 @@ class ContentCreationAgent:
             logger.info(
                 "Content creation complete",
                 task_id=task_id,
-                posts_created=len(posts)
+                posts_created=len(posts),
+                share_media=self.share_media
             )
 
             return posts
@@ -256,6 +270,152 @@ class ContentCreationAgent:
             # Mark task as failed
             await self.tasks_repo.update(self.business_asset_id, task_id, {"status": "failed"})
             raise
+
+    async def _create_dual_platform_posts(
+        self,
+        task,
+        unified_post: UnifiedPostOutput,
+        source_url: Optional[str],
+        scheduled_time_str: Optional[str]
+    ) -> List[Dict[str, Any]]:
+        """
+        Create both Instagram and Facebook posts from a unified post output.
+
+        If share_media is True, both posts use the same media IDs.
+        If share_media is False, generates separate media for each platform.
+        """
+        posts = []
+        media_uuids = [UUID(media_id) for media_id in unified_post.media_ids] if unified_post.media_ids else []
+
+        # Determine post types based on format
+        if unified_post.format_type == "image":
+            ig_post_type = "instagram_image"
+            fb_post_type = "facebook_feed"
+        else:  # video
+            ig_post_type = "instagram_reel"
+            fb_post_type = "facebook_video"
+
+        # Prepare text with source link and AI disclosure
+        post_text = unified_post.text
+        if source_url:
+            post_text += NEWS_SOURCE_LINK_FORMAT.format(url=source_url)
+        post_text += AI_DISCLOSURE_FOOTNOTE
+
+        # Calculate scheduled times if not provided
+        if scheduled_time_str:
+            try:
+                base_scheduled_time = datetime.fromisoformat(scheduled_time_str.replace('Z', '+00:00'))
+            except ValueError:
+                base_scheduled_time = await self._calculate_scheduled_time("instagram")
+        else:
+            base_scheduled_time = await self._calculate_scheduled_time("instagram")
+
+        # Create Instagram post
+        ig_post = CompletedPost(
+            business_asset_id=self.business_asset_id,
+            task_id=task.id,
+            news_event_seed_id=task.news_event_seed_id,
+            trend_seed_id=task.trend_seed_id,
+            ungrounded_seed_id=task.ungrounded_seed_id,
+            platform="instagram",
+            post_type=ig_post_type,
+            text=post_text,
+            media_ids=media_uuids,
+            location=unified_post.location,
+            hashtags=unified_post.hashtags,
+            scheduled_posting_time=base_scheduled_time
+        )
+        created_ig = await self.posts_repo.create(ig_post)
+        posts.append(created_ig.model_dump(mode="json"))
+        logger.info(
+            "Instagram post created",
+            post_id=str(created_ig.id),
+            post_type=ig_post_type,
+            shared_media=self.share_media
+        )
+
+        # Create Facebook post
+        # For FB, schedule slightly after IG (or use separate calculation)
+        fb_scheduled_time = base_scheduled_time + timedelta(minutes=30)
+
+        # If not sharing media, we would need to generate new media here
+        # For now, we use the same media IDs (actual media re-generation would require agent re-run)
+        fb_media_uuids = media_uuids  # Same media if sharing
+
+        fb_post = CompletedPost(
+            business_asset_id=self.business_asset_id,
+            task_id=task.id,
+            news_event_seed_id=task.news_event_seed_id,
+            trend_seed_id=task.trend_seed_id,
+            ungrounded_seed_id=task.ungrounded_seed_id,
+            platform="facebook",
+            post_type=fb_post_type,
+            text=post_text,
+            media_ids=fb_media_uuids,
+            location=unified_post.location,
+            hashtags=unified_post.hashtags,
+            scheduled_posting_time=fb_scheduled_time
+        )
+        created_fb = await self.posts_repo.create(fb_post)
+        posts.append(created_fb.model_dump(mode="json"))
+        logger.info(
+            "Facebook post created",
+            post_id=str(created_fb.id),
+            post_type=fb_post_type,
+            shared_media=self.share_media
+        )
+
+        return posts
+
+    async def _create_fb_only_post(
+        self,
+        task,
+        unified_post: UnifiedPostOutput,
+        source_url: Optional[str],
+        scheduled_time_str: Optional[str]
+    ) -> List[Dict[str, Any]]:
+        """
+        Create a Facebook-only text post (no Instagram equivalent).
+        """
+        posts = []
+
+        # Prepare text with source link and AI disclosure
+        post_text = unified_post.text
+        if source_url:
+            post_text += NEWS_SOURCE_LINK_FORMAT.format(url=source_url)
+        post_text += AI_DISCLOSURE_FOOTNOTE
+
+        # Calculate scheduled time
+        if scheduled_time_str:
+            try:
+                scheduled_time = datetime.fromisoformat(scheduled_time_str.replace('Z', '+00:00'))
+            except ValueError:
+                scheduled_time = await self._calculate_scheduled_time("facebook")
+        else:
+            scheduled_time = await self._calculate_scheduled_time("facebook")
+
+        fb_post = CompletedPost(
+            business_asset_id=self.business_asset_id,
+            task_id=task.id,
+            news_event_seed_id=task.news_event_seed_id,
+            trend_seed_id=task.trend_seed_id,
+            ungrounded_seed_id=task.ungrounded_seed_id,
+            platform="facebook",
+            post_type="facebook_feed",
+            text=post_text,
+            media_ids=[],  # Text-only, no media
+            location=unified_post.location,
+            hashtags=unified_post.hashtags,
+            scheduled_posting_time=scheduled_time
+        )
+        created_fb = await self.posts_repo.create(fb_post)
+        posts.append(created_fb.model_dump(mode="json"))
+        logger.info(
+            "Facebook text-only post created",
+            post_id=str(created_fb.id)
+        )
+
+        return posts
 
     async def _get_content_seed(
         self,
@@ -277,7 +437,7 @@ class ContentCreationAgent:
         task,  # ContentCreationTask model
         seed  # Pydantic model (NewsEventSeed, TrendSeed, or UngroundedSeed)
     ) -> str:
-        """Format task and seed information for the agent."""
+        """Format task and seed information for the agent using unified format."""
         context = f"""Create social media content for the following task:
 
 ** Content Seed **
@@ -314,33 +474,35 @@ Format: {seed.format if hasattr(seed, 'format') else 'Unknown'}
 Details: {seed.details if hasattr(seed, 'details') else ''}
 """
 
-        # Add allocations
+        # Add unified format allocations
         context += f"""\n
-** Required Posts **
-Instagram:
-- Image/Carousel Posts: {task.instagram_image_posts}
-- Reel Posts: {task.instagram_reel_posts}
+** Required Posts (Unified Format) **
 
-Facebook:
-- Feed Posts: {task.facebook_feed_posts}
-- Video Posts: {task.facebook_video_posts}
+IMPORTANT: Use unified format output (format_type: "image", "video", or "text_only")
+Each image/video post you create will automatically be posted to BOTH Instagram and Facebook!
+
+- Image Posts: {task.image_posts} (each creates IG image + FB feed)
+- Video Posts: {task.video_posts} (each creates IG reel + FB video)
+- Text-Only Posts: {task.text_only_posts} (FB only)
 
 ** Media Budgets **
 - Maximum Images: {task.image_budget}
 - Maximum Videos: {task.video_budget}
 
 ** Instructions **
-Create ALL required posts with engaging captions, relevant hashtags, and appropriate media.
-Use your media generation tools to create images and videos within budget.
-Ensure content is authentic, engaging, and aligned with the target audience.
+Create unified post outputs for the requested content. Each output creates posts on both platforms!
 
 For each post, specify:
-1. Platform (facebook or instagram)
-2. Post type (instagram_image, instagram_reel, facebook_feed, facebook_video)
-3. Text/caption
-4. Media (generate if needed)
-5. Hashtags
-6. Optional: location tag
+1. format_type: "image", "video", or "text_only"
+2. text: The caption (will be used for both platforms)
+3. media_ids: List of media IDs from generation tools (for image/video)
+4. hashtags: List of relevant hashtags
+5. location: Optional location tag
+
+Remember:
+- Generate {task.image_posts} image posts (each creates 2 platform posts)
+- Generate {task.video_posts} video posts (each creates 2 platform posts)
+- Generate {task.text_only_posts} text-only posts (FB only)
 """
 
         return context

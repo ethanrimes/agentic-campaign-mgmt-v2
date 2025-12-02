@@ -195,26 +195,32 @@ Available Content Seeds:
             input_text += f"\n** Recent Insights **\nNo insights reports available yet.\n"
 
         input_text += f"""
-Based on this context, create a strategic weekly content plan.
+Based on this context, create a strategic weekly content plan using UNIFIED FORMAT allocation.
+
+REMINDER - UNIFIED FORMAT:
+- image_posts: Each creates 1 IG image + 1 FB feed post (2 posts total)
+- video_posts: Each creates 1 IG reel + 1 FB video post (2 posts total)
+- text_only_posts: Creates only 1 FB feed post (must be in SEPARATE allocations)
 
 Your plan must include:
 1. Selected content seeds (with IDs)
-2. Post allocations for each seed (Instagram + Facebook)
-3. Media budgets (images and videos)
-4. Reasoning for your choices
+2. Unified format allocations (image_posts, video_posts, text_only_posts)
+3. Media budgets (image_budget, video_budget)
+4. Scheduled posting times for each post unit
+5. Reasoning for your choices
 
 ⚠️ CRITICAL REMINDER - YOUR PLAN MUST STAY WITHIN THESE LIMITS:
-- Maximum {guardrails_config.max_posts_per_week} total posts (you can do fewer, but NOT more)
-- Maximum {guardrails_config.max_images_per_week} total images (instagram_image_posts + facebook_feed_posts)
-- Maximum {guardrails_config.max_videos_per_week} total videos (instagram_reel_posts + facebook_video_posts)
+- Maximum {guardrails_config.max_posts_per_week} total posts (counting BOTH platforms)
+- Maximum {guardrails_config.max_images_per_week} image_posts (each creates 2 platform posts)
+- Maximum {guardrails_config.max_videos_per_week} video_posts (each creates 2 platform posts)
 - Between {guardrails_config.min_content_seeds_per_week} and {guardrails_config.max_content_seeds_per_week} content seeds
 
 Before you finalize your plan:
-1. Count ALL your posts across ALL seeds
-2. Count ALL your images across ALL seeds
-3. Count ALL your videos across ALL seeds
+1. Count total posts: (image_posts × 2) + (video_posts × 2) + text_only_posts
+2. Count total image_posts across ALL seeds
+3. Count total video_posts across ALL seeds
 4. Verify you have not exceeded ANY maximum limit
-5. If you're over any limit, reduce allocations until you're within budget
+5. Ensure scheduled_times matches post unit count for each allocation
 
 DO NOT submit a plan that exceeds these limits - it will be automatically rejected!
 """

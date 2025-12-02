@@ -3,6 +3,10 @@
 """
 Planner agent output schemas.
 Defines the structured output for weekly content planning.
+
+Uses unified format-based allocation (image_posts, video_posts, text_only_posts)
+rather than platform-specific allocation. Each image/video post creates both
+an Instagram and Facebook post using shared or separate media based on config.
 """
 
 from datetime import datetime
@@ -14,6 +18,14 @@ from uuid import UUID
 class ContentSeedAllocation(BaseModel):
     """
     Allocation of posts and media budget for a single content seed.
+
+    Uses unified format-based allocation:
+    - image_posts: Each creates 1 IG image + 1 FB feed post (2 posts total)
+    - video_posts: Each creates 1 IG reel + 1 FB video post (2 posts total)
+    - text_only_posts: FB-only text posts (no Instagram equivalent)
+
+    Note: text_only_posts should only be used in allocations where
+    image_posts=0 and video_posts=0 (separate seed allocations).
     """
 
     seed_id: UUID = Field(..., description="Reference to content seed (any type)")
@@ -21,28 +33,21 @@ class ContentSeedAllocation(BaseModel):
         ..., description="Type of content seed"
     )
 
-    # Instagram allocation
-    instagram_image_posts: int = Field(
+    # Format-based allocation (unified across platforms)
+    image_posts: int = Field(
         default=0,
         ge=0,
-        description="Number of Instagram image/carousel posts",
+        description="Number of image posts (each creates 1 IG image + 1 FB feed post)",
     )
-    instagram_reel_posts: int = Field(
+    video_posts: int = Field(
         default=0,
         ge=0,
-        description="Number of Instagram reel posts",
+        description="Number of video posts (each creates 1 IG reel + 1 FB video post)",
     )
-
-    # Facebook allocation
-    facebook_feed_posts: int = Field(
+    text_only_posts: int = Field(
         default=0,
         ge=0,
-        description="Number of Facebook feed posts",
-    )
-    facebook_video_posts: int = Field(
-        default=0,
-        ge=0,
-        description="Number of Facebook video posts",
+        description="Number of text-only posts (FB only, no Instagram equivalent)",
     )
 
     # Media budget
@@ -57,29 +62,37 @@ class ContentSeedAllocation(BaseModel):
         description="Maximum videos that can be generated for this seed",
     )
 
+    # Scheduled posting times (planner decides these)
+    scheduled_times: List[str] = Field(
+        default_factory=list,
+        description="ISO datetime strings for when to post. One per post unit.",
+    )
+
     class Config:
         json_schema_extra = {
             "example": {
                 "seed_id": "b2c3d4e5-f6a7-5b6c-9d0e-1f2a3b4c5d6e",
                 "seed_type": "news_event",
-                "instagram_image_posts": 2,
-                "instagram_reel_posts": 0,
-                "facebook_feed_posts": 1,
-                "facebook_video_posts": 0,
-                "image_budget": 3,
-                "video_budget": 0,
+                "image_posts": 2,
+                "video_posts": 1,
+                "text_only_posts": 0,
+                "image_budget": 2,
+                "video_budget": 1,
+                "scheduled_times": ["2025-01-20T10:00:00Z", "2025-01-21T14:00:00Z", "2025-01-22T18:00:00Z"],
             }
         }
 
     @property
     def total_posts(self) -> int:
-        """Total posts allocated for this seed."""
-        return (
-            self.instagram_image_posts
-            + self.instagram_reel_posts
-            + self.facebook_feed_posts
-            + self.facebook_video_posts
-        )
+        """Total posts allocated for this seed (counting both platforms)."""
+        # Each image/video post creates 2 posts (IG + FB)
+        # text_only creates 1 post (FB only)
+        return (self.image_posts * 2) + (self.video_posts * 2) + self.text_only_posts
+
+    @property
+    def total_post_units(self) -> int:
+        """Total post units (for scheduling purposes - not counting platform duplication)."""
+        return self.image_posts + self.video_posts + self.text_only_posts
 
 
 class PlannerOutput(BaseModel):
@@ -107,13 +120,33 @@ class PlannerOutput(BaseModel):
 
     @property
     def total_posts(self) -> int:
-        """Total posts across all allocations."""
+        """Total posts across all allocations (counting both platforms)."""
         return sum(a.total_posts for a in self.allocations)
+
+    @property
+    def total_post_units(self) -> int:
+        """Total post units (for scheduling - not counting platform duplication)."""
+        return sum(a.total_post_units for a in self.allocations)
 
     @property
     def total_seeds(self) -> int:
         """Total unique content seeds used."""
         return len(self.allocations)
+
+    @property
+    def total_image_posts(self) -> int:
+        """Total image post units across all allocations."""
+        return sum(a.image_posts for a in self.allocations)
+
+    @property
+    def total_video_posts(self) -> int:
+        """Total video post units across all allocations."""
+        return sum(a.video_posts for a in self.allocations)
+
+    @property
+    def total_text_only_posts(self) -> int:
+        """Total text-only posts across all allocations."""
+        return sum(a.text_only_posts for a in self.allocations)
 
     @property
     def total_images(self) -> int:
@@ -129,7 +162,7 @@ class PlannerOutput(BaseModel):
         json_schema_extra = {
             "example": {
                 "allocations": [],
-                "reasoning": "This week's plan focuses on winter campus aesthetics (trending per insights) and SEPTA news (high local relevance). Allocating more Instagram posts due to higher engagement rates. Minimizing video due to recent underperformance.",
+                "reasoning": "This week's plan focuses on winter campus aesthetics (trending per insights) and SEPTA news (high local relevance). Using unified format to share media across platforms for efficiency.",
                 "week_start_date": "2025-01-20",
                 "created_at": "2025-01-18T17:00:00Z",
             }

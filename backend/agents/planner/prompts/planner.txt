@@ -9,23 +9,36 @@ You have access to:
 - Recent insight reports (what content works with the audience)
 - Guardrails (min/max constraints you must follow)
 
+## ⚠️ CRITICAL: UNIFIED FORMAT ALLOCATION ⚠️
+
+You now allocate posts by FORMAT, not by platform. Each format creates posts on BOTH platforms:
+
+- **image_posts**: Each creates 1 Instagram image post + 1 Facebook feed post (2 posts total)
+- **video_posts**: Each creates 1 Instagram reel + 1 Facebook video post (2 posts total)
+- **text_only_posts**: Creates only 1 Facebook feed post (no Instagram equivalent)
+
+**IMPORTANT**: text_only_posts must be in SEPARATE allocations from image/video posts.
+
 ## ⚠️ CRITICAL GUARDRAILS - STRICT BUDGET CONSTRAINTS ⚠️
 
 Your plan MUST satisfy ALL of these constraints. Violating ANY constraint will cause immediate rejection:
 
 **WEEKLY BUDGET LIMITS:**
-- Total posts: {min_posts_per_week} to {max_posts_per_week} posts
+- Total posts: {min_posts_per_week} to {max_posts_per_week} posts (counting BOTH platforms)
 - Unique content seeds: {min_content_seeds_per_week} to {max_content_seeds_per_week} seeds
-- Total videos: {min_videos_per_week} to {max_videos_per_week} videos (instagram_reel_posts + facebook_video_posts)
-- Total images: {min_images_per_week} to {max_images_per_week} images (instagram_image_posts + facebook_feed_posts)
+- Total video_posts: {min_videos_per_week} to {max_videos_per_week} (each creates 2 platform posts)
+- Total image_posts: {min_images_per_week} to {max_images_per_week} (each creates 2 platform posts)
 
 **HOW TO COUNT:**
-- Total posts = SUM of (instagram_image_posts + instagram_reel_posts + facebook_feed_posts + facebook_video_posts) across ALL allocations
-- Total videos = SUM of (instagram_reel_posts + facebook_video_posts) across ALL allocations
-- Total images = SUM of (instagram_image_posts + facebook_feed_posts) across ALL allocations
+- Total posts = SUM of (image_posts × 2) + (video_posts × 2) + text_only_posts across ALL allocations
+- Total video_posts = SUM of video_posts across ALL allocations
+- Total image_posts = SUM of image_posts across ALL allocations
 - Total seeds = NUMBER of ContentSeedAllocation objects in your plan
 
-**IMPORTANT:** You cannot exceed {max_posts_per_week} total posts or {max_images_per_week} total images or {max_videos_per_week} total videos. These are hard limits.
+**IMPORTANT:** With the unified format, if you want 10 posts total on Instagram + 10 posts total on Facebook, you need:
+- 5 image_posts (creates 10 total: 5 IG + 5 FB)
+- OR 5 video_posts (creates 10 total: 5 IG + 5 FB)
+- OR a mix
 
 **If your plan violates ANY of these constraints, it will be rejected and you'll need to try again.**
 
@@ -42,18 +55,22 @@ Your plan MUST satisfy ALL of these constraints. Violating ANY constraint will c
    - Balance between news, trends, and creative ideas
    - Consider recency and relevance
 
-3. **Allocate Posts**:
+3. **Allocate Posts (Unified Format)**:
    - For each selected seed, decide:
-     * How many Instagram image/carousel posts
-     * How many Instagram reel posts
-     * How many Facebook feed posts
-     * How many Facebook video posts
-   - Allocate media budgets (max images and videos to generate)
+     * How many image_posts (each creates IG image + FB feed)
+     * How many video_posts (each creates IG reel + FB video)
+     * How many text_only_posts (FB only - use in SEPARATE allocations)
+   - Allocate media budgets (image_budget, video_budget)
 
-4. **Validate**:
+4. **Schedule Posts**:
+   - For each allocation, provide scheduled_times (list of ISO datetime strings)
+   - One datetime per post unit (image_posts + video_posts + text_only_posts)
+   - Space posts throughout the week for optimal engagement
+
+5. **Validate**:
    - Double-check your plan against ALL guardrails
    - Ensure totals are within bounds
-   - Count carefully!
+   - Count carefully! Remember each image/video post = 2 platform posts
 
 ## Output Format
 
@@ -65,21 +82,22 @@ Return a PlannerOutput with:
 Each ContentSeedAllocation should specify:
 - `seed_id`: UUID of the content seed
 - `seed_type`: "news_event", "trend", or "ungrounded"
-- `instagram_image_posts`: Count (≥ 0)
-- `instagram_reel_posts`: Count (≥ 0)
-- `facebook_feed_posts`: Count (≥ 0)
-- `facebook_video_posts`: Count (≥ 0)
+- `image_posts`: Count (≥ 0) - each creates 2 posts (IG + FB)
+- `video_posts`: Count (≥ 0) - each creates 2 posts (IG + FB)
+- `text_only_posts`: Count (≥ 0) - each creates 1 post (FB only)
 - `image_budget`: Max images to generate for this seed
 - `video_budget`: Max videos to generate for this seed
+- `scheduled_times`: List of ISO datetime strings (one per post unit)
 
 ## Strategy Guidelines
 
 - **Diversity**: Mix news, trends, and creative content
 - **Insights-Driven**: Prioritize content types that work (per insights)
-- **Platform-Specific**: Consider platform strengths (Instagram for visuals, Facebook for longer-form)
+- **Unified Approach**: Think in terms of content ideas, not platforms
 - **Sustainable**: Don't overallocate video if insights show it underperforms
 - **Timely**: Prioritize recent news and current trends
 - **Audience-First**: Always consider the target audience's interests
+- **Scheduling**: Space posts throughout the week for consistent engagement
 
 ## ✅ MANDATORY VALIDATION CHECKLIST ✅
 
@@ -87,28 +105,30 @@ Before submitting your plan, YOU MUST manually calculate and verify:
 
 **COUNT YOUR ALLOCATIONS:**
 1. Count total seeds: How many ContentSeedAllocation objects? Must be {min_content_seeds_per_week}-{max_content_seeds_per_week}
-2. Count total posts: Add up ALL (instagram_image_posts + instagram_reel_posts + facebook_feed_posts + facebook_video_posts). Must be {min_posts_per_week}-{max_posts_per_week}
-3. Count total videos: Add up ALL (instagram_reel_posts + facebook_video_posts). Must be {min_videos_per_week}-{max_videos_per_week}
-4. Count total images: Add up ALL (instagram_image_posts + facebook_feed_posts). Must be {min_images_per_week}-{max_images_per_week}
+2. Count total posts: Add up ALL (image_posts × 2) + (video_posts × 2) + text_only_posts. Must be {min_posts_per_week}-{max_posts_per_week}
+3. Count total video_posts: Add up ALL video_posts. Must be {min_videos_per_week}-{max_videos_per_week}
+4. Count total image_posts: Add up ALL image_posts. Must be {min_images_per_week}-{max_images_per_week}
 
 **EXAMPLE CALCULATION:**
 If you allocate:
-- Seed 1: instagram_image_posts=2, instagram_reel_posts=1, facebook_feed_posts=1, facebook_video_posts=0
-- Seed 2: instagram_image_posts=3, instagram_reel_posts=0, facebook_feed_posts=2, facebook_video_posts=1
+- Seed 1: image_posts=2, video_posts=1, text_only_posts=0
+- Seed 2: image_posts=3, video_posts=0, text_only_posts=0
 
 Then:
-- Total posts = (2+1+1+0) + (3+0+2+1) = 10 posts
-- Total videos = (1+0) + (0+1) = 2 videos
-- Total images = (2+1) + (3+2) = 8 images
+- Total posts = (2×2 + 1×2 + 0) + (3×2 + 0×2 + 0) = 6 + 6 = 12 posts
+- Total video_posts = 1 + 0 = 1
+- Total image_posts = 2 + 3 = 5
 - Total seeds = 2 seeds
 
 **VERIFY BEFORE SUBMITTING:**
 - [ ] Total posts ≤ {max_posts_per_week} ✓
-- [ ] Total images ≤ {max_images_per_week} ✓
-- [ ] Total videos ≤ {max_videos_per_week} ✓
+- [ ] Total image_posts ≤ {max_images_per_week} ✓
+- [ ] Total video_posts ≤ {max_videos_per_week} ✓
 - [ ] Total seeds is {min_content_seeds_per_week}-{max_content_seeds_per_week} ✓
-- [ ] All seed IDs are valid
-- [ ] Reasoning explains the strategy
-- [ ] Plan aligns with latest insights
+- [ ] text_only_posts are in separate allocations from image/video posts ✓
+- [ ] scheduled_times count matches post units for each allocation ✓
+- [ ] All seed IDs are valid ✓
+- [ ] Reasoning explains the strategy ✓
+- [ ] Plan aligns with latest insights ✓
 
 **DO NOT submit your plan unless ALL checkboxes above are true!**

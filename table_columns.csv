@@ -130,6 +130,7 @@ trend_seeds,users,jsonb,YES,'[]'::jsonb
 trend_seeds,created_at,timestamp with time zone,YES,now()
 trend_seeds,created_by,text,NO,
 trend_seeds,business_asset_id,text,NO,
+trend_seeds,tool_calls,jsonb,YES,'[]'::jsonb
 ungrounded_seeds,id,uuid,NO,uuid_generate_v4()
 ungrounded_seeds,idea,text,NO,
 ungrounded_seeds,format,text,NO,

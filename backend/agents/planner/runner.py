@@ -91,6 +91,8 @@ class PlannerRunner:
         """
         Convert plan allocations into content creation tasks.
 
+        Uses unified format (image_posts, video_posts, text_only_posts).
+
         Args:
             plan: Validated plan dictionary
 
@@ -116,16 +118,19 @@ class PlannerRunner:
                 elif seed_type == "ungrounded":
                     seed_kwargs["ungrounded_seed_id"] = seed_id
 
-                # Create ContentCreationTask model instance
+                # Create ContentCreationTask model instance with unified format
                 task = ContentCreationTask(
                     business_asset_id=self.business_asset_id,
                     **seed_kwargs,
-                    instagram_image_posts=allocation["instagram_image_posts"],
-                    instagram_reel_posts=allocation["instagram_reel_posts"],
-                    facebook_feed_posts=allocation["facebook_feed_posts"],
-                    facebook_video_posts=allocation["facebook_video_posts"],
-                    image_budget=allocation["image_budget"],
-                    video_budget=allocation["video_budget"],
+                    # Unified format allocations
+                    image_posts=allocation.get("image_posts", 0),
+                    video_posts=allocation.get("video_posts", 0),
+                    text_only_posts=allocation.get("text_only_posts", 0),
+                    # Media budgets
+                    image_budget=allocation.get("image_budget", 0),
+                    video_budget=allocation.get("video_budget", 0),
+                    # Scheduled times from planner
+                    scheduled_times=allocation.get("scheduled_times", []),
                     status="pending"
                 )
 
@@ -137,7 +142,10 @@ class PlannerRunner:
                 logger.info(
                     "Content task created",
                     task_id=str(created_task.id),
-                    seed_id=allocation["seed_id"]
+                    seed_id=allocation["seed_id"],
+                    image_posts=allocation.get("image_posts", 0),
+                    video_posts=allocation.get("video_posts", 0),
+                    text_only_posts=allocation.get("text_only_posts", 0)
                 )
 
             except Exception as e:
