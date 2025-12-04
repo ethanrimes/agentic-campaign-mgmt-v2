@@ -83,7 +83,7 @@ export default function VerificationStatusBadge({
       <Link
         href={`/verifier?post=${postId}`}
         onClick={(e) => e.stopPropagation()}
-        className="group relative inline-block"
+        className="group relative inline-flex flex-col items-center"
       >
         <span
           className={cn(
@@ -97,8 +97,10 @@ export default function VerificationStatusBadge({
           )}
         >
           <Icon className={iconSize[size]} />
-          <span className="group-hover:hidden">{config.label}</span>
-          <span className="hidden group-hover:inline underline decoration-dotted underline-offset-2">View Report</span>
+          {config.label}
+        </span>
+        <span className="text-[9px] text-slate-400 group-hover:text-slate-600 transition-colors mt-0.5">
+          see report
         </span>
       </Link>
     )

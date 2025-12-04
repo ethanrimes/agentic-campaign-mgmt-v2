@@ -335,39 +335,39 @@ export default function InstagramPostGrid({ posts, accountName = 'Instagram Acco
 
                   {/* Engagement Metrics */}
                   {selectedMediaMetrics && (
-                    <div className="bg-gradient-to-r from-pink-50 to-rose-50 dark:from-pink-900/20 dark:to-rose-900/20 rounded-xl p-5 space-y-4">
+                    <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-5 space-y-4">
                       <div className="flex items-center justify-between">
                         <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200">Engagement Overview</h4>
                         {selectedMediaMetrics.metrics_fetched_at && (
-                          <span className="text-[10px] uppercase tracking-wider font-medium text-slate-400 bg-white/50 dark:bg-black/20 px-2 py-1 rounded-md">
+                          <span className="text-[10px] uppercase tracking-wider font-medium text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-md">
                             Updated {formatRelativeTime(selectedMediaMetrics.metrics_fetched_at)}
                           </span>
                         )}
                       </div>
 
                       <div className="grid grid-cols-4 gap-3">
-                        <div className="flex flex-col items-center justify-center p-3 bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-pink-100 dark:border-pink-900/30">
+                        <div className="flex flex-col items-center justify-center p-3 bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800">
                           <Heart className="w-5 h-5 text-pink-500 mb-1" fill="currentColor" />
                           <p className="text-lg font-bold text-slate-900 dark:text-white">
                             {formatNumber(selectedMediaMetrics.likes)}
                           </p>
                           <p className="text-[10px] font-medium text-slate-500 uppercase tracking-wide">Likes</p>
                         </div>
-                        <div className="flex flex-col items-center justify-center p-3 bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-pink-100 dark:border-pink-900/30">
+                        <div className="flex flex-col items-center justify-center p-3 bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800">
                           <MessageCircle className="w-5 h-5 text-blue-500 mb-1" />
                           <p className="text-lg font-bold text-slate-900 dark:text-white">
                             {formatNumber(selectedMediaMetrics.comments)}
                           </p>
                           <p className="text-[10px] font-medium text-slate-500 uppercase tracking-wide">Comments</p>
                         </div>
-                        <div className="flex flex-col items-center justify-center p-3 bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-pink-100 dark:border-pink-900/30">
+                        <div className="flex flex-col items-center justify-center p-3 bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800">
                           <Bookmark className="w-5 h-5 text-amber-500 mb-1" />
                           <p className="text-lg font-bold text-slate-900 dark:text-white">
                             {formatNumber(selectedMediaMetrics.saved)}
                           </p>
                           <p className="text-[10px] font-medium text-slate-500 uppercase tracking-wide">Saves</p>
                         </div>
-                        <div className="flex flex-col items-center justify-center p-3 bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-pink-100 dark:border-pink-900/30">
+                        <div className="flex flex-col items-center justify-center p-3 bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800">
                           <Share2 className="w-5 h-5 text-green-500 mb-1" />
                           <p className="text-lg font-bold text-slate-900 dark:text-white">
                             {formatNumber(selectedMediaMetrics.shares)}
@@ -376,8 +376,8 @@ export default function InstagramPostGrid({ posts, accountName = 'Instagram Acco
                         </div>
                       </div>
 
-                      <div className="space-y-2 pt-2 border-t border-pink-200/50 dark:border-pink-800/30">
-                        <div className="flex items-center justify-between p-2 rounded-lg hover:bg-white/50 dark:hover:bg-black/20 transition-colors">
+                      <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-slate-700">
+                        <div className="flex items-center justify-between p-2 rounded-lg hover:bg-white dark:hover:bg-slate-900 transition-colors">
                           <div className="flex items-center gap-2">
                             <div className="p-1.5 bg-white dark:bg-slate-800 rounded-md shadow-sm">
                               <Eye className="w-4 h-4 text-slate-500" />
@@ -388,7 +388,7 @@ export default function InstagramPostGrid({ posts, accountName = 'Instagram Acco
                             {formatNumber(selectedMediaMetrics.views)}
                           </span>
                         </div>
-                        <div className="flex items-center justify-between p-2 rounded-lg hover:bg-white/50 dark:hover:bg-black/20 transition-colors">
+                        <div className="flex items-center justify-between p-2 rounded-lg hover:bg-white dark:hover:bg-slate-900 transition-colors">
                           <div className="flex items-center gap-2">
                             <div className="p-1.5 bg-white dark:bg-slate-800 rounded-md shadow-sm">
                               <Users className="w-4 h-4 text-slate-500" />
@@ -399,7 +399,7 @@ export default function InstagramPostGrid({ posts, accountName = 'Instagram Acco
                             {formatNumber(selectedMediaMetrics.reach)}
                           </span>
                         </div>
-                        <div className="flex items-center justify-between p-2 rounded-lg hover:bg-white/50 dark:hover:bg-black/20 transition-colors">
+                        <div className="flex items-center justify-between p-2 rounded-lg hover:bg-white dark:hover:bg-slate-900 transition-colors">
                           <div className="flex items-center gap-2">
                             <div className="p-1.5 bg-white dark:bg-slate-800 rounded-md shadow-sm">
                               <Sparkles className="w-4 h-4 text-slate-500" />
@@ -414,7 +414,7 @@ export default function InstagramPostGrid({ posts, accountName = 'Instagram Acco
 
                       {/* Reels-specific metrics */}
                       {(selectedMediaMetrics.ig_reels_avg_watch_time_ms || selectedMediaMetrics.ig_reels_video_view_total_time_ms) && (
-                        <div className="pt-3 border-t border-pink-200/50 dark:border-pink-800/30">
+                        <div className="pt-3 border-t border-slate-200 dark:border-slate-700">
                           <div className="flex items-center gap-2 mb-3">
                             <Play className="w-4 h-4 text-purple-600" />
                             <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Reel Performance</span>
