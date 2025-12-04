@@ -198,7 +198,7 @@ export default function FacebookPage() {
                 <span className="text-sm text-slate-500 font-medium">last 28 days</span>
               </div>
               <div className="mt-3 text-xs text-slate-400 font-medium">
-                Total interactions across all posts
+                The number of times people have engaged with your posts through reactions, comments, shares and more.
               </div>
             </div>
 
@@ -215,7 +215,7 @@ export default function FacebookPage() {
                 <span className="text-sm text-slate-500 font-medium">last 28 days</span>
               </div>
               <div className="mt-3 text-xs text-slate-400 font-medium">
-                Video and media playbacks
+                The number of times your content was played or displayed. Content includes videos, posts, stories and ads.
               </div>
             </div>
           </div>
