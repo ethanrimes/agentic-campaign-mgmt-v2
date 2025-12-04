@@ -3,9 +3,11 @@
 from .image_generator import ImageGenerator
 from .video_generator import VideoGenerator
 from .model_configs import (
+    ImageSize,
     ModelConfig,
     SDXLLoraConfig,
     SeedreamV4Config,
+    SeedreamV45Config,
     WAN22I2VConfig,
     SeedanceV1ProT2VConfig,
     IMAGE_MODEL_CONFIGS,
@@ -20,10 +22,13 @@ __all__ = [
     # Generators
     "ImageGenerator",
     "VideoGenerator",
+    # Enums
+    "ImageSize",
     # Model configs
     "ModelConfig",
     "SDXLLoraConfig",
     "SeedreamV4Config",
+    "SeedreamV45Config",
     "WAN22I2VConfig",
     "SeedanceV1ProT2VConfig",
     # Registries

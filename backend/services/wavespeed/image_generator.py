@@ -2,11 +2,11 @@
 
 """Image generation service using Wavespeed AI."""
 
-from typing import Optional
+from typing import Optional, Union
 from backend.config import settings
 from backend.utils import get_logger
 from .base import WavespeedBaseClient
-from .model_configs import get_image_model_config, ModelConfig
+from .model_configs import get_image_model_config, ModelConfig, ImageSize
 
 logger = get_logger(__name__)
 
@@ -16,15 +16,24 @@ class ImageGenerator(WavespeedBaseClient):
     Image generator using Wavespeed AI models.
 
     Supports multiple image models configured via settings.wavespeed_image_model:
-    - stability-ai/sdxl-lora (default)
+    - stability-ai/sdxl-lora
     - bytedance/seedream-v4
+    - bytedance/seedream-v4.5 (requires minimum 2048*2048)
 
     Example:
         ```python
         generator = ImageGenerator()
+
+        # Using ImageSize enum (recommended)
         image_bytes = await generator.generate(
             prompt="A vibrant photo of Penn campus in winter",
-            size="1024*1024"
+            size=ImageSize.SQUARE
+        )
+
+        # Using string (for backwards compatibility)
+        image_bytes = await generator.generate(
+            prompt="A vibrant photo of Penn campus in winter",
+            size="2048*2048"
         )
         ```
     """
@@ -42,7 +51,7 @@ class ImageGenerator(WavespeedBaseClient):
     async def generate(
         self,
         prompt: str,
-        size: str = "1024*1024",
+        size: Union[ImageSize, str] = None,
         negative_prompt: str = "",
         guidance_scale: float = 3.5,
         num_inference_steps: int = 28,
@@ -52,7 +61,9 @@ class ImageGenerator(WavespeedBaseClient):
 
         Args:
             prompt: Text prompt for generation
-            size: Image size (e.g., "1024*1024"). Valid range depends on model.
+            size: Image size - use ImageSize enum or "width*height" string.
+                  Defaults to ImageSize.SQUARE (2048*2048) for seedream models.
+                  Note: seedream-v4.5 requires minimum 2048*2048 (4,194,304 pixels).
             negative_prompt: Negative prompt (only used by sdxl-lora)
             guidance_scale: CFG scale (only used by sdxl-lora, range 1-20)
             num_inference_steps: Denoising steps (only used by sdxl-lora, range 1-50)
@@ -63,17 +74,25 @@ class ImageGenerator(WavespeedBaseClient):
         Raises:
             MediaGenerationError: If generation fails
         """
+        # Convert ImageSize enum to string if needed
+        if isinstance(size, ImageSize):
+            size_str = size.value
+        elif size is None:
+            size_str = ImageSize.get_default().value
+        else:
+            size_str = size
+
         logger.info(
             "Generating image",
             model=self.model_id,
             prompt=prompt[:50],
-            size=size,
+            size=size_str,
         )
 
         # Build payload using model-specific configuration
         payload = self._config.build_payload(
             prompt=prompt,
-            size=size,
+            size=size_str,
             negative_prompt=negative_prompt,
             guidance_scale=guidance_scale,
             num_inference_steps=num_inference_steps,

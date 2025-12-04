@@ -75,7 +75,7 @@ class Settings(BaseSettings):
     max_images_per_week: int = 30
 
     # Wavespeed configuration
-    wavespeed_image_model: str = "bytedance/seedream-v4"
+    wavespeed_image_model: str = "bytedance/seedream-v4.5"
     wavespeed_video_model: str = "bytedance/seedance-v1-pro-t2v-480p"
     wavespeed_api_base: str = "https://api.wavespeed.ai/api/v3"
     wavespeed_polling_interval: float = 2.0
