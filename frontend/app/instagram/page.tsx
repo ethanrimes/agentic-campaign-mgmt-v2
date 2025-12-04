@@ -193,7 +193,7 @@ export default function InstagramPage() {
               </div>
             </div>
 
-            {/* Reach (Month) */}
+            {/* Reach (Day) */}
             <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] transition-shadow">
               <div className="flex items-center justify-between mb-4">
                 <div className="w-10 h-10 rounded-xl bg-sky-50 flex items-center justify-center text-sky-600">
@@ -206,7 +206,7 @@ export default function InstagramPage() {
                 <span className="text-xs text-slate-500 font-medium">last 24 hours</span>
               </div>
               <div className="mt-2 text-xs text-slate-400 font-medium">
-                Unique accounts reached
+                The number of unique accounts that have seen any of your posts at least once.
               </div>
             </div>
 
@@ -223,7 +223,7 @@ export default function InstagramPage() {
                 <span className="text-xs text-slate-500 font-medium">total</span>
               </div>
               <div className="mt-2 text-xs text-slate-400 font-medium">
-                Likes, comments, saves & shares
+                The total number of likes, comments, saves and shares across all your posts.
               </div>
             </div>
 
