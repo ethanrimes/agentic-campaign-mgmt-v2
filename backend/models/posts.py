@@ -96,6 +96,9 @@ class CompletedPost(BaseModel):
     platform_post_id: Optional[str] = Field(
         None, description="Post ID from Facebook/Instagram (after publishing)"
     )
+    platform_video_id: Optional[str] = Field(
+        None, description="Video ID from Facebook/Instagram for video posts (reels, videos). Used to fetch video-specific insights."
+    )
     platform_post_url: Optional[HttpUrl] = Field(
         None, description="URL to the published post (if available)"
     )

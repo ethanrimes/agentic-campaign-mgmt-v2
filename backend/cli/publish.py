@@ -46,29 +46,40 @@ async def publish_facebook_post(business_asset_id: str, post: CompletedPost, pub
         media_urls = await get_media_urls(business_asset_id, post.media_ids)
         text = post.text or ""
 
+        platform_post_id = None
+        platform_video_id = None
+        platform_post_url = None
+
         # Determine publishing method based on post type and media
         if post_type == "facebook_video" or (media_urls and len(media_urls) == 1 and ".mp4" in media_urls[0]):
-            # Video post
+            # Video post - returns video_id which can be used for insights
             platform_post_id = await publisher.post_video(media_urls[0], text)
+            # For video posts, the returned ID is the video_id
+            platform_video_id = platform_post_id
+            platform_post_url = f"https://www.facebook.com/reel/{platform_post_id}"
         elif len(media_urls) > 1:
             # Carousel post
             platform_post_id = await publisher.post_carousel(media_urls, text)
+            platform_post_url = f"https://www.facebook.com/{platform_post_id}"
         elif len(media_urls) == 1:
             # Single image post
             platform_post_id = await publisher.post_image(media_urls[0], text)
+            platform_post_url = f"https://www.facebook.com/{platform_post_id}"
         else:
             # Text/link post
             platform_post_id = await publisher.post_text(text, None)
+            platform_post_url = f"https://www.facebook.com/{platform_post_id}"
 
-        # Mark as published
+        # Mark as published with video_id if applicable
         await repo.mark_published(
             business_asset_id,
             post.id,
             platform_post_id,
-            f"https://www.facebook.com/{platform_post_id}"
+            platform_post_url,
+            platform_video_id=platform_video_id
         )
 
-        logger.info("Published Facebook post", post_id=str(post.id), platform_post_id=platform_post_id)
+        logger.info("Published Facebook post", post_id=str(post.id), platform_post_id=platform_post_id, platform_video_id=platform_video_id)
         return True
 
     except Exception as e:
@@ -84,10 +95,15 @@ async def publish_instagram_post(business_asset_id: str, post: CompletedPost, pu
         media_urls = await get_media_urls(business_asset_id, post.media_ids)
         caption = post.text or ""
 
+        platform_post_id = None
+        platform_video_id = None
+
         # Determine publishing method based on post type
         if post_type == "instagram_reel" or (media_urls and ".mp4" in media_urls[0]):
-            # Reel post
+            # Reel post - returns media_id which can be used for video insights
             platform_post_id = await publisher.post_reel(media_urls[0], caption)
+            # For reels, the returned media_id is also the video_id for insights
+            platform_video_id = platform_post_id
         elif len(media_urls) > 1:
             # Carousel post
             platform_post_id = await publisher.post_carousel(media_urls, caption)
@@ -99,15 +115,16 @@ async def publish_instagram_post(business_asset_id: str, post: CompletedPost, pu
             await repo.mark_failed(business_asset_id, post.id, "Instagram posts require media")
             return False
 
-        # Mark as published
+        # Mark as published with video_id if applicable
         await repo.mark_published(
             business_asset_id,
             post.id,
             platform_post_id,
-            f"https://www.instagram.com/p/{platform_post_id}/"
+            f"https://www.instagram.com/p/{platform_post_id}/",
+            platform_video_id=platform_video_id
         )
 
-        logger.info("Published Instagram post", post_id=str(post.id), platform_post_id=platform_post_id)
+        logger.info("Published Instagram post", post_id=str(post.id), platform_post_id=platform_post_id, platform_video_id=platform_video_id)
         return True
 
     except Exception as e:
