@@ -186,7 +186,7 @@ async def _fetch_posts_with_engagement(context: InsightsContext) -> None:
                 logger.debug(f"No cached post metrics for {post.platform_post_id}: {e}")
 
             # For video posts, also get video-specific metrics
-            if post.post_type == "facebook_video" or post.media_type == "video":
+            if post.post_type == "facebook_video":
                 try:
                     video_id = post.platform_video_id or post.platform_post_id
                     cached_video = await fb_video_repo.get_by_video_id(
@@ -281,15 +281,18 @@ def format_context_for_agent(context: InsightsContext) -> str:
         fb = context.facebook_page_insights
         lines.append(f"- Page Name: {fb.page_name or 'N/A'}")
         lines.append(f"- Last Updated: {context.facebook_page_last_fetched}")
-        lines.append(f"- Page Views (day): {fb.page_views_total_day}")
+        lines.append(f"- Page Views (day): {fb.page_views_total}")
         lines.append(f"- Page Views (week): {fb.page_views_total_week}")
         lines.append(f"- Page Views (28 days): {fb.page_views_total_days_28}")
-        lines.append(f"- Post Engagements (day): {fb.page_post_engagements_day}")
+        lines.append(f"- Post Engagements (day): {fb.page_post_engagements}")
         lines.append(f"- Post Engagements (week): {fb.page_post_engagements_week}")
-        lines.append(f"- New Follows (day): {fb.page_follows_day}")
-        lines.append(f"- Video Views (day): {fb.page_video_views_day}")
-        if fb.reactions_total:
-            lines.append(f"- Total Reactions: {fb.reactions_total}")
+        lines.append(f"- Post Engagements (28 days): {fb.page_post_engagements_days_28}")
+        lines.append(f"- Page Follows: {fb.page_follows}")
+        lines.append(f"- Video Views (day): {fb.page_video_views}")
+        lines.append(f"- Media Views (day): {fb.page_media_view}")
+        total_reactions = fb.reactions_like_total + fb.reactions_love_total + fb.reactions_wow_total + fb.reactions_haha_total + fb.reactions_sorry_total + fb.reactions_anger_total
+        if total_reactions:
+            lines.append(f"- Total Reactions (day): {total_reactions}")
     else:
         lines.append("No Facebook page metrics available (run 'insights fetch-account' to populate)")
     lines.append("")

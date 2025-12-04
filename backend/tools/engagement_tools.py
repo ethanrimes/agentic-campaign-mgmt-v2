@@ -14,11 +14,11 @@ from datetime import datetime, timedelta, timezone
 from pydantic import BaseModel, Field
 
 from backend.models.insights import (
-    FacebookPageInsight,
-    FacebookPostInsight,
-    FacebookVideoInsight,
-    InstagramMediaInsight,
-    InstagramAccountInsight,
+    FacebookPageInsights,
+    FacebookPostInsights,
+    FacebookVideoInsights,
+    InstagramMediaInsights,
+    InstagramAccountInsights,
 )
 from backend.config.business_asset_loader import get_business_asset_credentials
 from backend.utils import get_logger
@@ -34,7 +34,7 @@ async def fetch_facebook_page_insights(
     business_asset_id: str,
     period: str = "day",
     days_back: int = 14
-) -> List[FacebookPageInsight]:
+) -> List[FacebookPageInsights]:
     """
     Fetch Facebook Page-level insights.
 
@@ -47,7 +47,7 @@ async def fetch_facebook_page_insights(
         days_back: Number of days to look back (max 90)
 
     Returns:
-        List of FacebookPageInsight objects
+        List of FacebookPageInsights objects
     """
     try:
         credentials = get_business_asset_credentials(business_asset_id)
@@ -88,7 +88,7 @@ async def fetch_facebook_page_insights(
                     values = metric_data.get("values", [])
 
                     for value_entry in values:
-                        insights.append(FacebookPageInsight(
+                        insights.append(FacebookPageInsights(
                             name=name,
                             period=period_val,
                             title=title,
@@ -112,7 +112,7 @@ async def fetch_facebook_page_insights(
 async def fetch_facebook_post_insights(
     business_asset_id: str,
     platform_post_id: str
-) -> Optional[FacebookPostInsight]:
+) -> Optional[FacebookPostInsights]:
     """
     Fetch engagement metrics for a Facebook feed post or photo.
 
@@ -124,7 +124,7 @@ async def fetch_facebook_post_insights(
         platform_post_id: The platform post ID (without page_id prefix)
 
     Returns:
-        FacebookPostInsight or None if error
+        FacebookPostInsights or None if error
     """
     try:
         credentials = get_business_asset_credentials(business_asset_id)
@@ -154,7 +154,7 @@ async def fetch_facebook_post_insights(
 
                 data = await response.json()
 
-                insight = FacebookPostInsight(
+                insight = FacebookPostInsights(
                     post_id=platform_post_id,
                     reactions_like=data.get("reactions", {}).get("summary", {}).get("total_count", 0),
                     media_views=None  # Not available for basic feed posts
@@ -211,7 +211,7 @@ async def fetch_facebook_post_insights(
 async def fetch_facebook_video_insights(
     business_asset_id: str,
     video_id: str
-) -> Optional[FacebookVideoInsight]:
+) -> Optional[FacebookVideoInsights]:
     """
     Fetch metrics for a Facebook video or reel.
 
@@ -233,7 +233,7 @@ async def fetch_facebook_video_insights(
         video_id: The Facebook video ID (platform_post_id for video posts)
 
     Returns:
-        FacebookVideoInsight or None if error
+        FacebookVideoInsights or None if error
     """
     try:
         credentials = get_business_asset_credentials(business_asset_id)
@@ -253,7 +253,7 @@ async def fetch_facebook_video_insights(
                     return None
 
                 data = await response.json()
-                insight = FacebookVideoInsight(video_id=video_id)
+                insight = FacebookVideoInsights(video_id=video_id)
 
                 for metric in data.get("data", []):
                     name = metric.get("name")
@@ -296,7 +296,7 @@ async def fetch_instagram_media_insights(
     business_asset_id: str,
     media_id: str,
     media_type: str = "image"
-) -> Optional[InstagramMediaInsight]:
+) -> Optional[InstagramMediaInsights]:
     """
     Fetch engagement metrics for an Instagram post, reel, or carousel.
 
@@ -306,7 +306,7 @@ async def fetch_instagram_media_insights(
         media_type: Type of media (image, video, carousel, reel)
 
     Returns:
-        InstagramMediaInsight or None if error
+        InstagramMediaInsights or None if error
     """
     try:
         credentials = get_business_asset_credentials(business_asset_id)
@@ -320,7 +320,7 @@ async def fetch_instagram_media_insights(
                 "access_token": access_token,
             }
 
-            insight = InstagramMediaInsight(media_id=media_id, media_type=media_type)
+            insight = InstagramMediaInsights(media_id=media_id, media_type=media_type)
 
             async with session.get(media_url, params=media_params) as media_response:
                 if media_response.status == 200:
@@ -409,7 +409,7 @@ async def fetch_instagram_media_insights(
 async def fetch_instagram_account_insights(
     business_asset_id: str,
     days_back: int = 14
-) -> Optional[InstagramAccountInsight]:
+) -> Optional[InstagramAccountInsights]:
     """
     Fetch Instagram account-level insights.
 
@@ -418,7 +418,7 @@ async def fetch_instagram_account_insights(
         days_back: Number of days to look back
 
     Returns:
-        InstagramAccountInsight or None if error
+        InstagramAccountInsights or None if error
     """
     try:
         credentials = get_business_asset_credentials(business_asset_id)
@@ -448,7 +448,7 @@ async def fetch_instagram_account_insights(
                     return None
 
                 data = await response.json()
-                insight = InstagramAccountInsight()
+                insight = InstagramAccountInsights()
 
                 for metric in data.get("data", []):
                     name = metric.get("name")

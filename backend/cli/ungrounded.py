@@ -45,10 +45,14 @@ def generate(business_asset_id: str, count: int):
 @click.option("--limit", default=10, help="Number of seeds to display")
 def list(business_asset_id: str, limit: int):
     """List recent ungrounded seeds"""
+    import asyncio
     from backend.database.repositories import UngroundedSeedRepository
 
-    repo = UngroundedSeedRepository()
-    seeds = repo.get_recent(business_asset_id, limit=limit)
+    async def _list():
+        repo = UngroundedSeedRepository()
+        return await repo.get_recent(business_asset_id, limit=limit)
+
+    seeds = asyncio.run(_list())
 
     click.echo(f"\n💭 Recent Ungrounded Seeds ({len(seeds)}):\n")
     for seed in seeds:
