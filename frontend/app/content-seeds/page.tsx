@@ -2,7 +2,7 @@
 
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { getNewsEventSeeds, getTrendSeeds, getUngroundedSeeds, getPostCountsBySeed } from '@/lib/api-client'
 import { useBusinessAsset } from '@/lib/business-asset-context'
@@ -10,7 +10,7 @@ import { Database, TrendingUp, Lightbulb, Sparkles } from 'lucide-react'
 import ContentSeedsGrid from '@/components/seeds/ContentSeedsGrid'
 import type { NewsEventSeed, TrendSeed, UngroundedSeed } from '@/types'
 
-export default function ContentSeedsPage() {
+function ContentSeedsPageContent() {
   const { selectedAsset } = useBusinessAsset()
   const searchParams = useSearchParams()
   const initialSeedId = searchParams.get('seed') || undefined
@@ -126,5 +126,20 @@ export default function ContentSeedsPage() {
         />
       )}
     </div>
+  )
+}
+
+export default function ContentSeedsPage() {
+  return (
+    <Suspense fallback={
+      <div className="max-w-7xl mx-auto">
+        <div className="text-center py-16">
+          <Sparkles className="w-16 h-16 text-cyan-400 mx-auto mb-4 animate-pulse" />
+          <p className="text-lg text-gray-600">Loading...</p>
+        </div>
+      </div>
+    }>
+      <ContentSeedsPageContent />
+    </Suspense>
   )
 }
