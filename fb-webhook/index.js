@@ -13,6 +13,7 @@ const bodyParser = require("body-parser");
 const { config, validateConfig } = require("./src/config");
 const { loadBusinessAssets } = require("./src/businessAssets");
 const webhookRoutes = require("./src/webhookRoutes");
+const insightsRoutes = require("./src/insightsRoutes");
 
 // Validate configuration before starting
 validateConfig();
@@ -24,6 +25,7 @@ app.use(bodyParser.json());
 
 // Routes
 app.use("/", webhookRoutes);
+app.use("/insights", insightsRoutes);
 
 // Error handling
 process.on("uncaughtException", (error) => {
@@ -61,6 +63,7 @@ async function startServer() {
       console.log(`Webhook URL: http://localhost:${config.port}/webhook`);
       console.log(`Health Check: http://localhost:${config.port}/health`);
       console.log(`Reload Assets: http://localhost:${config.port}/reload`);
+      console.log(`Insights Refresh: http://localhost:${config.port}/insights/refresh-all`);
       console.log(`Verify Token: ${config.verifyToken ? "Set" : "Not Set"}`);
       console.log(`Supabase: ${config.supabaseUrl ? "Connected" : "Not Connected"}`);
       console.log(`Business Assets: ${assets.length} loaded`);

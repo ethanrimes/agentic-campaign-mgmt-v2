@@ -184,3 +184,59 @@ export async function getVerifierResponseByPostId(
   }
   return response.json()
 }
+
+// Insights
+import type {
+  CachedInsights,
+  InsightsRefreshResponse,
+  FacebookPostInsights,
+  FacebookVideoInsights,
+  InstagramMediaInsights,
+} from '@/types'
+
+export async function getCachedInsights(
+  business_asset_id: string,
+  platform: 'facebook' | 'instagram' | 'all' = 'all'
+): Promise<CachedInsights> {
+  const response = await fetch(buildApiUrl('/api/insights', { business_asset_id, platform }))
+  if (!response.ok) {
+    throw new Error('Failed to fetch cached insights')
+  }
+  return response.json()
+}
+
+export async function refreshInsights(
+  business_asset_id: string,
+  type: 'account' | 'posts' | 'all' = 'all'
+): Promise<InsightsRefreshResponse> {
+  const response = await fetch('/api/insights/refresh', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ business_asset_id, type }),
+  })
+  return response.json()
+}
+
+// Helper to get post insights by platform_post_id
+export async function getPostInsights(
+  business_asset_id: string,
+  platform_post_id: string,
+  platform: 'facebook' | 'instagram'
+): Promise<FacebookPostInsights | InstagramMediaInsights | null> {
+  const insights = await getCachedInsights(business_asset_id, platform)
+
+  if (platform === 'facebook') {
+    return insights.facebook_posts?.find(p => p.platform_post_id === platform_post_id) || null
+  } else {
+    return insights.instagram_media?.find(m => m.platform_media_id === platform_post_id) || null
+  }
+}
+
+// Helper to get video insights
+export async function getVideoInsights(
+  business_asset_id: string,
+  video_id: string
+): Promise<FacebookVideoInsights | null> {
+  const insights = await getCachedInsights(business_asset_id, 'facebook')
+  return insights.facebook_videos?.find(v => v.video_id === video_id) || null
+}

@@ -2,11 +2,11 @@
 
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, ChevronLeft, ChevronRight, Calendar, ExternalLink, Play, Sparkles, Heart, MessageCircle, Send, Bookmark } from 'lucide-react'
-import type { CompletedPost } from '@/types'
+import { X, ChevronLeft, ChevronRight, ExternalLink, Play, Sparkles, Heart, MessageCircle, Send, Bookmark, Eye, Clock, Share2 } from 'lucide-react'
+import type { CompletedPost, InstagramMediaInsights } from '@/types'
 import { formatDateTime, formatRelativeTime } from '@/lib/utils'
 import Link from 'next/link'
 import VerificationStatusBadge from '@/components/common/VerificationStatusBadge'
@@ -14,13 +14,45 @@ import VerificationStatusBadge from '@/components/common/VerificationStatusBadge
 interface InstagramPostGridProps {
   posts: CompletedPost[]
   accountName?: string
+  mediaInsights?: InstagramMediaInsights[]
 }
 
-export default function InstagramPostGrid({ posts, accountName = 'Instagram Account' }: InstagramPostGridProps) {
+function formatNumber(num: number | null | undefined): string {
+  if (num === null || num === undefined) return '--'
+  if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`
+  if (num >= 1000) return `${(num / 1000).toFixed(1)}K`
+  return num.toString()
+}
+
+function formatDuration(ms: number | null | undefined): string {
+  if (ms === null || ms === undefined) return '--'
+  const seconds = Math.floor(ms / 1000)
+  if (seconds < 60) return `${seconds}s`
+  const minutes = Math.floor(seconds / 60)
+  const remainingSeconds = seconds % 60
+  return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`
+}
+
+export default function InstagramPostGrid({ posts, accountName = 'Instagram Account', mediaInsights = [] }: InstagramPostGridProps) {
   const [selectedPost, setSelectedPost] = useState<CompletedPost | null>(null)
   const [currentMediaIndex, setCurrentMediaIndex] = useState(0)
   const searchParams = useSearchParams()
   const highlightPostId = searchParams.get('post')
+
+  // Create lookup map for insights
+  const mediaInsightsMap = useMemo(() => {
+    const map = new Map<string, InstagramMediaInsights>()
+    mediaInsights.forEach(insight => {
+      map.set(insight.platform_media_id, insight)
+    })
+    return map
+  }, [mediaInsights])
+
+  // Get insights for a specific post
+  const getMediaMetrics = (post: CompletedPost) => {
+    if (!post.platform_post_id) return null
+    return mediaInsightsMap.get(post.platform_post_id) || null
+  }
 
   useEffect(() => {
     if (highlightPostId && posts.length > 0) {
@@ -53,6 +85,8 @@ export default function InstagramPostGrid({ posts, accountName = 'Instagram Acco
     }
   }
 
+  const selectedMediaMetrics = selectedPost ? getMediaMetrics(selectedPost) : null
+
   return (
     <>
       {/* Grid View - Instagram profile style */}
@@ -61,6 +95,7 @@ export default function InstagramPostGrid({ posts, accountName = 'Instagram Acco
           const previewMedia = post.media_urls && post.media_urls.length > 0 ? post.media_urls[0] : null
           const isReel = post.post_type === 'instagram_reel' ||
             (previewMedia && (previewMedia.includes('.mp4') || previewMedia.includes('video')))
+          const metrics = getMediaMetrics(post)
 
           return (
             <motion.div
@@ -101,17 +136,23 @@ export default function InstagramPostGrid({ posts, accountName = 'Instagram Acco
                 </div>
               )}
 
-              {/* Hover overlay */}
+              {/* Hover overlay with metrics */}
               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-[2px]">
                 <div className="text-white text-center space-y-2 font-bold flex flex-col items-center">
                   <div className="flex items-center gap-2">
                     <Heart className="w-5 h-5 fill-white" />
-                    <span>--</span>
+                    <span>{metrics ? formatNumber(metrics.likes) : '--'}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <MessageCircle className="w-5 h-5 fill-white" />
-                    <span>--</span>
+                    <span>{metrics ? formatNumber(metrics.comments) : '--'}</span>
                   </div>
+                  {metrics?.views && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <Eye className="w-4 h-4" />
+                      <span>{formatNumber(metrics.views)}</span>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -280,8 +321,108 @@ export default function InstagramPostGrid({ posts, accountName = 'Instagram Acco
                     </div>
                   )}
 
+                  {/* Engagement Metrics */}
+                  {selectedMediaMetrics && (
+                    <div className="bg-gradient-to-r from-pink-50 to-rose-50 dark:from-pink-900/20 dark:to-rose-900/20 rounded-xl p-4 space-y-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300">Engagement Metrics</h4>
+                        {selectedMediaMetrics.metrics_fetched_at && (
+                          <span className="text-xs text-slate-500">
+                            {formatRelativeTime(selectedMediaMetrics.metrics_fetched_at)}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-4 gap-2">
+                        <div className="text-center p-2 bg-white dark:bg-slate-900 rounded-lg">
+                          <Heart className="w-4 h-4 text-pink-500 mx-auto mb-1" />
+                          <p className="text-lg font-bold text-slate-900 dark:text-white">
+                            {formatNumber(selectedMediaMetrics.likes)}
+                          </p>
+                          <p className="text-[10px] text-slate-500">Likes</p>
+                        </div>
+                        <div className="text-center p-2 bg-white dark:bg-slate-900 rounded-lg">
+                          <MessageCircle className="w-4 h-4 text-blue-500 mx-auto mb-1" />
+                          <p className="text-lg font-bold text-slate-900 dark:text-white">
+                            {formatNumber(selectedMediaMetrics.comments)}
+                          </p>
+                          <p className="text-[10px] text-slate-500">Comments</p>
+                        </div>
+                        <div className="text-center p-2 bg-white dark:bg-slate-900 rounded-lg">
+                          <Bookmark className="w-4 h-4 text-amber-500 mx-auto mb-1" />
+                          <p className="text-lg font-bold text-slate-900 dark:text-white">
+                            {formatNumber(selectedMediaMetrics.saved)}
+                          </p>
+                          <p className="text-[10px] text-slate-500">Saves</p>
+                        </div>
+                        <div className="text-center p-2 bg-white dark:bg-slate-900 rounded-lg">
+                          <Share2 className="w-4 h-4 text-green-500 mx-auto mb-1" />
+                          <p className="text-lg font-bold text-slate-900 dark:text-white">
+                            {formatNumber(selectedMediaMetrics.shares)}
+                          </p>
+                          <p className="text-[10px] text-slate-500">Shares</p>
+                        </div>
+                      </div>
+
+                      <div className="pt-2 border-t border-pink-200 dark:border-pink-800 space-y-1">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-slate-600 dark:text-slate-400 flex items-center gap-1">
+                            <Eye className="w-4 h-4" />
+                            Views
+                          </span>
+                          <span className="font-semibold text-slate-900 dark:text-white">
+                            {formatNumber(selectedMediaMetrics.views)}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-slate-600 dark:text-slate-400">Reach</span>
+                          <span className="font-semibold text-slate-900 dark:text-white">
+                            {formatNumber(selectedMediaMetrics.reach)}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-slate-600 dark:text-slate-400">Impressions</span>
+                          <span className="font-semibold text-slate-900 dark:text-white">
+                            {formatNumber(selectedMediaMetrics.impressions)}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Reels-specific metrics */}
+                      {(selectedMediaMetrics.ig_reels_avg_watch_time_ms || selectedMediaMetrics.ig_reels_video_view_total_time_ms) && (
+                        <div className="pt-2 border-t border-pink-200 dark:border-pink-800">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Play className="w-4 h-4 text-purple-600" />
+                            <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">Reel Metrics</span>
+                          </div>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-slate-600 dark:text-slate-400 flex items-center gap-1">
+                              <Clock className="w-4 h-4" />
+                              Avg Watch Time
+                            </span>
+                            <span className="font-semibold text-slate-900 dark:text-white">
+                              {formatDuration(selectedMediaMetrics.ig_reels_avg_watch_time_ms)}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* No metrics available */}
+                  {!selectedMediaMetrics && selectedPost.status === 'published' && (
+                    <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 text-center">
+                      <p className="text-sm text-slate-500">
+                        No engagement metrics cached yet.
+                      </p>
+                      <p className="text-xs text-slate-400 mt-1">
+                        Metrics are refreshed automatically every 24 hours.
+                      </p>
+                    </div>
+                  )}
+
                   {/* Verification Status */}
-                  <div className="pl-11 pt-2">
+                  <div className="pt-2">
                     <VerificationStatusBadge
                       status={selectedPost.verification_status || 'unverified'}
                       postId={selectedPost.id}
@@ -306,6 +447,19 @@ export default function InstagramPostGrid({ posts, accountName = 'Instagram Acco
                       ? formatDateTime(selectedPost.published_at)
                       : formatDateTime(selectedPost.created_at)}
                   </div>
+
+                  {/* View on Instagram button */}
+                  {selectedMediaMetrics?.permalink && (
+                    <a
+                      href={selectedMediaMetrics.permalink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block w-full text-center py-2 bg-gradient-to-r from-pink-500 to-rose-500 text-white rounded-lg font-medium hover:from-pink-600 hover:to-rose-600 transition-all"
+                    >
+                      <ExternalLink className="w-4 h-4 inline mr-2" />
+                      View on Instagram
+                    </a>
+                  )}
 
                   {/* Content Seed Link */}
                   {(selectedPost as any).content_seed_id && (

@@ -2,24 +2,70 @@
 
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, ChevronLeft, ChevronRight, Calendar, ExternalLink, Sparkles, MessageCircle, ThumbsUp, Share2 } from 'lucide-react'
-import type { CompletedPost } from '@/types'
-import { formatDateTime } from '@/lib/utils'
+import { X, ChevronLeft, ChevronRight, ExternalLink, Sparkles, MessageCircle, ThumbsUp, Share2, Eye, Clock, Play } from 'lucide-react'
+import type { CompletedPost, FacebookPostInsights, FacebookVideoInsights } from '@/types'
+import { formatDateTime, formatRelativeTime } from '@/lib/utils'
 import Link from 'next/link'
 import VerificationStatusBadge from '@/components/common/VerificationStatusBadge'
 
 interface FacebookPostGridProps {
   posts: CompletedPost[]
+  postInsights?: FacebookPostInsights[]
+  videoInsights?: FacebookVideoInsights[]
 }
 
-export default function FacebookPostGrid({ posts }: FacebookPostGridProps) {
+function formatNumber(num: number | null | undefined): string {
+  if (num === null || num === undefined) return '--'
+  if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`
+  if (num >= 1000) return `${(num / 1000).toFixed(1)}K`
+  return num.toString()
+}
+
+function formatDuration(ms: number | null | undefined): string {
+  if (ms === null || ms === undefined) return '--'
+  const seconds = Math.floor(ms / 1000)
+  if (seconds < 60) return `${seconds}s`
+  const minutes = Math.floor(seconds / 60)
+  const remainingSeconds = seconds % 60
+  return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`
+}
+
+export default function FacebookPostGrid({ posts, postInsights = [], videoInsights = [] }: FacebookPostGridProps) {
   const [selectedPost, setSelectedPost] = useState<CompletedPost | null>(null)
   const [currentMediaIndex, setCurrentMediaIndex] = useState(0)
   const searchParams = useSearchParams()
   const highlightPostId = searchParams.get('post')
+
+  // Create lookup maps for insights
+  const postInsightsMap = useMemo(() => {
+    const map = new Map<string, FacebookPostInsights>()
+    postInsights.forEach(insight => {
+      map.set(insight.platform_post_id, insight)
+    })
+    return map
+  }, [postInsights])
+
+  const videoInsightsMap = useMemo(() => {
+    const map = new Map<string, FacebookVideoInsights>()
+    videoInsights.forEach(insight => {
+      map.set(insight.video_id, insight)
+    })
+    return map
+  }, [videoInsights])
+
+  // Get insights for a specific post
+  const getPostMetrics = (post: CompletedPost) => {
+    if (!post.platform_post_id) return null
+    return postInsightsMap.get(post.platform_post_id) || null
+  }
+
+  const getVideoMetrics = (post: CompletedPost) => {
+    if (!post.platform_post_id) return null
+    return videoInsightsMap.get(post.platform_post_id) || null
+  }
 
   useEffect(() => {
     if (highlightPostId && posts.length > 0) {
@@ -52,6 +98,9 @@ export default function FacebookPostGrid({ posts }: FacebookPostGridProps) {
     }
   }
 
+  const selectedPostMetrics = selectedPost ? getPostMetrics(selectedPost) : null
+  const selectedVideoMetrics = selectedPost ? getVideoMetrics(selectedPost) : null
+
   return (
     <>
       {/* Grid View */}
@@ -59,6 +108,7 @@ export default function FacebookPostGrid({ posts }: FacebookPostGridProps) {
         {posts.map((post, index) => {
           const previewMedia = post.media_urls && post.media_urls.length > 0 ? post.media_urls[0] : null
           const isVideo = previewMedia && (previewMedia.includes('.mp4') || previewMedia.includes('video'))
+          const metrics = getPostMetrics(post)
 
           return (
             <motion.div
@@ -100,6 +150,28 @@ export default function FacebookPostGrid({ posts }: FacebookPostGridProps) {
               {post.media_urls && post.media_urls.length > 1 && (
                 <div className="absolute top-3 right-3 bg-black/50 backdrop-blur-sm text-white text-xs px-2.5 py-1 rounded-full font-medium">
                   {post.media_urls.length}
+                </div>
+              )}
+
+              {/* Hover Stats Overlay */}
+              {metrics && (
+                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                  <div className="text-white text-center space-y-2">
+                    <div className="flex items-center gap-4 justify-center">
+                      <div className="flex items-center gap-1">
+                        <ThumbsUp className="w-4 h-4" />
+                        <span className="font-semibold">{formatNumber(metrics.reactions_total)}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <MessageCircle className="w-4 h-4" />
+                        <span className="font-semibold">{formatNumber(metrics.comments)}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 justify-center">
+                      <Eye className="w-4 h-4" />
+                      <span className="text-sm">{formatNumber(metrics.post_impressions_unique)} reach</span>
+                    </div>
+                  </div>
                 </div>
               )}
 
@@ -254,6 +326,125 @@ export default function FacebookPostGrid({ posts }: FacebookPostGridProps) {
                     </div>
                   )}
 
+                  {/* Engagement Metrics - Post Level */}
+                  {selectedPostMetrics && (
+                    <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 space-y-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300">Engagement Metrics</h4>
+                        {selectedPostMetrics.metrics_fetched_at && (
+                          <span className="text-xs text-slate-500">
+                            {formatRelativeTime(selectedPostMetrics.metrics_fetched_at)}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-3">
+                        <div className="text-center p-2 bg-white dark:bg-slate-900 rounded-lg">
+                          <div className="flex items-center justify-center gap-1 text-blue-600 mb-1">
+                            <ThumbsUp className="w-4 h-4" />
+                          </div>
+                          <p className="text-lg font-bold text-slate-900 dark:text-white">
+                            {formatNumber(selectedPostMetrics.reactions_total)}
+                          </p>
+                          <p className="text-xs text-slate-500">Reactions</p>
+                        </div>
+                        <div className="text-center p-2 bg-white dark:bg-slate-900 rounded-lg">
+                          <div className="flex items-center justify-center gap-1 text-green-600 mb-1">
+                            <MessageCircle className="w-4 h-4" />
+                          </div>
+                          <p className="text-lg font-bold text-slate-900 dark:text-white">
+                            {formatNumber(selectedPostMetrics.comments)}
+                          </p>
+                          <p className="text-xs text-slate-500">Comments</p>
+                        </div>
+                        <div className="text-center p-2 bg-white dark:bg-slate-900 rounded-lg">
+                          <div className="flex items-center justify-center gap-1 text-purple-600 mb-1">
+                            <Share2 className="w-4 h-4" />
+                          </div>
+                          <p className="text-lg font-bold text-slate-900 dark:text-white">
+                            {formatNumber(selectedPostMetrics.shares)}
+                          </p>
+                          <p className="text-xs text-slate-500">Shares</p>
+                        </div>
+                      </div>
+
+                      <div className="pt-2 border-t border-slate-200 dark:border-slate-700">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-slate-600 dark:text-slate-400 flex items-center gap-1">
+                            <Eye className="w-4 h-4" />
+                            Reach (Unique)
+                          </span>
+                          <span className="font-semibold text-slate-900 dark:text-white">
+                            {formatNumber(selectedPostMetrics.post_impressions_unique)}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm mt-1">
+                          <span className="text-slate-600 dark:text-slate-400">Total Impressions</span>
+                          <span className="font-semibold text-slate-900 dark:text-white">
+                            {formatNumber(selectedPostMetrics.post_impressions)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Video Metrics */}
+                  {selectedVideoMetrics && (
+                    <div className="bg-purple-50 dark:bg-purple-900/20 rounded-xl p-4 space-y-3">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Play className="w-4 h-4 text-purple-600" />
+                        <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300">Video Metrics</h4>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="text-center p-2 bg-white dark:bg-slate-900 rounded-lg">
+                          <p className="text-lg font-bold text-slate-900 dark:text-white">
+                            {formatNumber(selectedVideoMetrics.post_video_views)}
+                          </p>
+                          <p className="text-xs text-slate-500">Total Views</p>
+                        </div>
+                        <div className="text-center p-2 bg-white dark:bg-slate-900 rounded-lg">
+                          <p className="text-lg font-bold text-slate-900 dark:text-white">
+                            {formatNumber(selectedVideoMetrics.post_video_views_unique)}
+                          </p>
+                          <p className="text-xs text-slate-500">Unique Views</p>
+                        </div>
+                      </div>
+
+                      <div className="pt-2 border-t border-purple-200 dark:border-purple-800">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-slate-600 dark:text-slate-400 flex items-center gap-1">
+                            <Clock className="w-4 h-4" />
+                            Avg Watch Time
+                          </span>
+                          <span className="font-semibold text-slate-900 dark:text-white">
+                            {formatDuration(selectedVideoMetrics.post_video_avg_time_watched_ms)}
+                          </span>
+                        </div>
+                        {selectedVideoMetrics.video_length_ms && (
+                          <div className="flex items-center justify-between text-sm mt-1">
+                            <span className="text-slate-600 dark:text-slate-400">Video Length</span>
+                            <span className="font-semibold text-slate-900 dark:text-white">
+                              {formatDuration(selectedVideoMetrics.video_length_ms)}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* No metrics available */}
+                  {!selectedPostMetrics && !selectedVideoMetrics && selectedPost.status === 'published' && (
+                    <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 text-center">
+                      <p className="text-sm text-slate-500">
+                        No engagement metrics cached yet.
+                      </p>
+                      <p className="text-xs text-slate-400 mt-1">
+                        Metrics are refreshed automatically every 24 hours.
+                      </p>
+                    </div>
+                  )}
+
                   {/* Metadata Cards */}
                   <div className="grid grid-cols-2 gap-3">
                     {selectedPost.location && (
@@ -271,24 +462,6 @@ export default function FacebookPostGrid({ posts }: FacebookPostGridProps) {
                           size="sm"
                         />
                       </div>
-                    </div>
-                  </div>
-
-                  {/* Fake Interaction Stats */}
-                  <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-700/50 text-slate-500 dark:text-slate-400 text-sm">
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center gap-1.5">
-                        <ThumbsUp className="w-4 h-4" />
-                        <span>--</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <MessageCircle className="w-4 h-4" />
-                        <span>--</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <Share2 className="w-4 h-4" />
-                      <span>--</span>
                     </div>
                   </div>
 

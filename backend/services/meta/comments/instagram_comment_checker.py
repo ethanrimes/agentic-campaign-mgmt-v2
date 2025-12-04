@@ -1,4 +1,4 @@
-# backend/services/meta/instagram_comment_checker.py
+# backend/services/meta/comments/instagram_comment_checker.py
 
 """
 Instagram comment checker service.
@@ -10,7 +10,7 @@ to the database for processing by the comment responder agent.
 
 from typing import Dict, Any, List
 from datetime import datetime
-from backend.services.meta.comment_operations import CommentOperations
+from backend.services.meta.comments.comment_operations import CommentOperations
 from backend.database.repositories.platform_comments import PlatformCommentRepository
 from backend.config.settings import settings
 from backend.utils import get_logger

@@ -1,11 +1,11 @@
-# backend/services/meta/instagram_publisher.py
+# backend/services/meta/publishing/instagram_publisher.py
 
 """Instagram posting service."""
 
 import asyncio
 from typing import List, Optional
 from backend.utils import get_logger, PublishingError
-from .base import MetaBaseClient
+from backend.services.meta.base import MetaBaseClient
 
 logger = get_logger(__name__)
 

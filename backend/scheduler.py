@@ -32,6 +32,7 @@ from apscheduler.executors.pool import ThreadPoolExecutor
 from apscheduler.events import EVENT_JOB_EXECUTED, EVENT_JOB_ERROR
 from backend.utils import get_logger
 from backend.database.repositories.business_assets import BusinessAssetRepository
+from backend.config.settings import settings
 
 logger = get_logger(__name__)
 
@@ -114,6 +115,15 @@ class SchedulingConfig:
     TREND_DISCOVERY_INTERVAL_HOURS = 24  # Trend discovery
     UNGROUNDED_GENERATION_INTERVAL_HOURS = 12  # Ungrounded idea generation
     PLANNING_PIPELINE_INTERVAL_HOURS = 6  # Insights + planner + content creation
+
+    # Insights fetching (from settings)
+    @property
+    def INSIGHTS_FETCH_INTERVAL_HOURS(self):
+        return settings.insights_fetch_interval_hours
+
+    @property
+    def INSIGHTS_ENABLED(self):
+        return settings.insights_enable_scheduled_fetch
 
 
 SCHEDULING_CONFIG = SchedulingConfig()
@@ -208,6 +218,33 @@ def run_ungrounded_generation():
         run_command(
             ["ungrounded", "generate", "--business-asset-id", asset_id, "--count", "3"],
             f"Ungrounded Idea Generation - {asset_id}"
+        )
+
+
+# ============================================================================
+# INSIGHTS FETCHING JOBS
+# ============================================================================
+
+def run_insights_fetch():
+    """Fetch and cache insights metrics from Facebook and Instagram for all business assets.
+
+    This fetches:
+    - Page-level metrics (Facebook page insights, Instagram account insights)
+    - Post-level metrics for recent posts (limited by settings.insights_post_limit)
+
+    Metrics are cached in the database and used by the insights agent.
+    """
+    assets = get_active_business_assets()
+    for asset_id in assets:
+        # Fetch page/account level insights
+        run_command(
+            ["insights", "fetch-account", "--business-asset-id", asset_id],
+            f"Fetch Account Insights - {asset_id}"
+        )
+        # Fetch post-level insights
+        run_command(
+            ["insights", "fetch-posts", "--business-asset-id", asset_id],
+            f"Fetch Post Insights - {asset_id}"
         )
 
 
@@ -416,6 +453,29 @@ def create_scheduler():
         coalesce=True,
         next_run_time=datetime.now()
     )
+
+    # ========================================================================
+    # INSIGHTS FETCHING
+    # ========================================================================
+
+    # Insights fetching - fetch and cache metrics from Facebook and Instagram
+    if SCHEDULING_CONFIG.INSIGHTS_ENABLED:
+        scheduler.add_job(
+            run_insights_fetch,
+            'interval',
+            hours=SCHEDULING_CONFIG.INSIGHTS_FETCH_INTERVAL_HOURS,
+            id='insights_fetch',
+            name='Insights Fetching (Facebook + Instagram)',
+            max_instances=1,
+            coalesce=True,
+            next_run_time=datetime.now()  # Run immediately on startup
+        )
+        logger.info(
+            "Insights fetching scheduled",
+            interval_hours=SCHEDULING_CONFIG.INSIGHTS_FETCH_INTERVAL_HOURS
+        )
+    else:
+        logger.info("Insights fetching disabled by settings.insights_enable_scheduled_fetch")
 
     # ========================================================================
     # ANALYSIS & PLANNING

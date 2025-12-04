@@ -10,8 +10,7 @@ from backend.utils import get_logger
 from backend.models import CompletedPost
 from backend.database.repositories.completed_posts import CompletedPostRepository
 from backend.database.repositories.media import MediaRepository
-from backend.services.meta.facebook_publisher import FacebookPublisher
-from backend.services.meta.instagram_publisher import InstagramPublisher
+from backend.services.meta import FacebookPublisher, InstagramPublisher
 
 logger = get_logger(__name__)
 

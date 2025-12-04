@@ -1,4 +1,4 @@
-# backend/services/meta/engagement_api.py
+# backend/services/meta/insights/engagement_api.py
 
 """
 Engagement metrics API for Facebook and Instagram.
@@ -7,7 +7,7 @@ Used by the insights agent to analyze what content works.
 
 from typing import Dict, Any, List
 from backend.utils import get_logger
-from .base import MetaBaseClient
+from backend.services.meta.base import MetaBaseClient
 
 logger = get_logger(__name__)
 
