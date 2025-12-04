@@ -124,6 +124,7 @@ export interface FacebookPageInsights {
   business_asset_id: string
   page_id: string
   page_name: string | null
+  page_picture_url: string | null
   // Page views
   page_views_total_day: number | null
   page_views_total_week: number | null
@@ -133,11 +134,13 @@ export interface FacebookPageInsights {
   page_post_engagements_week: number | null
   page_post_engagements_days_28: number | null
   // Followers
-  page_follows_day: number | null
-  page_follows_week: number | null
-  page_follows_days_28: number | null
+  page_follows: number | null
+  // Media views
+  page_media_view: number | null
+  page_media_view_week: number | null
+  page_media_view_days_28: number | null
   // Video views
-  page_video_views_day: number | null
+  page_video_views: number | null
   page_video_views_week: number | null
   page_video_views_days_28: number | null
   // Total reactions
@@ -151,6 +154,8 @@ export interface FacebookPostInsights {
   business_asset_id: string
   platform_post_id: string
   completed_post_id: string | null
+  // Media views
+  post_media_view: number | null
   // Impressions & Reach
   post_impressions: number | null
   post_impressions_unique: number | null
@@ -202,6 +207,7 @@ export interface InstagramAccountInsights {
   business_asset_id: string
   instagram_account_id: string
   username: string | null
+  profile_picture_url: string | null
   followers_count: number | null
   follows_count: number | null
   media_count: number | null

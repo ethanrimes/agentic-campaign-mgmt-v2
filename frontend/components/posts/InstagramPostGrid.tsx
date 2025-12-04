@@ -14,6 +14,7 @@ import VerificationStatusBadge from '@/components/common/VerificationStatusBadge
 interface InstagramPostGridProps {
   posts: CompletedPost[]
   accountName?: string
+  accountProfilePictureUrl?: string | null
   mediaInsights?: InstagramMediaInsights[]
 }
 
@@ -33,7 +34,7 @@ function formatDuration(ms: number | null | undefined): string {
   return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`
 }
 
-export default function InstagramPostGrid({ posts, accountName = 'Instagram Account', mediaInsights = [] }: InstagramPostGridProps) {
+export default function InstagramPostGrid({ posts, accountName = 'Instagram Account', accountProfilePictureUrl, mediaInsights = [] }: InstagramPostGridProps) {
   const [selectedPost, setSelectedPost] = useState<CompletedPost | null>(null)
   const [currentMediaIndex, setCurrentMediaIndex] = useState(0)
   const searchParams = useSearchParams()
@@ -268,7 +269,11 @@ export default function InstagramPostGrid({ posts, accountName = 'Instagram Acco
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-600 p-[2px] rounded-full">
                       <div className="w-full h-full bg-white dark:bg-black rounded-full flex items-center justify-center overflow-hidden border border-white dark:border-black">
-                        <span className="font-bold text-xs">{accountName.charAt(0).toUpperCase()}</span>
+                        {accountProfilePictureUrl ? (
+                          <img src={accountProfilePictureUrl} alt={accountName} className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="font-bold text-xs">{accountName.charAt(0).toUpperCase()}</span>
+                        )}
                       </div>
                     </div>
                     <span className="font-semibold text-sm text-slate-900 dark:text-white">{accountName}</span>
@@ -287,7 +292,11 @@ export default function InstagramPostGrid({ posts, accountName = 'Instagram Acco
                   <div className="flex gap-3">
                     <div className="w-8 h-8 bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-600 p-[2px] rounded-full flex-shrink-0">
                       <div className="w-full h-full bg-white dark:bg-black rounded-full flex items-center justify-center overflow-hidden border border-white dark:border-black">
-                        <span className="font-bold text-xs">{accountName.charAt(0).toUpperCase()}</span>
+                        {accountProfilePictureUrl ? (
+                          <img src={accountProfilePictureUrl} alt={accountName} className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="font-bold text-xs">{accountName.charAt(0).toUpperCase()}</span>
+                        )}
                       </div>
                     </div>
                     <div className="flex-1">
