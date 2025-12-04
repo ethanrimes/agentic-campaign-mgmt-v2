@@ -15,6 +15,8 @@ interface FacebookPostGridProps {
   posts: CompletedPost[]
   postInsights?: FacebookPostInsights[]
   videoInsights?: FacebookVideoInsights[]
+  pageName?: string | null
+  pagePictureUrl?: string | null
 }
 
 function formatNumber(num: number | null | undefined): string {
@@ -33,7 +35,7 @@ function formatDuration(ms: number | null | undefined): string {
   return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`
 }
 
-export default function FacebookPostGrid({ posts, postInsights = [], videoInsights = [] }: FacebookPostGridProps) {
+export default function FacebookPostGrid({ posts, postInsights = [], videoInsights = [], pageName, pagePictureUrl }: FacebookPostGridProps) {
   const [selectedPost, setSelectedPost] = useState<CompletedPost | null>(null)
   const [currentMediaIndex, setCurrentMediaIndex] = useState(0)
   const searchParams = useSearchParams()
@@ -162,14 +164,12 @@ export default function FacebookPostGrid({ posts, postInsights = [], videoInsigh
                         <ThumbsUp className="w-4 h-4" />
                         <span className="font-semibold">{formatNumber(metrics.reactions_total)}</span>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <MessageCircle className="w-4 h-4" />
-                        <span className="font-semibold">{formatNumber(metrics.comments)}</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1 justify-center">
-                      <Eye className="w-4 h-4" />
-                      <span className="text-sm">{formatNumber(metrics.post_impressions_unique)} reach</span>
+                      {metrics.post_media_view !== null && metrics.post_media_view !== undefined && (
+                        <div className="flex items-center gap-1">
+                          <Play className="w-4 h-4" />
+                          <span className="font-semibold">{formatNumber(metrics.post_media_view)}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -281,13 +281,21 @@ export default function FacebookPostGrid({ posts, postInsights = [], videoInsigh
                 {/* Header */}
                 <div className="p-4 border-b border-slate-200/60 dark:border-slate-700/60 flex items-start justify-between bg-white/50 dark:bg-slate-900/50">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center shadow-md">
-                      <svg className="w-6 h-6 text-white fill-current" viewBox="0 0 24 24">
-                        <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.962.925-1.962 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
-                      </svg>
-                    </div>
+                    {pagePictureUrl ? (
+                      <img
+                        src={pagePictureUrl}
+                        alt={pageName || 'Facebook Page'}
+                        className="w-10 h-10 rounded-full object-cover shadow-md"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center shadow-md">
+                        <svg className="w-6 h-6 text-white fill-current" viewBox="0 0 24 24">
+                          <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.962.925-1.962 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+                        </svg>
+                      </div>
+                    )}
                     <div>
-                      <h3 className="font-bold text-slate-900 dark:text-white">Facebook Post</h3>
+                      <h3 className="font-bold text-slate-900 dark:text-white">{pageName || 'Facebook Post'}</h3>
                       <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
                         <span className="capitalize">{selectedPost.status}</span>
                         <span>•</span>
