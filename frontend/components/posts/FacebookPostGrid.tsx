@@ -157,20 +157,39 @@ export default function FacebookPostGrid({ posts, postInsights = [], videoInsigh
 
               {/* Hover Stats Overlay */}
               {metrics && (
-                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                  <div className="text-white text-center space-y-2">
+                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-[2px]">
+                  <div className="text-white text-center space-y-3">
                     <div className="flex items-center gap-4 justify-center">
-                      <div className="flex items-center gap-1">
-                        <ThumbsUp className="w-4 h-4" />
-                        <span className="font-semibold">{formatNumber(metrics.reactions_total)}</span>
+                      <div className="flex flex-col items-center gap-1">
+                        <ThumbsUp className="w-5 h-5 fill-white/20" />
+                        <span className="font-bold text-sm">{formatNumber(metrics.reactions_total)}</span>
                       </div>
-                      {metrics.post_media_view !== null && metrics.post_media_view !== undefined && (
-                        <div className="flex items-center gap-1">
-                          <Play className="w-4 h-4" />
-                          <span className="font-semibold">{formatNumber(metrics.post_media_view)}</span>
-                        </div>
-                      )}
+                      <div className="flex flex-col items-center gap-1">
+                        <MessageCircle className="w-5 h-5 fill-white/20" />
+                        <span className="font-bold text-sm">{formatNumber(metrics.comments)}</span>
+                      </div>
+                      <div className="flex flex-col items-center gap-1">
+                        <Share2 className="w-5 h-5 fill-white/20" />
+                        <span className="font-bold text-sm">{formatNumber(metrics.shares)}</span>
+                      </div>
                     </div>
+
+                    {(metrics.post_impressions_unique || metrics.post_media_view) && (
+                      <div className="flex items-center gap-4 justify-center pt-2 border-t border-white/20">
+                        {metrics.post_impressions_unique && (
+                          <div className="flex items-center gap-1.5 text-xs font-medium text-white/90">
+                            <Eye className="w-3.5 h-3.5" />
+                            <span>{formatNumber(metrics.post_impressions_unique)}</span>
+                          </div>
+                        )}
+                        {metrics.post_media_view !== null && metrics.post_media_view !== undefined && (
+                          <div className="flex items-center gap-1.5 text-xs font-medium text-white/90">
+                            <Play className="w-3.5 h-3.5" />
+                            <span>{formatNumber(metrics.post_media_view)}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -336,59 +355,62 @@ export default function FacebookPostGrid({ posts, postInsights = [], videoInsigh
 
                   {/* Engagement Metrics - Post Level */}
                   {selectedPostMetrics && (
-                    <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 space-y-3">
-                      <div className="flex items-center justify-between mb-2">
-                        <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300">Engagement Metrics</h4>
+                    <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-5 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200">Engagement Overview</h4>
                         {selectedPostMetrics.metrics_fetched_at && (
-                          <span className="text-xs text-slate-500">
-                            {formatRelativeTime(selectedPostMetrics.metrics_fetched_at)}
+                          <span className="text-[10px] uppercase tracking-wider font-medium text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-md">
+                            Updated {formatRelativeTime(selectedPostMetrics.metrics_fetched_at)}
                           </span>
                         )}
                       </div>
 
-                      <div className="grid grid-cols-3 gap-3">
-                        <div className="text-center p-2 bg-white dark:bg-slate-900 rounded-lg">
-                          <div className="flex items-center justify-center gap-1 text-blue-600 mb-1">
-                            <ThumbsUp className="w-4 h-4" />
+                      <div className="grid grid-cols-3 gap-4">
+                        <div className="flex flex-col items-center justify-center p-3 bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800">
+                          <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center mb-2">
+                            <ThumbsUp className="w-4 h-4 text-blue-600" />
                           </div>
-                          <p className="text-lg font-bold text-slate-900 dark:text-white">
+                          <p className="text-xl font-bold text-slate-900 dark:text-white">
                             {formatNumber(selectedPostMetrics.reactions_total)}
                           </p>
-                          <p className="text-xs text-slate-500">Reactions</p>
+                          <p className="text-xs font-medium text-slate-500">Reactions</p>
                         </div>
-                        <div className="text-center p-2 bg-white dark:bg-slate-900 rounded-lg">
-                          <div className="flex items-center justify-center gap-1 text-green-600 mb-1">
-                            <MessageCircle className="w-4 h-4" />
+                        <div className="flex flex-col items-center justify-center p-3 bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800">
+                          <div className="w-8 h-8 rounded-full bg-green-50 flex items-center justify-center mb-2">
+                            <MessageCircle className="w-4 h-4 text-green-600" />
                           </div>
-                          <p className="text-lg font-bold text-slate-900 dark:text-white">
+                          <p className="text-xl font-bold text-slate-900 dark:text-white">
                             {formatNumber(selectedPostMetrics.comments)}
                           </p>
-                          <p className="text-xs text-slate-500">Comments</p>
+                          <p className="text-xs font-medium text-slate-500">Comments</p>
                         </div>
-                        <div className="text-center p-2 bg-white dark:bg-slate-900 rounded-lg">
-                          <div className="flex items-center justify-center gap-1 text-purple-600 mb-1">
-                            <Share2 className="w-4 h-4" />
+                        <div className="flex flex-col items-center justify-center p-3 bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800">
+                          <div className="w-8 h-8 rounded-full bg-purple-50 flex items-center justify-center mb-2">
+                            <Share2 className="w-4 h-4 text-purple-600" />
                           </div>
-                          <p className="text-lg font-bold text-slate-900 dark:text-white">
+                          <p className="text-xl font-bold text-slate-900 dark:text-white">
                             {formatNumber(selectedPostMetrics.shares)}
                           </p>
-                          <p className="text-xs text-slate-500">Shares</p>
+                          <p className="text-xs font-medium text-slate-500">Shares</p>
                         </div>
                       </div>
 
-                      <div className="pt-2 border-t border-slate-200 dark:border-slate-700">
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-slate-600 dark:text-slate-400 flex items-center gap-1">
-                            <Eye className="w-4 h-4" />
-                            Reach (Unique)
-                          </span>
-                          <span className="font-semibold text-slate-900 dark:text-white">
+                      <div className="grid grid-cols-2 gap-4 pt-2">
+                        <div className="flex items-center justify-between p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800">
+                          <div className="flex items-center gap-2">
+                            <Eye className="w-4 h-4 text-slate-400" />
+                            <span className="text-sm font-medium text-slate-600 dark:text-slate-400">Unique Reach</span>
+                          </div>
+                          <span className="font-bold text-slate-900 dark:text-white">
                             {formatNumber(selectedPostMetrics.post_impressions_unique)}
                           </span>
                         </div>
-                        <div className="flex items-center justify-between text-sm mt-1">
-                          <span className="text-slate-600 dark:text-slate-400">Total Impressions</span>
-                          <span className="font-semibold text-slate-900 dark:text-white">
+                        <div className="flex items-center justify-between p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800">
+                          <div className="flex items-center gap-2">
+                            <Sparkles className="w-4 h-4 text-slate-400" />
+                            <span className="text-sm font-medium text-slate-600 dark:text-slate-400">Impressions</span>
+                          </div>
+                          <span className="font-bold text-slate-900 dark:text-white">
                             {formatNumber(selectedPostMetrics.post_impressions)}
                           </span>
                         </div>

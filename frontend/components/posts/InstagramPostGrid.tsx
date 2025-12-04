@@ -5,7 +5,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, ChevronLeft, ChevronRight, ExternalLink, Play, Sparkles, Heart, MessageCircle, Send, Bookmark, Eye, Clock, Share2 } from 'lucide-react'
+import { X, ChevronLeft, ChevronRight, ExternalLink, Play, Sparkles, Heart, MessageCircle, Send, Bookmark, Eye, Clock, Share2, Users } from 'lucide-react'
 import type { CompletedPost, InstagramMediaInsights } from '@/types'
 import { formatDateTime, formatRelativeTime } from '@/lib/utils'
 import Link from 'next/link'
@@ -138,19 +138,22 @@ export default function InstagramPostGrid({ posts, accountName = 'Instagram Acco
               )}
 
               {/* Hover overlay with metrics */}
-              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-[2px]">
-                <div className="text-white text-center space-y-2 font-bold flex flex-col items-center">
-                  <div className="flex items-center gap-2">
-                    <Heart className="w-5 h-5 fill-white" />
-                    <span>{metrics ? formatNumber(metrics.likes) : '--'}</span>
+              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-[2px]">
+                <div className="text-white text-center space-y-3 flex flex-col items-center">
+                  <div className="flex items-center gap-4">
+                    <div className="flex flex-col items-center gap-0.5">
+                      <Heart className="w-5 h-5 fill-white" />
+                      <span className="font-bold text-sm">{metrics ? formatNumber(metrics.likes) : '--'}</span>
+                    </div>
+                    <div className="flex flex-col items-center gap-0.5">
+                      <MessageCircle className="w-5 h-5 fill-white" />
+                      <span className="font-bold text-sm">{metrics ? formatNumber(metrics.comments) : '--'}</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <MessageCircle className="w-5 h-5 fill-white" />
-                    <span>{metrics ? formatNumber(metrics.comments) : '--'}</span>
-                  </div>
+
                   {metrics?.views && (
-                    <div className="flex items-center gap-2 text-sm">
-                      <Eye className="w-4 h-4" />
+                    <div className="flex items-center gap-1.5 text-xs font-medium bg-black/30 px-2 py-1 rounded-full">
+                      <Eye className="w-3.5 h-3.5" />
                       <span>{formatNumber(metrics.views)}</span>
                     </div>
                   )}
@@ -332,66 +335,78 @@ export default function InstagramPostGrid({ posts, accountName = 'Instagram Acco
 
                   {/* Engagement Metrics */}
                   {selectedMediaMetrics && (
-                    <div className="bg-gradient-to-r from-pink-50 to-rose-50 dark:from-pink-900/20 dark:to-rose-900/20 rounded-xl p-4 space-y-3">
-                      <div className="flex items-center justify-between mb-2">
-                        <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300">Engagement Metrics</h4>
+                    <div className="bg-gradient-to-r from-pink-50 to-rose-50 dark:from-pink-900/20 dark:to-rose-900/20 rounded-xl p-5 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200">Engagement Overview</h4>
                         {selectedMediaMetrics.metrics_fetched_at && (
-                          <span className="text-xs text-slate-500">
-                            {formatRelativeTime(selectedMediaMetrics.metrics_fetched_at)}
+                          <span className="text-[10px] uppercase tracking-wider font-medium text-slate-400 bg-white/50 dark:bg-black/20 px-2 py-1 rounded-md">
+                            Updated {formatRelativeTime(selectedMediaMetrics.metrics_fetched_at)}
                           </span>
                         )}
                       </div>
 
-                      <div className="grid grid-cols-4 gap-2">
-                        <div className="text-center p-2 bg-white dark:bg-slate-900 rounded-lg">
-                          <Heart className="w-4 h-4 text-pink-500 mx-auto mb-1" />
+                      <div className="grid grid-cols-4 gap-3">
+                        <div className="flex flex-col items-center justify-center p-3 bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-pink-100 dark:border-pink-900/30">
+                          <Heart className="w-5 h-5 text-pink-500 mb-1" fill="currentColor" />
                           <p className="text-lg font-bold text-slate-900 dark:text-white">
                             {formatNumber(selectedMediaMetrics.likes)}
                           </p>
-                          <p className="text-[10px] text-slate-500">Likes</p>
+                          <p className="text-[10px] font-medium text-slate-500 uppercase tracking-wide">Likes</p>
                         </div>
-                        <div className="text-center p-2 bg-white dark:bg-slate-900 rounded-lg">
-                          <MessageCircle className="w-4 h-4 text-blue-500 mx-auto mb-1" />
+                        <div className="flex flex-col items-center justify-center p-3 bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-pink-100 dark:border-pink-900/30">
+                          <MessageCircle className="w-5 h-5 text-blue-500 mb-1" />
                           <p className="text-lg font-bold text-slate-900 dark:text-white">
                             {formatNumber(selectedMediaMetrics.comments)}
                           </p>
-                          <p className="text-[10px] text-slate-500">Comments</p>
+                          <p className="text-[10px] font-medium text-slate-500 uppercase tracking-wide">Comments</p>
                         </div>
-                        <div className="text-center p-2 bg-white dark:bg-slate-900 rounded-lg">
-                          <Bookmark className="w-4 h-4 text-amber-500 mx-auto mb-1" />
+                        <div className="flex flex-col items-center justify-center p-3 bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-pink-100 dark:border-pink-900/30">
+                          <Bookmark className="w-5 h-5 text-amber-500 mb-1" />
                           <p className="text-lg font-bold text-slate-900 dark:text-white">
                             {formatNumber(selectedMediaMetrics.saved)}
                           </p>
-                          <p className="text-[10px] text-slate-500">Saves</p>
+                          <p className="text-[10px] font-medium text-slate-500 uppercase tracking-wide">Saves</p>
                         </div>
-                        <div className="text-center p-2 bg-white dark:bg-slate-900 rounded-lg">
-                          <Share2 className="w-4 h-4 text-green-500 mx-auto mb-1" />
+                        <div className="flex flex-col items-center justify-center p-3 bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-pink-100 dark:border-pink-900/30">
+                          <Share2 className="w-5 h-5 text-green-500 mb-1" />
                           <p className="text-lg font-bold text-slate-900 dark:text-white">
                             {formatNumber(selectedMediaMetrics.shares)}
                           </p>
-                          <p className="text-[10px] text-slate-500">Shares</p>
+                          <p className="text-[10px] font-medium text-slate-500 uppercase tracking-wide">Shares</p>
                         </div>
                       </div>
 
-                      <div className="pt-2 border-t border-pink-200 dark:border-pink-800 space-y-1">
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-slate-600 dark:text-slate-400 flex items-center gap-1">
-                            <Eye className="w-4 h-4" />
-                            Views
-                          </span>
-                          <span className="font-semibold text-slate-900 dark:text-white">
+                      <div className="space-y-2 pt-2 border-t border-pink-200/50 dark:border-pink-800/30">
+                        <div className="flex items-center justify-between p-2 rounded-lg hover:bg-white/50 dark:hover:bg-black/20 transition-colors">
+                          <div className="flex items-center gap-2">
+                            <div className="p-1.5 bg-white dark:bg-slate-800 rounded-md shadow-sm">
+                              <Eye className="w-4 h-4 text-slate-500" />
+                            </div>
+                            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Total Views</span>
+                          </div>
+                          <span className="font-bold text-slate-900 dark:text-white">
                             {formatNumber(selectedMediaMetrics.views)}
                           </span>
                         </div>
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-slate-600 dark:text-slate-400">Reach</span>
-                          <span className="font-semibold text-slate-900 dark:text-white">
+                        <div className="flex items-center justify-between p-2 rounded-lg hover:bg-white/50 dark:hover:bg-black/20 transition-colors">
+                          <div className="flex items-center gap-2">
+                            <div className="p-1.5 bg-white dark:bg-slate-800 rounded-md shadow-sm">
+                              <Users className="w-4 h-4 text-slate-500" />
+                            </div>
+                            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Reach</span>
+                          </div>
+                          <span className="font-bold text-slate-900 dark:text-white">
                             {formatNumber(selectedMediaMetrics.reach)}
                           </span>
                         </div>
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-slate-600 dark:text-slate-400">Impressions</span>
-                          <span className="font-semibold text-slate-900 dark:text-white">
+                        <div className="flex items-center justify-between p-2 rounded-lg hover:bg-white/50 dark:hover:bg-black/20 transition-colors">
+                          <div className="flex items-center gap-2">
+                            <div className="p-1.5 bg-white dark:bg-slate-800 rounded-md shadow-sm">
+                              <Sparkles className="w-4 h-4 text-slate-500" />
+                            </div>
+                            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Impressions</span>
+                          </div>
+                          <span className="font-bold text-slate-900 dark:text-white">
                             {formatNumber(selectedMediaMetrics.impressions)}
                           </span>
                         </div>
@@ -399,17 +414,17 @@ export default function InstagramPostGrid({ posts, accountName = 'Instagram Acco
 
                       {/* Reels-specific metrics */}
                       {(selectedMediaMetrics.ig_reels_avg_watch_time_ms || selectedMediaMetrics.ig_reels_video_view_total_time_ms) && (
-                        <div className="pt-2 border-t border-pink-200 dark:border-pink-800">
-                          <div className="flex items-center gap-2 mb-2">
+                        <div className="pt-3 border-t border-pink-200/50 dark:border-pink-800/30">
+                          <div className="flex items-center gap-2 mb-3">
                             <Play className="w-4 h-4 text-purple-600" />
-                            <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">Reel Metrics</span>
+                            <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Reel Performance</span>
                           </div>
-                          <div className="flex items-center justify-between text-sm">
-                            <span className="text-slate-600 dark:text-slate-400 flex items-center gap-1">
+                          <div className="flex items-center justify-between p-3 bg-purple-50/50 dark:bg-purple-900/10 rounded-xl border border-purple-100 dark:border-purple-900/30">
+                            <span className="text-sm font-medium text-slate-600 dark:text-slate-400 flex items-center gap-2">
                               <Clock className="w-4 h-4" />
                               Avg Watch Time
                             </span>
-                            <span className="font-semibold text-slate-900 dark:text-white">
+                            <span className="font-bold text-slate-900 dark:text-white">
                               {formatDuration(selectedMediaMetrics.ig_reels_avg_watch_time_ms)}
                             </span>
                           </div>
