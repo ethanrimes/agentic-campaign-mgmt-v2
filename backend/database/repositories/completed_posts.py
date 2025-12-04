@@ -241,7 +241,12 @@ class CompletedPostRepository(BaseRepository[CompletedPost]):
             return []
 
     async def mark_published(
-        self, business_asset_id: str, post_id: UUID, platform_post_id: str, platform_post_url: str | None = None
+        self,
+        business_asset_id: str,
+        post_id: UUID,
+        platform_post_id: str,
+        platform_post_url: str | None = None,
+        platform_video_id: str | None = None
     ) -> CompletedPost | None:
         """
         Mark a post as published.
@@ -251,6 +256,7 @@ class CompletedPostRepository(BaseRepository[CompletedPost]):
             post_id: ID of the post to mark as published
             platform_post_id: Platform's post ID
             platform_post_url: Optional platform URL for the post
+            platform_video_id: Optional video ID for video posts (used for fetching video insights)
         """
         from datetime import datetime, timezone
         updates = {
@@ -260,6 +266,8 @@ class CompletedPostRepository(BaseRepository[CompletedPost]):
         }
         if platform_post_url:
             updates["platform_post_url"] = platform_post_url
+        if platform_video_id:
+            updates["platform_video_id"] = platform_video_id
         return await self.update(business_asset_id, post_id, updates)
 
     async def mark_failed(self, business_asset_id: str, post_id: UUID, error_message: str) -> CompletedPost | None:
