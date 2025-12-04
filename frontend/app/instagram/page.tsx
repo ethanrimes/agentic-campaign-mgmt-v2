@@ -202,8 +202,8 @@ export default function InstagramPage() {
                 <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Reach</span>
               </div>
               <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-bold text-slate-900">{formatNumber(accountInsights?.reach_days_28)}</span>
-                <span className="text-xs text-slate-500 font-medium">last 28 days</span>
+                <span className="text-2xl font-bold text-slate-900">{formatNumber(accountInsights?.reach_day)}</span>
+                <span className="text-xs text-slate-500 font-medium">last 24 hours</span>
               </div>
               <div className="mt-2 text-xs text-slate-400 font-medium">
                 Unique accounts reached
