@@ -600,3 +600,57 @@ class CompletedPostRepository(BaseRepository[CompletedPost]):
                 error=str(e),
             )
             return []
+
+    async def get_recent_published_for_insights(
+        self,
+        business_asset_id: str,
+        platform: Literal["facebook", "instagram"],
+        limit: int = 50,
+        since: Optional[datetime] = None
+    ) -> List[CompletedPost]:
+        """
+        Get recent PUBLISHED posts for insights fetching.
+
+        Args:
+            business_asset_id: Business asset ID to filter by
+            platform: Platform to filter by
+            limit: Maximum number of posts to return
+            since: Optional datetime to filter posts published after
+
+        Returns:
+            List of published posts with platform_post_id set
+        """
+        try:
+            from backend.database import get_supabase_admin_client
+            client = await get_supabase_admin_client()
+
+            query = (
+                client.table(self.table_name)
+                .select("*")
+                .eq("business_asset_id", business_asset_id)
+                .eq("platform", platform)
+                .eq("status", "published")
+                .not_.is_("platform_post_id", "null")
+            )
+
+            if since:
+                query = query.gte("published_at", since.isoformat())
+
+            result = (
+                await query
+                .order("published_at", desc=True)
+                .limit(limit)
+                .execute()
+            )
+
+            return [self.model_class(**item) for item in result.data]
+        except Exception as e:
+            from backend.utils import get_logger
+            logger = get_logger(__name__)
+            logger.error(
+                "Failed to get recent published posts for insights",
+                business_asset_id=business_asset_id,
+                platform=platform,
+                error=str(e),
+            )
+            return []

@@ -1,10 +1,10 @@
-# backend/services/meta/comment_operations.py
+# backend/services/meta/comments/comment_operations.py
 
 """Comment operations service for Facebook and Instagram."""
 
 from typing import Dict, Any, List, Optional
 from backend.utils import get_logger, APIError
-from .base import MetaBaseClient
+from backend.services.meta.base import MetaBaseClient
 
 logger = get_logger(__name__)
 

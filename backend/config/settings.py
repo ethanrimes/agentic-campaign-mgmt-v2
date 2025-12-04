@@ -92,6 +92,16 @@ class Settings(BaseSettings):
     insights_instagram_posts_limit: int = 10  # Max Instagram posts to include in context
     insights_account_metrics_days: int = 14  # Days of account-level metrics to fetch
 
+    # Insights fetching configuration
+    insights_fetch_interval_hours: int = 24  # How often to fetch insights (default: 24 hours)
+    insights_post_limit: int = 50  # Max recent posts to fetch insights for per platform
+    insights_post_days_back: int = 30  # Only fetch insights for posts from the last N days
+    insights_enable_scheduled_fetch: bool = True  # Enable/disable scheduled insights fetching
+
+    # Insights refresh rate limiting (for webhook-triggered refreshes)
+    insights_refresh_cooldown_minutes: int = 5  # Min minutes between webhook-triggered refreshes
+    insights_enable_webhook_refresh: bool = True  # Enable/disable webhook-triggered refresh
+
     # Deduplicator configuration (how many recent canonical seeds to compare against)
     deduplicator_canonical_seeds_limit: int = 10
 

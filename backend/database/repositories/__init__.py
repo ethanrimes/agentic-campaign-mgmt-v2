@@ -5,6 +5,13 @@ from .news_event_seeds import NewsEventSeedRepository, IngestedEventRepository
 from .trend_seeds import TrendSeedsRepository
 from .ungrounded_seeds import UngroundedSeedRepository
 from .insights import InsightsRepository
+from .insights_metrics import (
+    FacebookPageInsightsRepository,
+    FacebookPostInsightsRepository,
+    FacebookVideoInsightsRepository,
+    InstagramAccountInsightsRepository,
+    InstagramMediaInsightsRepository,
+)
 from .content_creation_tasks import ContentCreationTaskRepository
 from .completed_posts import CompletedPostRepository
 from .media import MediaRepository
@@ -19,6 +26,13 @@ __all__ = [
     "TrendSeedsRepository",
     "UngroundedSeedRepository",
     "InsightsRepository",
+    # Cached insights metrics repositories
+    "FacebookPageInsightsRepository",
+    "FacebookPostInsightsRepository",
+    "FacebookVideoInsightsRepository",
+    "InstagramAccountInsightsRepository",
+    "InstagramMediaInsightsRepository",
+    # Other repositories
     "ContentCreationTaskRepository",
     "CompletedPostRepository",
     "MediaRepository",

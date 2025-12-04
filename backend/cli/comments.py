@@ -5,7 +5,7 @@
 import click
 import asyncio
 from backend.utils import get_logger
-from backend.services.meta.instagram_comment_checker import check_instagram_comments
+from backend.services.meta import check_instagram_comments
 from backend.agents.comment_responder import run_comment_responder
 
 logger = get_logger(__name__)

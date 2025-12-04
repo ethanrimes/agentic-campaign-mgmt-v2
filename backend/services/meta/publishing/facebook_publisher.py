@@ -1,11 +1,11 @@
-# backend/services/meta/facebook_publisher.py
+# backend/services/meta/publishing/facebook_publisher.py
 
 """Facebook posting service."""
 
 import json
 from typing import List
 from backend.utils import get_logger, PublishingError
-from .base import MetaBaseClient
+from backend.services.meta.base import MetaBaseClient
 
 logger = get_logger(__name__)
 

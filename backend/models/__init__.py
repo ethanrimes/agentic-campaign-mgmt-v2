@@ -5,7 +5,15 @@ from .sources import Source
 from .tasks import ContentCreationTask
 from .posts import CompletedPost
 from .comments import PlatformComment
-from .insights import InsightReport, ToolCall
+from .insights import (
+    InsightReport,
+    ToolCall,
+    FacebookPageInsights,
+    FacebookPostInsights,
+    FacebookVideoInsights,
+    InstagramAccountInsights,
+    InstagramMediaInsights,
+)
 from .media import Image, Video, MediaType
 from .social_media import Post, User, ScraperPost
 from .planner import PlannerOutput, ContentSeedAllocation
@@ -26,9 +34,15 @@ __all__ = [
     "CompletedPost",
     # Comments
     "PlatformComment",
-    # Insights
+    # Insights - Reports
     "InsightReport",
     "ToolCall",
+    # Insights - Cached Metrics
+    "FacebookPageInsights",
+    "FacebookPostInsights",
+    "FacebookVideoInsights",
+    "InstagramAccountInsights",
+    "InstagramMediaInsights",
     # Media
     "Image",
     "Video",

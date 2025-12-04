@@ -3,8 +3,8 @@
 """
 Context builder for the insights agent.
 
-Fetches all posts, metrics, and comments needed for the context-stuffing approach.
-This eliminates the need for the agent to make tool calls.
+Reads cached metrics from the database instead of making live API calls.
+This provides faster context building and reduces API rate limiting.
 """
 
 from typing import Dict, Any, List, Optional
@@ -13,20 +13,20 @@ from datetime import datetime
 
 from backend.config.settings import settings
 from backend.database.repositories.completed_posts import CompletedPostRepository
-from backend.tools.engagement_tools import (
-    fetch_facebook_page_insights,
-    fetch_facebook_post_insights,
-    fetch_facebook_video_insights,
-    fetch_instagram_media_insights,
-    fetch_instagram_account_insights,
-    fetch_platform_comments,
+from backend.database.repositories.insights_metrics import (
+    FacebookPageInsightsRepository,
+    FacebookPostInsightsRepository,
+    FacebookVideoInsightsRepository,
+    InstagramAccountInsightsRepository,
+    InstagramMediaInsightsRepository,
 )
+from backend.database.repositories.platform_comments import PlatformCommentRepository
 from backend.models.insights import (
-    FacebookPageInsight,
-    FacebookPostInsight,
-    FacebookVideoInsight,
-    InstagramMediaInsight,
-    InstagramAccountInsight,
+    FacebookPageInsights,
+    FacebookPostInsights,
+    FacebookVideoInsights,
+    InstagramAccountInsights,
+    InstagramMediaInsights,
 )
 from backend.utils import get_logger
 
@@ -47,6 +47,9 @@ class PostWithEngagement:
     # Engagement metrics (populated based on post type)
     metrics: Optional[Dict[str, Any]] = None
 
+    # Video metrics (for video posts)
+    video_metrics: Optional[Dict[str, Any]] = None
+
     # Comments on this post
     comments: List[Dict[str, Any]] = field(default_factory=list)
 
@@ -56,9 +59,9 @@ class InsightsContext:
     """Complete context for the insights agent."""
     business_asset_id: str
 
-    # Account-level metrics
-    facebook_page_insights: List[FacebookPageInsight] = field(default_factory=list)
-    instagram_account_insights: Optional[InstagramAccountInsight] = None
+    # Account-level metrics (cached from database)
+    facebook_page_insights: Optional[FacebookPageInsights] = None
+    instagram_account_insights: Optional[InstagramAccountInsights] = None
 
     # Posts with engagement
     facebook_posts: List[PostWithEngagement] = field(default_factory=list)
@@ -68,6 +71,10 @@ class InsightsContext:
     total_facebook_posts: int = 0
     total_instagram_posts: int = 0
     analysis_period_days: int = 14
+
+    # Data freshness
+    facebook_page_last_fetched: Optional[datetime] = None
+    instagram_account_last_fetched: Optional[datetime] = None
 
 
 async def build_insights_context(business_asset_id: str) -> InsightsContext:
@@ -108,26 +115,45 @@ async def build_insights_context(business_asset_id: str) -> InsightsContext:
 
 
 async def _fetch_account_metrics(context: InsightsContext) -> None:
-    """Fetch account-level metrics for both platforms."""
-    days_back = settings.insights_account_metrics_days
+    """Fetch account-level metrics from cached database."""
+    # Facebook page insights (cached)
+    try:
+        fb_repo = FacebookPageInsightsRepository()
+        fb_insights = await fb_repo.get_latest(context.business_asset_id)
+        if fb_insights:
+            context.facebook_page_insights = fb_insights
+            context.facebook_page_last_fetched = fb_insights.metrics_fetched_at
+            logger.debug(
+                "Loaded Facebook page insights from cache",
+                last_fetched=fb_insights.metrics_fetched_at
+            )
+    except Exception as e:
+        logger.warning("Failed to load Facebook page insights from cache", error=str(e))
 
-    # Facebook page insights
-    context.facebook_page_insights = await fetch_facebook_page_insights(
-        business_asset_id=context.business_asset_id,
-        period="day",
-        days_back=days_back
-    )
-
-    # Instagram account insights
-    context.instagram_account_insights = await fetch_instagram_account_insights(
-        business_asset_id=context.business_asset_id,
-        days_back=days_back
-    )
+    # Instagram account insights (cached)
+    try:
+        ig_repo = InstagramAccountInsightsRepository()
+        ig_insights = await ig_repo.get_latest(context.business_asset_id)
+        if ig_insights:
+            context.instagram_account_insights = ig_insights
+            context.instagram_account_last_fetched = ig_insights.metrics_fetched_at
+            logger.debug(
+                "Loaded Instagram account insights from cache",
+                last_fetched=ig_insights.metrics_fetched_at
+            )
+    except Exception as e:
+        logger.warning("Failed to load Instagram account insights from cache", error=str(e))
 
 
 async def _fetch_posts_with_engagement(context: InsightsContext) -> None:
-    """Fetch recent published posts and their engagement metrics."""
+    """Fetch recent published posts and their cached engagement metrics from database."""
     posts_repo = CompletedPostRepository()
+    comments_repo = PlatformCommentRepository()
+
+    # Initialize metrics repositories
+    fb_post_repo = FacebookPostInsightsRepository()
+    fb_video_repo = FacebookVideoInsightsRepository()
+    ig_media_repo = InstagramMediaInsightsRepository()
 
     # Fetch published Facebook posts
     fb_posts = await posts_repo.get_recent_published_by_platform(
@@ -147,31 +173,41 @@ async def _fetch_posts_with_engagement(context: InsightsContext) -> None:
             platform_post_id=post.platform_post_id
         )
 
-        # Fetch engagement based on post type
-        if post.post_type == "facebook_video":
-            metrics = await fetch_facebook_video_insights(
-                business_asset_id=context.business_asset_id,
-                video_id=post.platform_post_id
-            )
-            if metrics:
-                post_with_engagement.metrics = metrics.model_dump()
-        else:
-            # facebook_feed or other types
-            metrics = await fetch_facebook_post_insights(
-                business_asset_id=context.business_asset_id,
-                platform_post_id=post.platform_post_id
-            )
-            if metrics:
-                post_with_engagement.metrics = metrics.model_dump()
+        # Fetch cached post metrics from database
+        if post.platform_post_id:
+            try:
+                cached_metrics = await fb_post_repo.get_by_post_id(
+                    context.business_asset_id,
+                    post.platform_post_id
+                )
+                if cached_metrics:
+                    post_with_engagement.metrics = cached_metrics.model_dump()
+            except Exception as e:
+                logger.debug(f"No cached post metrics for {post.platform_post_id}: {e}")
 
-        # Fetch comments for this post
-        comments = await fetch_platform_comments(
-            business_asset_id=context.business_asset_id,
-            platform="facebook",
-            post_id=post.platform_post_id,
-            limit=20
-        )
-        post_with_engagement.comments = comments
+            # For video posts, also get video-specific metrics
+            if post.post_type == "facebook_video" or post.media_type == "video":
+                try:
+                    video_id = post.platform_video_id or post.platform_post_id
+                    cached_video = await fb_video_repo.get_by_video_id(
+                        context.business_asset_id,
+                        video_id
+                    )
+                    if cached_video:
+                        post_with_engagement.video_metrics = cached_video.model_dump()
+                except Exception as e:
+                    logger.debug(f"No cached video metrics for {post.platform_post_id}: {e}")
+
+        # Fetch comments from database
+        try:
+            comments = await comments_repo.get_comments_by_post(
+                business_asset_id=context.business_asset_id,
+                platform="facebook",
+                post_id=post.platform_post_id,
+            )
+            post_with_engagement.comments = [c.model_dump() for c in comments[:20]]
+        except Exception as e:
+            logger.debug(f"No comments for FB post {post.platform_post_id}: {e}")
 
         context.facebook_posts.append(post_with_engagement)
 
@@ -193,30 +229,28 @@ async def _fetch_posts_with_engagement(context: InsightsContext) -> None:
             platform_post_id=post.platform_post_id
         )
 
-        # Determine media type for Instagram
-        if "reel" in post.post_type.lower():
-            media_type = "reel"
-        elif "carousel" in post.post_type.lower():
-            media_type = "carousel"
-        else:
-            media_type = "image"
+        # Fetch cached media metrics from database
+        if post.platform_post_id:
+            try:
+                cached_metrics = await ig_media_repo.get_by_media_id(
+                    context.business_asset_id,
+                    post.platform_post_id
+                )
+                if cached_metrics:
+                    post_with_engagement.metrics = cached_metrics.model_dump()
+            except Exception as e:
+                logger.debug(f"No cached media metrics for {post.platform_post_id}: {e}")
 
-        metrics = await fetch_instagram_media_insights(
-            business_asset_id=context.business_asset_id,
-            media_id=post.platform_post_id,
-            media_type=media_type
-        )
-        if metrics:
-            post_with_engagement.metrics = metrics.model_dump()
-
-        # Fetch comments for this post
-        comments = await fetch_platform_comments(
-            business_asset_id=context.business_asset_id,
-            platform="instagram",
-            post_id=post.platform_post_id,
-            limit=20
-        )
-        post_with_engagement.comments = comments
+        # Fetch comments from database
+        try:
+            comments = await comments_repo.get_comments_by_post(
+                business_asset_id=context.business_asset_id,
+                platform="instagram",
+                post_id=post.platform_post_id,
+            )
+            post_with_engagement.comments = [c.model_dump() for c in comments[:20]]
+        except Exception as e:
+            logger.debug(f"No comments for IG post {post.platform_post_id}: {e}")
 
         context.instagram_posts.append(post_with_engagement)
 
@@ -244,73 +278,75 @@ def format_context_for_agent(context: InsightsContext) -> str:
     # Facebook page metrics
     lines.append("### Facebook Page Metrics")
     if context.facebook_page_insights:
-        # Aggregate by metric name
-        metrics_by_name: Dict[str, List[int]] = {}
-        for insight in context.facebook_page_insights:
-            if insight.name not in metrics_by_name:
-                metrics_by_name[insight.name] = []
-            if isinstance(insight.value, (int, float)):
-                metrics_by_name[insight.name].append(insight.value)
-
-        for name, values in metrics_by_name.items():
-            total = sum(values)
-            lines.append(f"- {name}: {total} (over {len(values)} days)")
+        fb = context.facebook_page_insights
+        lines.append(f"- Page Name: {fb.page_name or 'N/A'}")
+        lines.append(f"- Last Updated: {context.facebook_page_last_fetched}")
+        lines.append(f"- Page Views (day): {fb.page_views_total_day}")
+        lines.append(f"- Page Views (week): {fb.page_views_total_week}")
+        lines.append(f"- Page Views (28 days): {fb.page_views_total_days_28}")
+        lines.append(f"- Post Engagements (day): {fb.page_post_engagements_day}")
+        lines.append(f"- Post Engagements (week): {fb.page_post_engagements_week}")
+        lines.append(f"- New Follows (day): {fb.page_follows_day}")
+        lines.append(f"- Video Views (day): {fb.page_video_views_day}")
+        if fb.reactions_total:
+            lines.append(f"- Total Reactions: {fb.reactions_total}")
     else:
-        lines.append("No Facebook page metrics available")
+        lines.append("No Facebook page metrics available (run 'insights fetch-account' to populate)")
     lines.append("")
 
     # Instagram account metrics
     lines.append("### Instagram Account Metrics")
     if context.instagram_account_insights:
         ig = context.instagram_account_insights
-        lines.append(f"- Accounts Engaged: {ig.accounts_engaged}")
-        lines.append(f"- Total Interactions: {ig.total_interactions}")
-        lines.append(f"- Reach: {ig.reach}")
-        lines.append(f"- Views: {ig.views}")
-        lines.append(f"- Profile Link Taps: {ig.profile_link_taps}")
-        if ig.follows is not None:
-            lines.append(f"- New Follows: {ig.follows}")
-        if ig.unfollows is not None:
-            lines.append(f"- Unfollows: {ig.unfollows}")
+        lines.append(f"- Username: @{ig.username or 'N/A'}")
+        lines.append(f"- Last Updated: {context.instagram_account_last_fetched}")
+        lines.append(f"- Followers: {ig.followers_count}")
+        lines.append(f"- Following: {ig.follows_count}")
+        lines.append(f"- Media Count: {ig.media_count}")
+        lines.append(f"- Reach (day): {ig.reach_day}")
+        lines.append(f"- Reach (week): {ig.reach_week}")
+        lines.append(f"- Reach (28 days): {ig.reach_days_28}")
     else:
-        lines.append("No Instagram account metrics available")
+        lines.append("No Instagram account metrics available (run 'insights fetch-account' to populate)")
     lines.append("")
 
     # Facebook posts
     lines.append("## Facebook Posts")
     lines.append(f"Total posts in database: {context.total_facebook_posts}")
-    lines.append(f"Posts with metrics: {len(context.facebook_posts)}")
+    lines.append(f"Posts with metrics: {len([p for p in context.facebook_posts if p.metrics])}")
     lines.append("")
 
     for i, post in enumerate(context.facebook_posts, 1):
         lines.append(f"### Facebook Post #{i}")
         lines.append(f"- Type: {post.post_type}")
         lines.append(f"- Published: {post.published_at}")
-        lines.append(f"- Text: {post.text[:200]}{'...' if len(post.text) > 200 else ''}")
+        text = post.text or ""
+        lines.append(f"- Text: {text[:200]}{'...' if len(text) > 200 else ''}")
 
         if post.metrics:
-            lines.append("- Metrics:")
-            if post.post_type == "facebook_video":
-                lines.append(f"  - Total Views: {post.metrics.get('total_views', 0)}")
-                lines.append(f"  - Unique Reach: {post.metrics.get('unique_views', 0)}")
-                lines.append(f"  - Avg Watch Time: {post.metrics.get('avg_time_watched_ms', 0)}ms")
-                lines.append(f"  - Total Watch Time: {post.metrics.get('total_time_watched_ms', 0)}ms")
-                if post.metrics.get('reels_total_plays'):
-                    lines.append(f"  - Reels Plays: {post.metrics.get('reels_total_plays')}")
-                if post.metrics.get('reels_replay_count'):
-                    lines.append(f"  - Replays: {post.metrics.get('reels_replay_count')}")
-                if post.metrics.get('reactions_by_type'):
-                    lines.append(f"  - Social Actions: {post.metrics.get('reactions_by_type')}")
-            else:
-                lines.append(f"  - Clicks: {post.metrics.get('clicks', 0)}")
-                lines.append(f"  - Reactions: {post.metrics.get('reactions_like', 0)} likes")
-                if post.metrics.get('reactions_love'):
-                    lines.append(f"  - Loves: {post.metrics.get('reactions_love', 0)}")
-                if post.metrics.get('reactions_by_type'):
-                    rt = post.metrics['reactions_by_type']
-                    lines.append(f"  - Reaction Breakdown: {rt}")
-        else:
-            lines.append("- Metrics: Not available")
+            lines.append("- Post Metrics:")
+            lines.append(f"  - Reach (unique): {post.metrics.get('post_impressions_unique', 0)}")
+            lines.append(f"  - Reach (organic): {post.metrics.get('post_impressions_organic_unique', 0)}")
+            lines.append(f"  - Total Reactions: {post.metrics.get('reactions_total', 0)}")
+            lines.append(f"  - Comments: {post.metrics.get('comments', 0)}")
+            lines.append(f"  - Shares: {post.metrics.get('shares', 0)}")
+            if post.metrics.get('reactions_like'):
+                lines.append(f"  - Likes: {post.metrics.get('reactions_like', 0)}")
+            if post.metrics.get('reactions_love'):
+                lines.append(f"  - Loves: {post.metrics.get('reactions_love', 0)}")
+
+        # Video-specific metrics
+        if post.video_metrics:
+            lines.append("- Video Metrics:")
+            lines.append(f"  - Total Views: {post.video_metrics.get('post_video_views', 0)}")
+            lines.append(f"  - Unique Views: {post.video_metrics.get('post_video_views_unique', 0)}")
+            lines.append(f"  - Total Watch Time: {post.video_metrics.get('post_video_view_time_ms', 0)}ms")
+            lines.append(f"  - Avg Watch Time: {post.video_metrics.get('post_video_avg_time_watched_ms', 0)}ms")
+            if post.video_metrics.get('video_length_ms'):
+                lines.append(f"  - Video Length: {post.video_metrics.get('video_length_ms', 0)}ms")
+
+        if not post.metrics and not post.video_metrics:
+            lines.append("- Metrics: Not cached (run 'insights fetch-posts' to populate)")
 
         if post.comments:
             lines.append(f"- Comments ({len(post.comments)}):")
@@ -325,7 +361,7 @@ def format_context_for_agent(context: InsightsContext) -> str:
     # Instagram posts
     lines.append("## Instagram Posts")
     lines.append(f"Total posts in database: {context.total_instagram_posts}")
-    lines.append(f"Posts with metrics: {len(context.instagram_posts)}")
+    lines.append(f"Posts with metrics: {len([p for p in context.instagram_posts if p.metrics])}")
     lines.append("")
 
     for i, post in enumerate(context.instagram_posts, 1):
@@ -334,21 +370,23 @@ def format_context_for_agent(context: InsightsContext) -> str:
         lines.append(f"- Published: {post.published_at}")
         if post.metrics and post.metrics.get('permalink'):
             lines.append(f"- Link: {post.metrics.get('permalink')}")
-        lines.append(f"- Text: {post.text[:200]}{'...' if len(post.text) > 200 else ''}")
+        text = post.text or ""
+        lines.append(f"- Text: {text[:200]}{'...' if len(text) > 200 else ''}")
 
         if post.metrics:
             lines.append("- Metrics:")
-            lines.append(f"  - Reach: {post.metrics.get('reach', 0)}")
             lines.append(f"  - Views: {post.metrics.get('views', 0)}")
-            lines.append(f"  - Total Interactions: {post.metrics.get('total_interactions', 0)}")
             lines.append(f"  - Likes: {post.metrics.get('likes', 0)}")
             lines.append(f"  - Comments: {post.metrics.get('comments', 0)}")
-            lines.append(f"  - Saves: {post.metrics.get('saves', 0)}")
+            lines.append(f"  - Saves: {post.metrics.get('saved', 0)}")
             lines.append(f"  - Shares: {post.metrics.get('shares', 0)}")
-            if post.metrics.get('avg_watch_time_ms'):
-                lines.append(f"  - Avg Watch Time: {post.metrics.get('avg_watch_time_ms')}ms")
+            # For reels, show watch time metrics
+            if post.metrics.get('ig_reels_avg_watch_time_ms'):
+                lines.append(f"  - Avg Watch Time: {post.metrics.get('ig_reels_avg_watch_time_ms')}ms")
+            if post.metrics.get('ig_reels_video_view_total_time_ms'):
+                lines.append(f"  - Total Watch Time: {post.metrics.get('ig_reels_video_view_total_time_ms')}ms")
         else:
-            lines.append("- Metrics: Not available")
+            lines.append("- Metrics: Not cached (run 'insights fetch-posts' to populate)")
 
         if post.comments:
             lines.append(f"- Comments ({len(post.comments)}):")

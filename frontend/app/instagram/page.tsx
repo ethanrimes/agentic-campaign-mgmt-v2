@@ -3,34 +3,71 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { getCompletedPosts } from '@/lib/api-client'
+import { getCompletedPosts, getCachedInsights, refreshInsights } from '@/lib/api-client'
 import { useBusinessAsset } from '@/lib/business-asset-context'
 import { Instagram } from 'lucide-react'
 import InstagramPostGrid from '@/components/posts/InstagramPostGrid'
-import type { CompletedPost } from '@/types'
+import InsightsDashboard from '@/components/insights/InsightsDashboard'
+import type { CompletedPost, InstagramAccountInsights, InstagramMediaInsights } from '@/types'
 
 export default function InstagramPage() {
   const { selectedAsset } = useBusinessAsset()
   const [posts, setPosts] = useState<CompletedPost[]>([])
   const [loading, setLoading] = useState(true)
+  const [accountInsights, setAccountInsights] = useState<InstagramAccountInsights | null>(null)
+  const [mediaInsights, setMediaInsights] = useState<InstagramMediaInsights[]>([])
+  const [isRefreshing, setIsRefreshing] = useState(false)
 
   useEffect(() => {
-    async function loadPosts() {
+    async function loadData() {
       if (!selectedAsset) return
 
       try {
         setLoading(true)
-        const data = await getCompletedPosts(selectedAsset.id, 'instagram')
-        setPosts(data)
+
+        // Load posts and insights in parallel
+        const [postsData, insightsData] = await Promise.all([
+          getCompletedPosts(selectedAsset.id, 'instagram'),
+          getCachedInsights(selectedAsset.id, 'instagram'),
+        ])
+
+        setPosts(postsData)
+        setAccountInsights(insightsData.instagram_account || null)
+        setMediaInsights(insightsData.instagram_media || [])
       } catch (error) {
-        console.error('Failed to load Instagram posts:', error)
+        console.error('Failed to load Instagram data:', error)
       } finally {
         setLoading(false)
       }
     }
 
-    loadPosts()
+    loadData()
   }, [selectedAsset])
+
+  const handleRefreshInsights = async () => {
+    if (!selectedAsset || isRefreshing) return
+
+    setIsRefreshing(true)
+    try {
+      const result = await refreshInsights(selectedAsset.id, 'all')
+
+      if (result.status === 'ok') {
+        // Wait a moment for the refresh to complete, then reload insights
+        await new Promise(resolve => setTimeout(resolve, 2000))
+        const insightsData = await getCachedInsights(selectedAsset.id, 'instagram')
+        setAccountInsights(insightsData.instagram_account || null)
+        setMediaInsights(insightsData.instagram_media || [])
+      } else if (result.seconds_until_allowed) {
+        alert(`Rate limited. Please wait ${result.seconds_until_allowed} seconds before refreshing again.`)
+      } else {
+        console.error('Refresh failed:', result.message)
+      }
+    } catch (error) {
+      console.error('Failed to refresh insights:', error)
+    } finally {
+      setIsRefreshing(false)
+    }
+  }
 
   if (!selectedAsset || loading) {
     return (
@@ -51,13 +88,14 @@ export default function InstagramPage() {
 
   return (
     <div className="max-w-7xl mx-auto animate-fade-in">
+      {/* Header Section */}
       <div className="relative mb-10 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-cyan-100/30 via-blue-100/20 to-slate-100/30 rounded-3xl blur-3xl"></div>
         <div className="relative bg-white rounded-2xl p-8 border border-slate-200 shadow-xl">
           <div className="flex items-center gap-4 mb-3">
             <div className="relative">
               <div className="w-14 h-14 bg-gradient-to-br from-pink-600 to-rose-600 rounded-2xl flex items-center justify-center shadow-lg">
-                <Instagram className="w-7 h-7 text-pink-600 dark:text-white" />
+                <Instagram className="w-7 h-7 text-white" />
               </div>
               <div className="absolute inset-0 bg-pink-600 rounded-2xl blur-xl opacity-30"></div>
             </div>
@@ -66,7 +104,7 @@ export default function InstagramPage() {
                 Instagram Posts
               </h1>
               <p className="text-slate-600 mt-1">
-                Published and scheduled Instagram content
+                {accountInsights?.username ? `@${accountInsights.username}` : 'Published and scheduled Instagram content'}
               </p>
             </div>
           </div>
@@ -93,6 +131,17 @@ export default function InstagramPage() {
         </div>
       </div>
 
+      {/* Insights Dashboard */}
+      <div className="mb-8">
+        <InsightsDashboard
+          platform="instagram"
+          accountInsights={accountInsights}
+          onRefresh={handleRefreshInsights}
+          isRefreshing={isRefreshing}
+        />
+      </div>
+
+      {/* Posts Grid */}
       {posts.length === 0 ? (
         <div className="text-center py-16 bg-white rounded-2xl border border-slate-200 shadow-xl">
           <div className="relative inline-block mb-6">
@@ -105,7 +154,11 @@ export default function InstagramPage() {
           </p>
         </div>
       ) : (
-        <InstagramPostGrid posts={posts} accountName={selectedAsset.name} />
+        <InstagramPostGrid
+          posts={posts}
+          accountName={accountInsights?.username || selectedAsset.name}
+          mediaInsights={mediaInsights}
+        />
       )}
     </div>
   )
