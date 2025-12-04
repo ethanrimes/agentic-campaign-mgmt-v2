@@ -7,7 +7,54 @@ Each model defines its endpoint, supported parameters, and payload builder.
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from enum import Enum
 from typing import Dict, Any, List, Optional, Literal
+
+
+class ImageSize(str, Enum):
+    """
+    Standard image sizes for social media content.
+
+    All sizes use maximum resolution where possible (up to 4096 limit).
+    All meet the minimum pixel requirement for seedream-v4.5.
+
+    Width and height range: 1024-4096 pixels
+    """
+    # Square formats (1:1) - Maximum resolution
+    SQUARE = "4096*4096"           # 16,777,216 px - Maximum square resolution
+    SQUARE_MEDIUM = "3072*3072"    # 9,437,184 px - High quality square
+
+    # Portrait formats (4:5, 9:16) - Instagram/TikTok/Reels - Maximum height
+    PORTRAIT_4_5 = "3277*4096"     # 13,422,592 px - Instagram portrait (4:5 at max height)
+    PORTRAIT_9_16 = "2304*4096"    # 9,437,184 px - Stories/Reels (9:16 at max height)
+    PORTRAIT_STORY = "2304*4096"   # 9,437,184 px - Alias for 9:16
+
+    # Landscape formats (16:9, 1.91:1) - Facebook/Twitter/YouTube - Maximum width
+    LANDSCAPE_16_9 = "4096*2304"   # 9,437,184 px - 16:9 at max width
+    LANDSCAPE_191_1 = "4096*2144"  # 8,781,824 px - Facebook link preview (1.91:1 at max width)
+    LANDSCAPE_WIDE = "4096*2160"   # 8,847,360 px - Ultra-wide horizontal
+    LANDSCAPE_FACEBOOK = "4096*3277"  # 13,422,592 px - Facebook feed landscape (5:4)
+
+    @classmethod
+    def get_default(cls) -> "ImageSize":
+        """Get the default size for general social media use."""
+        return cls.SQUARE
+
+    @classmethod
+    def for_platform(cls, platform: str, orientation: str = "square") -> "ImageSize":
+        """
+        Get recommended size for a specific platform and orientation.
+
+        Args:
+            platform: "instagram", "facebook", "tiktok", "twitter"
+            orientation: "square", "portrait", "landscape"
+        """
+        if orientation == "portrait":
+            return cls.PORTRAIT_4_5
+        elif orientation == "landscape":
+            return cls.LANDSCAPE_16_9
+        else:
+            return cls.SQUARE
 
 
 @dataclass
@@ -96,6 +143,48 @@ class SeedreamV4Config(ModelConfig):
             prompt: Text prompt for generation
             size: Image size in format "width*height" (range: 1024-4096 each)
         """
+        return {
+            "prompt": prompt,
+            "size": size,
+            "enable_base64_output": False,  # Fixed
+            "enable_sync_mode": False,  # Async mode to match current setup
+        }
+
+
+@dataclass
+class SeedreamV45Config(ModelConfig):
+    """Configuration for bytedance/seedream-v4.5 model.
+
+    NOTE: This model requires minimum 3,686,400 pixels (e.g., 1920*1920).
+    Use ImageSize enum values which all meet this requirement.
+    """
+
+    model_id: str = "bytedance/seedream-v4.5"
+
+    @property
+    def media_type(self) -> Literal["image", "video"]:
+        return "image"
+
+    def build_payload(
+        self,
+        prompt: str,
+        size: str = None,
+        **kwargs,
+    ) -> Dict[str, Any]:
+        """
+        Build payload for Seedream V4.5.
+
+        Args:
+            prompt: Text prompt for generation
+            size: Image size - use ImageSize enum value or "width*height" string.
+                  Must be at least 3,686,400 pixels. Defaults to ImageSize.SQUARE (2048*2048).
+        """
+        # Handle ImageSize enum or string
+        if size is None:
+            size = ImageSize.get_default().value
+        elif isinstance(size, ImageSize):
+            size = size.value
+
         return {
             "prompt": prompt,
             "size": size,
@@ -194,6 +283,7 @@ class SeedanceV1ProT2VConfig(ModelConfig):
 IMAGE_MODEL_CONFIGS: Dict[str, type[ModelConfig]] = {
     "stability-ai/sdxl-lora": SDXLLoraConfig,
     "bytedance/seedream-v4": SeedreamV4Config,
+    "bytedance/seedream-v4.5": SeedreamV45Config,
 }
 
 VIDEO_MODEL_CONFIGS: Dict[str, type[ModelConfig]] = {

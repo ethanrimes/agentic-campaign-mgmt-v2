@@ -210,33 +210,26 @@ async def fetch_post_insights(
                     continue
 
                 try:
-                    # Fetch post insights
-                    post_insights = await fb_service.fetch_post_insights(
-                        platform_post_id=post.platform_post_id
-                    )
-
-                    if post_insights:
-                        # Link to completed post
-                        post_insights.completed_post_id = post.id
-                        await fb_post_repo.upsert(post_insights)
-                        result["facebook_posts_fetched"] += 1
-
-                        # Check if it's a video post and fetch video insights
-                        if post.post_type == "facebook_video":
-                            try:
-                                video_insights = await fb_service.fetch_video_insights(
-                                    video_id=post.platform_post_id
-                                )
-                                if video_insights:
-                                    video_insights.completed_post_id = post.id
-                                    await fb_video_repo.upsert(video_insights)
-                                    result["facebook_videos_fetched"] += 1
-                            except Exception as e:
-                                logger.warning(
-                                    "Failed to fetch video insights",
-                                    post_id=post.platform_post_id,
-                                    error=str(e),
-                                )
+                    # Determine whether to use video or post insights endpoint
+                    # based on whether platform_video_id is set
+                    if post.platform_video_id:
+                        # Video post - use video insights endpoint
+                        video_insights = await fb_service.fetch_video_insights(
+                            video_id=post.platform_video_id
+                        )
+                        if video_insights:
+                            video_insights.completed_post_id = post.id
+                            await fb_video_repo.upsert(video_insights)
+                            result["facebook_videos_fetched"] += 1
+                    else:
+                        # Feed post - use post insights endpoint
+                        post_insights = await fb_service.fetch_post_insights(
+                            platform_post_id=post.platform_post_id
+                        )
+                        if post_insights:
+                            post_insights.completed_post_id = post.id
+                            await fb_post_repo.upsert(post_insights)
+                            result["facebook_posts_fetched"] += 1
 
                 except Exception as e:
                     error_msg = f"Failed to fetch FB post {post.platform_post_id}: {e}"

@@ -18,7 +18,10 @@ logger = get_logger(__name__)
 class GenerateImageInput(BaseModel):
     """Input for GenerateImage tool."""
     prompt: str = Field(..., description="Text prompt describing the image to generate")
-    size: str = Field("1024*1024", description="Image size (e.g., '1024*1024', '1024*768')")
+    size: str = Field(
+        None,
+        description="Image size. Options: 'square' (2048*2048), 'portrait' (1920*2400), 'landscape' (2400*1920). Defaults to square."
+    )
     guidance_scale: float = Field(7.5, description="Guidance scale (1-20, default: 7.5)")
 
 
@@ -38,7 +41,7 @@ class GenerateImageTool(BaseTool):
     def _run(
         self,
         prompt: str,
-        size: str = "1024*1024",
+        size: str = None,
         guidance_scale: float = 7.5
     ) -> str:
         """Sync version - not used by async agents."""
@@ -47,21 +50,30 @@ class GenerateImageTool(BaseTool):
     async def _arun(
         self,
         prompt: str,
-        size: str = "1024*1024",
+        size: str = None,
         guidance_scale: float = 7.5
     ) -> str:
         """Execute the tool asynchronously."""
         try:
             from datetime import datetime, timezone
             from uuid import uuid4
+            from backend.services.wavespeed.model_configs import ImageSize
 
             generator = ImageGenerator()
             storage = StorageService()
             media_repo = MediaRepository()
 
+            # Map friendly names to ImageSize enum
+            size_mapping = {
+                "square": ImageSize.SQUARE,
+                "portrait": ImageSize.PORTRAIT_4_5,
+                "landscape": ImageSize.LANDSCAPE_FACEBOOK,
+            }
+            actual_size = size_mapping.get(size, size) if size else None
+
             # Generate image (returns bytes directly)
-            logger.info("Generating image", prompt=prompt)
-            image_bytes = await generator.generate(prompt, size, guidance_scale)
+            logger.info("Generating image", prompt=prompt, size=actual_size)
+            image_bytes = await generator.generate(prompt, actual_size, guidance_scale=guidance_scale)
 
             # Generate unique filename
             timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
@@ -195,7 +207,10 @@ class GenerateImageAndVideoInput(BaseModel):
     """Input for GenerateImageAndVideo tool."""
     image_prompt: str = Field(..., description="Text prompt for generating the image")
     video_prompt: str = Field(..., description="Text prompt for generating the video")
-    image_size: str = Field("1024*1024", description="Image size (default: '1024*1024')")
+    image_size: str = Field(
+        None,
+        description="Image size. Options: 'square' (2048*2048), 'portrait' (1920*2400), 'landscape' (2400*1920). Defaults to square."
+    )
     video_orientation: Literal["landscape", "portrait"] = Field(
         "landscape",
         description="Video orientation: 'landscape' (1280x720) or 'portrait' (720x1280)"
@@ -221,7 +236,7 @@ class GenerateImageAndVideoTool(BaseTool):
         self,
         image_prompt: str,
         video_prompt: str,
-        image_size: str = "1024*1024",
+        image_size: str = None,
         video_orientation: str = "landscape"
     ) -> str:
         """Sync version - not used by async agents."""
@@ -231,20 +246,29 @@ class GenerateImageAndVideoTool(BaseTool):
         self,
         image_prompt: str,
         video_prompt: str,
-        image_size: str = "1024*1024",
+        image_size: str = None,
         video_orientation: str = "landscape"
     ) -> str:
         """Execute the tool asynchronously."""
         try:
             from datetime import datetime, timezone
             from uuid import uuid4
+            from backend.services.wavespeed.model_configs import ImageSize
 
-            # Map orientation to actual size
+            # Map orientation to actual size for video
             size_map = {
                 "landscape": "1280*720",
                 "portrait": "720*1280"
             }
             video_size = size_map.get(video_orientation, "1280*720")
+
+            # Map friendly names to ImageSize enum for image
+            image_size_mapping = {
+                "square": ImageSize.SQUARE,
+                "portrait": ImageSize.PORTRAIT_4_5,
+                "landscape": ImageSize.LANDSCAPE_FACEBOOK,
+            }
+            actual_image_size = image_size_mapping.get(image_size, image_size) if image_size else None
 
             image_gen = ImageGenerator()
             video_gen = VideoGenerator()
@@ -252,8 +276,8 @@ class GenerateImageAndVideoTool(BaseTool):
             media_repo = MediaRepository()
 
             # Step 1: Generate image (returns bytes directly)
-            logger.info("Generating image", prompt=image_prompt)
-            image_bytes = await image_gen.generate(image_prompt, image_size)
+            logger.info("Generating image", prompt=image_prompt, size=actual_image_size)
+            image_bytes = await image_gen.generate(image_prompt, actual_image_size)
 
             # Generate unique filename for image
             timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")

@@ -26,8 +26,8 @@ from backend.utils import setup_logging, get_logger
 from backend.database.repositories.completed_posts import CompletedPostRepository
 from backend.database.repositories.media import MediaRepository
 from backend.database.repositories.business_assets import BusinessAssetRepository
-from backend.services.meta.facebook_publisher import FacebookPublisher
-from backend.services.meta.instagram_publisher import InstagramPublisher
+from backend.services.meta.publishing.facebook_publisher import FacebookPublisher
+from backend.services.meta.publishing.instagram_publisher import InstagramPublisher
 from backend.models import CompletedPost
 
 setup_logging()

@@ -162,9 +162,9 @@ class ContentCreationAgent:
         file_id = uuid4().hex[:8]
 
         if spec.media_type == "image":
-            # Generate image
-            size = spec.size or "1024*1024"
-            logger.info("Generating image from spec", prompt=spec.prompt[:50], size=size)
+            # Generate image (defaults to ImageSize.SQUARE if no size specified)
+            size = spec.size  # Let the generator use its default if None
+            logger.info("Generating image from spec", prompt=spec.prompt[:50], size=size or "default")
 
             image_bytes = await self.image_generator.generate(spec.prompt, size)
 
