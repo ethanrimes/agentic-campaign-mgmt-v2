@@ -5,7 +5,7 @@
 import { useState, useEffect } from 'react'
 import { getCompletedPosts, getCachedInsights, refreshInsights } from '@/lib/api-client'
 import { useBusinessAsset } from '@/lib/business-asset-context'
-import { Facebook, RefreshCw, Users, Heart, Play, Share2 } from 'lucide-react'
+import { Facebook, RefreshCw, Users, Heart, Play, Share2, ChevronDown } from 'lucide-react'
 import FacebookPostGrid from '@/components/posts/FacebookPostGrid'
 import type { CompletedPost, FacebookPageInsights, FacebookPostInsights, FacebookVideoInsights } from '@/types'
 import { formatRelativeTime } from '@/lib/utils'
@@ -18,6 +18,8 @@ export default function FacebookPage() {
   const [postInsights, setPostInsights] = useState<FacebookPostInsights[]>([])
   const [videoInsights, setVideoInsights] = useState<FacebookVideoInsights[]>([])
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const [pendingExpanded, setPendingExpanded] = useState(true)
+  const [publishedExpanded, setPublishedExpanded] = useState(true)
 
   useEffect(() => {
     async function loadData() {
@@ -236,40 +238,52 @@ export default function FacebookPage() {
           {/* Pending Posts Section */}
           {posts.some(p => p.status === 'pending' || p.status === 'failed') && (
             <section>
-              <div className="flex items-center gap-3 mb-6">
+              <button
+                onClick={() => setPendingExpanded(!pendingExpanded)}
+                className="w-full flex items-center gap-3 mb-6 group cursor-pointer"
+              >
                 <h2 className="text-xl font-bold text-slate-800">Pending & Scheduled</h2>
                 <div className="h-px flex-1 bg-slate-200"></div>
                 <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">
                   {posts.filter(p => p.status === 'pending' || p.status === 'failed').length} posts
                 </span>
-              </div>
-              <FacebookPostGrid
-                posts={posts.filter(p => p.status === 'pending' || p.status === 'failed')}
-                postInsights={postInsights}
-                videoInsights={videoInsights}
-                pageName={pageInsights?.page_name}
-                pagePictureUrl={pageInsights?.page_picture_url}
-              />
+                <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform duration-200 ${pendingExpanded ? '' : '-rotate-90'}`} />
+              </button>
+              {pendingExpanded && (
+                <FacebookPostGrid
+                  posts={posts.filter(p => p.status === 'pending' || p.status === 'failed')}
+                  postInsights={postInsights}
+                  videoInsights={videoInsights}
+                  pageName={pageInsights?.page_name}
+                  pagePictureUrl={pageInsights?.page_picture_url}
+                />
+              )}
             </section>
           )}
 
           {/* Published Posts Section */}
           {posts.some(p => p.status === 'published') && (
             <section>
-              <div className="flex items-center gap-3 mb-6">
+              <button
+                onClick={() => setPublishedExpanded(!publishedExpanded)}
+                className="w-full flex items-center gap-3 mb-6 group cursor-pointer"
+              >
                 <h2 className="text-xl font-bold text-slate-800">Published History</h2>
                 <div className="h-px flex-1 bg-slate-200"></div>
                 <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">
                   {posts.filter(p => p.status === 'published').length} posts
                 </span>
-              </div>
-              <FacebookPostGrid
-                posts={posts.filter(p => p.status === 'published')}
-                postInsights={postInsights}
-                videoInsights={videoInsights}
-                pageName={pageInsights?.page_name}
-                pagePictureUrl={pageInsights?.page_picture_url}
-              />
+                <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform duration-200 ${publishedExpanded ? '' : '-rotate-90'}`} />
+              </button>
+              {publishedExpanded && (
+                <FacebookPostGrid
+                  posts={posts.filter(p => p.status === 'published')}
+                  postInsights={postInsights}
+                  videoInsights={videoInsights}
+                  pageName={pageInsights?.page_name}
+                  pagePictureUrl={pageInsights?.page_picture_url}
+                />
+              )}
             </section>
           )}
         </div>

@@ -5,7 +5,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { getCompletedPosts, getCachedInsights, refreshInsights } from '@/lib/api-client'
 import { useBusinessAsset } from '@/lib/business-asset-context'
-import { Instagram, RefreshCw, Users, UserPlus, Heart, Eye, Image } from 'lucide-react'
+import { Instagram, RefreshCw, Users, UserPlus, Heart, Eye, Image, ChevronDown } from 'lucide-react'
 import InstagramPostGrid from '@/components/posts/InstagramPostGrid'
 import type { CompletedPost, InstagramAccountInsights, InstagramMediaInsights } from '@/types'
 import { formatRelativeTime } from '@/lib/utils'
@@ -17,6 +17,8 @@ export default function InstagramPage() {
   const [accountInsights, setAccountInsights] = useState<InstagramAccountInsights | null>(null)
   const [mediaInsights, setMediaInsights] = useState<InstagramMediaInsights[]>([])
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const [pendingExpanded, setPendingExpanded] = useState(true)
+  const [publishedExpanded, setPublishedExpanded] = useState(true)
 
   useEffect(() => {
     async function loadData() {
@@ -182,11 +184,11 @@ export default function InstagramPage() {
               <div className="mt-2 flex gap-2">
                 <div className="flex items-center gap-1 text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-md">
                   <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
-                  {statusCounts.published}
+                  {statusCounts.published} published
                 </div>
                 <div className="flex items-center gap-1 text-xs font-medium text-amber-600 bg-amber-50 px-2 py-1 rounded-md">
                   <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-                  {statusCounts.pending}
+                  {statusCounts.pending} pending
                 </div>
               </div>
             </div>
@@ -260,38 +262,50 @@ export default function InstagramPage() {
           {/* Pending Posts Section */}
           {posts.some(p => p.status === 'pending' || p.status === 'failed') && (
             <section>
-              <div className="flex items-center gap-3 mb-6">
+              <button
+                onClick={() => setPendingExpanded(!pendingExpanded)}
+                className="w-full flex items-center gap-3 mb-6 group cursor-pointer"
+              >
                 <h2 className="text-xl font-bold text-slate-800">Pending & Scheduled</h2>
                 <div className="h-px flex-1 bg-slate-200"></div>
                 <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">
                   {posts.filter(p => p.status === 'pending' || p.status === 'failed').length} posts
                 </span>
-              </div>
-              <InstagramPostGrid
-                posts={posts.filter(p => p.status === 'pending' || p.status === 'failed')}
-                accountName={accountInsights?.username || selectedAsset.name}
-                accountProfilePictureUrl={accountInsights?.profile_picture_url}
-                mediaInsights={mediaInsights}
-              />
+                <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform duration-200 ${pendingExpanded ? '' : '-rotate-90'}`} />
+              </button>
+              {pendingExpanded && (
+                <InstagramPostGrid
+                  posts={posts.filter(p => p.status === 'pending' || p.status === 'failed')}
+                  accountName={accountInsights?.username || selectedAsset.name}
+                  accountProfilePictureUrl={accountInsights?.profile_picture_url}
+                  mediaInsights={mediaInsights}
+                />
+              )}
             </section>
           )}
 
           {/* Published Posts Section */}
           {posts.some(p => p.status === 'published') && (
             <section>
-              <div className="flex items-center gap-3 mb-6">
+              <button
+                onClick={() => setPublishedExpanded(!publishedExpanded)}
+                className="w-full flex items-center gap-3 mb-6 group cursor-pointer"
+              >
                 <h2 className="text-xl font-bold text-slate-800">Published History</h2>
                 <div className="h-px flex-1 bg-slate-200"></div>
                 <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">
                   {posts.filter(p => p.status === 'published').length} posts
                 </span>
-              </div>
-              <InstagramPostGrid
-                posts={posts.filter(p => p.status === 'published')}
-                accountName={accountInsights?.username || selectedAsset.name}
-                accountProfilePictureUrl={accountInsights?.profile_picture_url}
-                mediaInsights={mediaInsights}
-              />
+                <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform duration-200 ${publishedExpanded ? '' : '-rotate-90'}`} />
+              </button>
+              {publishedExpanded && (
+                <InstagramPostGrid
+                  posts={posts.filter(p => p.status === 'published')}
+                  accountName={accountInsights?.username || selectedAsset.name}
+                  accountProfilePictureUrl={accountInsights?.profile_picture_url}
+                  mediaInsights={mediaInsights}
+                />
+              )}
             </section>
           )}
         </div>

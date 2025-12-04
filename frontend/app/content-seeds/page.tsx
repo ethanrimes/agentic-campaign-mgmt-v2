@@ -3,6 +3,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { getNewsEventSeeds, getTrendSeeds, getUngroundedSeeds, getPostCountsBySeed } from '@/lib/api-client'
 import { useBusinessAsset } from '@/lib/business-asset-context'
 import { Database, TrendingUp, Lightbulb, Sparkles } from 'lucide-react'
@@ -11,6 +12,10 @@ import type { NewsEventSeed, TrendSeed, UngroundedSeed } from '@/types'
 
 export default function ContentSeedsPage() {
   const { selectedAsset } = useBusinessAsset()
+  const searchParams = useSearchParams()
+  const initialSeedId = searchParams.get('seed') || undefined
+  const initialSeedType = searchParams.get('type') as 'news_event' | 'trend' | 'ungrounded' | undefined
+
   const [newsSeeds, setNewsSeeds] = useState<NewsEventSeed[]>([])
   const [trendSeeds, setTrendSeeds] = useState<TrendSeed[]>([])
   const [ungroundedSeeds, setUngroundedSeeds] = useState<UngroundedSeed[]>([])
@@ -116,6 +121,8 @@ export default function ContentSeedsPage() {
           trendSeeds={trendSeeds}
           ungroundedSeeds={ungroundedSeeds}
           postCounts={postCounts}
+          initialSeedId={initialSeedId}
+          initialSeedType={initialSeedType}
         />
       )}
     </div>
