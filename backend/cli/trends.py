@@ -49,10 +49,14 @@ def discover(business_asset_id: str, query: str, count: int):
 @click.option("--limit", default=10, help="Number of trends to display")
 def list(business_asset_id: str, limit: int):
     """List recent trend seeds"""
+    import asyncio
     from backend.database.repositories import TrendSeedsRepository
 
-    repo = TrendSeedsRepository()
-    seeds = repo.get_recent(business_asset_id, limit=limit)
+    async def _list():
+        repo = TrendSeedsRepository()
+        return await repo.get_recent(business_asset_id, limit=limit)
+
+    seeds = asyncio.run(_list())
 
     click.echo(f"\n📈 Recent Trend Seeds ({len(seeds)}):\n")
     for seed in seeds:

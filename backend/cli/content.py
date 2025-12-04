@@ -146,10 +146,14 @@ def create(business_asset_id: str, task_id: str, skip_verify: bool, share_media:
 @click.option("--limit", default=10, help="Number of tasks to display")
 def pending(business_asset_id: str, limit: int):
     """List pending content creation tasks"""
+    import asyncio
     from backend.database.repositories import ContentCreationTaskRepository
 
-    repo = ContentCreationTaskRepository()
-    tasks = repo.get_pending_tasks(business_asset_id, limit=limit)
+    async def _get_pending():
+        repo = ContentCreationTaskRepository()
+        return await repo.get_pending_tasks(business_asset_id, limit=limit)
+
+    tasks = asyncio.run(_get_pending())
 
     click.echo(f"\n📋 Pending Tasks ({len(tasks)}):\n")
     for task in tasks:

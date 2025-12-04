@@ -206,7 +206,7 @@ def run_trend_discovery():
     assets = get_active_business_assets()
     for asset_id in assets:
         run_command(
-            ["trends", "discover", "--business-asset-id", asset_id, "--query", "UPenn students", "--count", "2"],
+            ["trends", "discover", "--business-asset-id", asset_id, "--count", "2"],
             f"Trend Discovery - {asset_id}"
         )
 
