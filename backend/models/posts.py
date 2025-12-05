@@ -73,9 +73,9 @@ class CompletedPost(BaseModel):
     status: Literal["pending", "published", "failed"] = Field(
         default="pending", description="Publishing status"
     )
-    verification_status: Literal["unverified", "verified", "rejected"] = Field(
+    verification_status: Literal["unverified", "verified", "rejected", "manually_overridden"] = Field(
         default="unverified",
-        description="Content verification status: unverified (not yet checked), verified (approved), rejected (failed verification)"
+        description="Content verification status: unverified (not yet checked), verified (approved), rejected (failed verification), manually_overridden (rejected but manually approved)"
     )
     scheduled_posting_time: Optional[datetime] = Field(
         None, description="When this post should be published (NULL means publish immediately)"
