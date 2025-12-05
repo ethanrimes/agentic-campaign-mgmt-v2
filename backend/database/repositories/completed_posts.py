@@ -80,14 +80,14 @@ class CompletedPostRepository(BaseRepository[CompletedPost]):
             now = datetime.now(timezone.utc).isoformat()
 
             # Get posts where scheduled_posting_time is NULL or <= now
-            # AND verification_status is 'verified'
+            # AND verification_status is 'verified' or 'manually_overridden'
             result = (
                 await client.table(self.table_name)
                 .select("*")
                 .eq("business_asset_id", business_asset_id)
                 .eq("platform", platform)
                 .eq("status", "pending")
-                .eq("verification_status", "verified")
+                .in_("verification_status", ["verified", "manually_overridden"])
                 .or_(f"scheduled_posting_time.is.null,scheduled_posting_time.lte.{now}")
                 .order("scheduled_posting_time", desc=False)
                 .limit(limit)
@@ -136,7 +136,7 @@ class CompletedPostRepository(BaseRepository[CompletedPost]):
                 .eq("business_asset_id", business_asset_id)
                 .eq("platform", platform)
                 .eq("status", "pending")
-                .eq("verification_status", "verified")
+                .in_("verification_status", ["verified", "manually_overridden"])
                 .order("scheduled_posting_time", desc=False)
                 .limit(limit)
                 .execute()
@@ -543,7 +543,7 @@ class CompletedPostRepository(BaseRepository[CompletedPost]):
                 .select("*")
                 .eq("business_asset_id", business_asset_id)
                 .eq("status", "pending")
-                .eq("verification_status", "verified")
+                .in_("verification_status", ["verified", "manually_overridden"])
                 .order("scheduled_posting_time", desc=False)
                 .limit(limit)
                 .execute()
