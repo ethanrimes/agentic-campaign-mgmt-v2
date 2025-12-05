@@ -54,6 +54,77 @@ content_creation_tasks,video_posts,integer,YES,0
 content_creation_tasks,text_only_posts,integer,YES,0
 content_creation_tasks,scheduled_times,jsonb,YES,'[]'::jsonb
 content_creation_tasks,carousel_posts,integer,YES,0
+facebook_page_insights,id,uuid,NO,uuid_generate_v4()
+facebook_page_insights,business_asset_id,text,NO,
+facebook_page_insights,page_id,text,NO,
+facebook_page_insights,page_name,text,YES,
+facebook_page_insights,page_picture_url,text,YES,
+facebook_page_insights,page_views_total,integer,YES,0
+facebook_page_insights,page_views_total_week,integer,YES,0
+facebook_page_insights,page_views_total_days_28,integer,YES,0
+facebook_page_insights,page_total_actions,integer,YES,0
+facebook_page_insights,page_total_actions_days_28,integer,YES,0
+facebook_page_insights,page_post_engagements,integer,YES,0
+facebook_page_insights,page_post_engagements_week,integer,YES,0
+facebook_page_insights,page_post_engagements_days_28,integer,YES,0
+facebook_page_insights,page_follows,integer,YES,0
+facebook_page_insights,page_media_view,integer,YES,0
+facebook_page_insights,page_media_view_week,integer,YES,0
+facebook_page_insights,page_media_view_days_28,integer,YES,0
+facebook_page_insights,page_media_view_from_followers,integer,YES,0
+facebook_page_insights,page_media_view_from_non_followers,integer,YES,0
+facebook_page_insights,reactions_like_total,integer,YES,0
+facebook_page_insights,reactions_love_total,integer,YES,0
+facebook_page_insights,reactions_wow_total,integer,YES,0
+facebook_page_insights,reactions_haha_total,integer,YES,0
+facebook_page_insights,reactions_sorry_total,integer,YES,0
+facebook_page_insights,reactions_anger_total,integer,YES,0
+facebook_page_insights,reactions_like_week,integer,YES,0
+facebook_page_insights,reactions_love_week,integer,YES,0
+facebook_page_insights,reactions_wow_week,integer,YES,0
+facebook_page_insights,reactions_haha_week,integer,YES,0
+facebook_page_insights,reactions_sorry_week,integer,YES,0
+facebook_page_insights,reactions_anger_week,integer,YES,0
+facebook_page_insights,page_video_views,integer,YES,0
+facebook_page_insights,page_video_views_week,integer,YES,0
+facebook_page_insights,page_video_views_days_28,integer,YES,0
+facebook_page_insights,raw_metrics,jsonb,YES,'{}'::jsonb
+facebook_page_insights,metrics_fetched_at,timestamp with time zone,YES,now()
+facebook_page_insights,created_at,timestamp with time zone,YES,now()
+facebook_page_insights,updated_at,timestamp with time zone,YES,now()
+facebook_post_insights,id,uuid,NO,uuid_generate_v4()
+facebook_post_insights,business_asset_id,text,NO,
+facebook_post_insights,platform_post_id,text,NO,
+facebook_post_insights,completed_post_id,uuid,YES,
+facebook_post_insights,post_media_view,integer,YES,0
+facebook_post_insights,post_media_view_from_followers,integer,YES,0
+facebook_post_insights,post_media_view_from_non_followers,integer,YES,0
+facebook_post_insights,post_impressions_unique,integer,YES,0
+facebook_post_insights,post_impressions_organic_unique,integer,YES,0
+facebook_post_insights,reactions_like,integer,YES,0
+facebook_post_insights,reactions_love,integer,YES,0
+facebook_post_insights,reactions_wow,integer,YES,0
+facebook_post_insights,reactions_haha,integer,YES,0
+facebook_post_insights,reactions_sorry,integer,YES,0
+facebook_post_insights,reactions_anger,integer,YES,0
+facebook_post_insights,reactions_by_type,jsonb,YES,'{}'::jsonb
+facebook_post_insights,raw_metrics,jsonb,YES,'{}'::jsonb
+facebook_post_insights,metrics_fetched_at,timestamp with time zone,YES,now()
+facebook_post_insights,created_at,timestamp with time zone,YES,now()
+facebook_post_insights,updated_at,timestamp with time zone,YES,now()
+facebook_video_insights,id,uuid,NO,uuid_generate_v4()
+facebook_video_insights,business_asset_id,text,NO,
+facebook_video_insights,platform_video_id,text,NO,
+facebook_video_insights,completed_post_id,uuid,YES,
+facebook_video_insights,post_video_views,integer,YES,0
+facebook_video_insights,post_video_views_unique,integer,YES,0
+facebook_video_insights,post_video_view_time_ms,bigint,YES,0
+facebook_video_insights,post_video_avg_time_watched_ms,integer,YES,0
+facebook_video_insights,post_video_length_ms,integer,YES,0
+facebook_video_insights,raw_metrics,jsonb,YES,'{}'::jsonb
+facebook_video_insights,metrics_fetched_at,timestamp with time zone,YES,now()
+facebook_video_insights,created_at,timestamp with time zone,YES,now()
+facebook_video_insights,updated_at,timestamp with time zone,YES,now()
 ingested_event_sources,id,uuid,NO,uuid_generate_v4()
 ingested_event_sources,ingested_event_id,uuid,NO,
 ingested_event_sources,source_id,uuid,NO,
@@ -77,6 +148,42 @@ insight_reports,tool_calls,jsonb,YES,'[]'::jsonb
 insight_reports,created_at,timestamp with time zone,YES,now()
 insight_reports,created_by,text,NO,
 insight_reports,business_asset_id,text,NO,
+insight_reports,recommendations,jsonb,YES,'[]'::jsonb
+insight_reports,reviewed_post_ids,ARRAY,YES,'{}'::uuid[]
+instagram_account_insights,id,uuid,NO,uuid_generate_v4()
+instagram_account_insights,business_asset_id,text,NO,
+instagram_account_insights,ig_user_id,text,NO,
+instagram_account_insights,username,text,YES,
+instagram_account_insights,name,text,YES,
+instagram_account_insights,biography,text,YES,
+instagram_account_insights,profile_picture_url,text,YES,
+instagram_account_insights,followers_count,integer,YES,0
+instagram_account_insights,follows_count,integer,YES,0
+instagram_account_insights,media_count,integer,YES,0
+instagram_account_insights,reach_day,integer,YES,0
+instagram_account_insights,reach_week,integer,YES,0
+instagram_account_insights,reach_days_28,integer,YES,0
+instagram_account_insights,raw_metrics,jsonb,YES,'{}'::jsonb
+instagram_account_insights,metrics_fetched_at,timestamp with time zone,YES,now()
+instagram_account_insights,created_at,timestamp with time zone,YES,now()
+instagram_account_insights,updated_at,timestamp with time zone,YES,now()
+instagram_media_insights,id,uuid,NO,uuid_generate_v4()
+instagram_media_insights,business_asset_id,text,NO,
+instagram_media_insights,platform_media_id,text,NO,
+instagram_media_insights,completed_post_id,uuid,YES,
+instagram_media_insights,media_type,text,YES,
+instagram_media_insights,permalink,text,YES,
+instagram_media_insights,comments,integer,YES,0
+instagram_media_insights,likes,integer,YES,0
+instagram_media_insights,saved,integer,YES,0
+instagram_media_insights,shares,integer,YES,0
+instagram_media_insights,views,integer,YES,0
+instagram_media_insights,ig_reels_avg_watch_time_ms,integer,YES,0
+instagram_media_insights,ig_reels_video_view_total_time_ms,bigint,YES,0
+instagram_media_insights,raw_metrics,jsonb,YES,'{}'::jsonb
+instagram_media_insights,metrics_fetched_at,timestamp with time zone,YES,now()
+instagram_media_insights,created_at,timestamp with time zone,YES,now()
+instagram_media_insights,updated_at,timestamp with time zone,YES,now()
 media,id,uuid,NO,uuid_generate_v4()
 media,media_type,USER-DEFINED,NO,
 media,storage_path,text,NO,
@@ -146,3 +253,14 @@ ungrounded_seeds,details,text,NO,
 ungrounded_seeds,created_at,timestamp with time zone,YES,now()
 ungrounded_seeds,created_by,text,NO,
 ungrounded_seeds,business_asset_id,text,NO,
+verifier_responses,id,uuid,NO,uuid_generate_v4()
+verifier_responses,completed_post_id,uuid,NO,
+verifier_responses,business_asset_id,text,NO,
+verifier_responses,is_approved,boolean,NO,
+verifier_responses,has_no_offensive_content,boolean,NO,
+verifier_responses,has_no_misinformation,boolean,YES,
+verifier_responses,reasoning,text,NO,
+verifier_responses,issues_found,ARRAY,YES,
+verifier_responses,model,text,NO,'gemini-2.5-flash'::text
+verifier_responses,created_at,timestamp with time zone,YES,now()
+verifier_responses,verification_group_id,uuid,YES,

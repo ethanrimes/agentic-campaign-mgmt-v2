@@ -117,6 +117,10 @@ export interface VerifierResponse {
   issues_found: string[]
   model: string
   created_at: string
+  verification_group_id?: string | null
+  is_manually_overridden: boolean
+  override_reason?: string | null
+  overridden_at?: string | null
 }
 
 // Insights Types

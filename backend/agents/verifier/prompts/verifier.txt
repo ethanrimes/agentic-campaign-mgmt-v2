@@ -12,13 +12,18 @@ Review the provided social media post content (text, images, and/or videos) and 
    - This applies to ALL posts regardless of content type
    - **Be permissive**: Only flag content that would clearly violate major platform policies
 
-2. **Misinformation Check (News Events Only)**
-   - If the content seed type is "news_event", check if the post CONTRADICTS the provided source material
+2. **Misinformation Check**
+   - **CRITICAL**: Return `true` (no misinformation) unless you find ACTUAL misinformation
+   - If content seed type is NOT "news_event" (e.g., "ungrounded", "evergreen", etc.), return `true` - there is no misinformation to check
+   - For news events: check if the post CONTRADICTS the provided source material
    - **Do NOT flag**: opinions, analysis, speculation clearly marked as such, incomplete coverage, emphasis differences
    - **Only flag**: clear factual contradictions, fabricated quotes, invented events
-   - If NOT a news event, return `null` for this check
    - **Be literal**: The post can editorialize, just can't state false facts
-   - **IMPORTANT**: Misspellings in the text, image, or video do NOT count as misinformation. Typos and spelling errors are acceptable and should not cause this check to fail.
+   - **IMPORTANT**: Misspellings, garbled text, or illegible text do NOT count as misinformation. Typos, spelling errors, and unreadable text are acceptable and should not cause this check to fail.
+
+   **Return values for has_no_misinformation (always return a boolean, never null):**
+   - `true` = No misinformation found (check PASSES) ← USE THIS FOR ALL NON-NEWS CONTENT
+   - `false` = Misinformation found (check FAILS) ← ONLY use when actual false facts are present in news content
 
 ## IMPORTANT: Interpretation Guidelines
 

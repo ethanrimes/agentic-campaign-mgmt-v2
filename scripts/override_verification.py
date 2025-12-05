@@ -120,7 +120,8 @@ async def get_verifier_response(post_id: UUID) -> Optional[dict]:
 
 async def override_verification(
     post_id: UUID,
-    dry_run: bool = False
+    dry_run: bool = False,
+    reason: Optional[str] = None
 ) -> dict:
     """
     Override a rejected verification, making the post eligible for publishing.
@@ -128,6 +129,7 @@ async def override_verification(
     Args:
         post_id: The UUID of the completed post to override
         dry_run: If True, only show what would be done
+        reason: Optional reason for the override
 
     Returns:
         Result dictionary with status
@@ -167,7 +169,7 @@ async def override_verification(
         result["message"] = "Would override verification (dry run)"
         return result
 
-    # Update the verification status
+    # Update the verification status on completed_posts
     client = await get_supabase_admin_client()
     update_result = (
         await client.table("completed_posts")
@@ -177,6 +179,19 @@ async def override_verification(
     )
 
     if update_result.data:
+        # Also update the verifier_responses table
+        from datetime import datetime, timezone
+        await (
+            client.table("verifier_responses")
+            .update({
+                "is_manually_overridden": True,
+                "override_reason": reason,
+                "overridden_at": datetime.now(timezone.utc).isoformat()
+            })
+            .eq("completed_post_id", str(post_id))
+            .execute()
+        )
+
         result["success"] = True
         result["message"] = "Verification status updated to 'manually_overridden'"
         logger.info(
@@ -248,7 +263,100 @@ async def main_list(business_asset_id: Optional[str] = None, limit: int = 50):
     print()
 
 
-async def main_override(post_id: str, dry_run: bool = False):
+async def main_from_file(ids_file: str, dry_run: bool = False):
+    """Override verification for all post IDs in a file."""
+    from pathlib import Path as FilePath
+
+    print("=" * 70)
+    print("Bulk Override Verification from File")
+    print("=" * 70)
+
+    if dry_run:
+        print("\n[DRY RUN MODE - No changes will be made]\n")
+
+    file_path = FilePath(ids_file)
+    if not file_path.exists():
+        print(f"\nError: File not found: {ids_file}")
+        return
+
+    # Read and validate IDs
+    post_ids = []
+    with open(file_path) as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith('#'):
+                try:
+                    UUID(line)
+                    post_ids.append(line)
+                except ValueError:
+                    print(f"Warning: Skipping invalid UUID: {line}")
+
+    if not post_ids:
+        print("\nNo valid post IDs found in file.")
+        return
+
+    print(f"\nFound {len(post_ids)} post IDs to process")
+
+    if dry_run:
+        for pid in post_ids[:10]:
+            print(f"  Would override: {pid}")
+        if len(post_ids) > 10:
+            print(f"  ... and {len(post_ids) - 10} more")
+        return
+
+    # Process each post
+    client = await get_supabase_admin_client()
+    success_count = 0
+    skip_count = 0
+
+    # Batch update for efficiency
+    batch_size = 100
+    for i in range(0, len(post_ids), batch_size):
+        batch = post_ids[i:i + batch_size]
+        batch_num = i // batch_size + 1
+        total_batches = (len(post_ids) + batch_size - 1) // batch_size
+
+        print(f"\nProcessing batch {batch_num}/{total_batches} ({len(batch)} posts)...")
+
+        result = await (
+            client.table("completed_posts")
+            .update({"verification_status": "manually_overridden"})
+            .in_("id", batch)
+            .eq("verification_status", "rejected")
+            .eq("status", "pending")
+            .execute()
+        )
+
+        updated = len(result.data) if result.data else 0
+        success_count += updated
+        skip_count += len(batch) - updated
+
+        # Also update verifier_responses for successfully updated posts
+        if result.data:
+            from datetime import datetime, timezone
+            updated_ids = [r["id"] for r in result.data]
+            await (
+                client.table("verifier_responses")
+                .update({
+                    "is_manually_overridden": True,
+                    "override_reason": "Bulk override from file",
+                    "overridden_at": datetime.now(timezone.utc).isoformat()
+                })
+                .in_("completed_post_id", updated_ids)
+                .execute()
+            )
+
+        print(f"  Updated: {updated}, Skipped: {len(batch) - updated}")
+
+    print("\n" + "=" * 70)
+    print("COMPLETE")
+    print(f"  Total IDs processed: {len(post_ids)}")
+    print(f"  Successfully overridden: {success_count}")
+    print(f"  Skipped (not rejected/pending): {skip_count}")
+    print("=" * 70 + "\n")
+
+
+async def main_override(post_id: str, dry_run: bool = False, no_confirm: bool = False):
     """Override a specific post's verification."""
     print("=" * 70)
     print("Override Verification")
@@ -300,7 +408,7 @@ async def main_override(post_id: str, dry_run: bool = False):
         return
 
     # Confirmation
-    if not dry_run:
+    if not dry_run and not no_confirm:
         print("\n" + "-" * 70)
         print("\nWARNING: This will mark the post as 'manually_overridden' and")
         print("         make it eligible for publishing on social media.")
@@ -362,12 +470,26 @@ if __name__ == "__main__":
         help="Show what would be done without making changes"
     )
 
+    parser.add_argument(
+        "--no-confirm",
+        action="store_true",
+        help="Skip confirmation prompt (for batch/scripted usage)"
+    )
+
+    parser.add_argument(
+        "--from-file",
+        type=str,
+        help="Read post IDs from a file (one per line) and override all"
+    )
+
     args = parser.parse_args()
 
     if args.list_rejected:
         asyncio.run(main_list(args.business_asset_id, args.limit))
+    elif args.from_file:
+        asyncio.run(main_from_file(args.from_file, args.dry_run))
     elif args.post_id:
-        asyncio.run(main_override(args.post_id, args.dry_run))
+        asyncio.run(main_override(args.post_id, args.dry_run, args.no_confirm))
     else:
         parser.print_help()
-        print("\nError: Either provide a post_id or use --list-rejected")
+        print("\nError: Either provide a post_id, use --list-rejected, or use --from-file")
