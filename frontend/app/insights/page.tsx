@@ -209,16 +209,16 @@ export default function InsightsPage() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 ml-12 p-6">
+      <div className="flex-1 ml-12 p-6 pt-20">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-green-500/20">
-              <BarChart3 className="w-5 h-5 text-white" />
+            <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-green-500/20">
+              <BarChart3 className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-bold">Insight Reports</h1>
-              <p className="text-xs text-slate-500 dark:text-slate-400">Performance analysis & recommendations</p>
+              <h1 className="text-2xl font-bold">Insight Reports</h1>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Performance analysis & recommendations</p>
             </div>
           </div>
 
@@ -323,50 +323,47 @@ export default function InsightsPage() {
                 {/* Expanded Content */}
                 {expandedRow === report.id && (
                   <div className="px-4 pb-4 bg-slate-50/50 dark:bg-slate-900/30 border-t border-slate-100 dark:border-slate-800/50">
-                    <div className="grid grid-cols-2 gap-4 pt-4">
-                      {/* Left Column */}
-                      <div className="space-y-4">
-                        {/* Summary Card */}
-                        <div className="bg-white dark:bg-slate-800/50 rounded-lg p-4 border border-slate-200 dark:border-slate-700">
-                          <div className="flex items-center gap-2 mb-2">
-                            <Brain className="w-4 h-4 text-green-500" />
-                            <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Summary</span>
-                          </div>
-                          <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">{report.summary}</p>
+                    <div className="space-y-4 pt-4">
+                      {/* Summary Card - Full Width */}
+                      <div className="bg-white dark:bg-slate-800/50 rounded-lg p-4 border border-slate-200 dark:border-slate-700">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Brain className="w-4 h-4 text-green-500" />
+                          <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Summary</span>
                         </div>
-
-                        {/* Findings */}
-                        <div className="bg-white dark:bg-slate-800/50 rounded-lg p-4 border border-slate-200 dark:border-slate-700">
-                          <div className="flex items-center gap-2 mb-2">
-                            <Activity className="w-4 h-4 text-blue-500" />
-                            <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Detailed Analysis</span>
-                          </div>
-                          <div className="prose prose-sm prose-slate dark:prose-invert max-w-none text-slate-600 dark:text-slate-300 max-h-64 overflow-y-auto">
-                            <ReactMarkdown>{report.findings}</ReactMarkdown>
-                          </div>
-                        </div>
-
-                        {/* Recommendations */}
-                        {report.recommendations && report.recommendations.length > 0 && (
-                          <div className="bg-amber-50/50 dark:bg-amber-500/5 rounded-lg p-4 border border-amber-200 dark:border-amber-500/20">
-                            <div className="flex items-center gap-2 mb-3">
-                              <Lightbulb className="w-4 h-4 text-amber-500" />
-                              <span className="text-xs font-semibold text-amber-700 dark:text-amber-300 uppercase tracking-wider">Recommendations</span>
-                            </div>
-                            <ul className="space-y-2">
-                              {report.recommendations.map((rec, i) => (
-                                <li key={i} className="flex items-start gap-2 text-sm text-slate-700 dark:text-slate-300">
-                                  <CheckCircle2 className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
-                                  {rec}
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
+                        <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">{report.summary}</p>
                       </div>
 
-                      {/* Right Column - Tool Calls */}
-                      <div>
+                      {/* Findings - Full Width */}
+                      <div className="bg-white dark:bg-slate-800/50 rounded-lg p-4 border border-slate-200 dark:border-slate-700">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Activity className="w-4 h-4 text-blue-500" />
+                          <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Detailed Analysis</span>
+                        </div>
+                        <div className="prose prose-sm prose-slate dark:prose-invert max-w-none text-slate-600 dark:text-slate-300">
+                          <ReactMarkdown>{report.findings}</ReactMarkdown>
+                        </div>
+                      </div>
+
+                      {/* Recommendations - Full Width */}
+                      {report.recommendations && report.recommendations.length > 0 && (
+                        <div className="bg-amber-50/50 dark:bg-amber-500/5 rounded-lg p-4 border border-amber-200 dark:border-amber-500/20">
+                          <div className="flex items-center gap-2 mb-3">
+                            <Lightbulb className="w-4 h-4 text-amber-500" />
+                            <span className="text-xs font-semibold text-amber-700 dark:text-amber-300 uppercase tracking-wider">Recommendations</span>
+                          </div>
+                          <ul className="space-y-2">
+                            {report.recommendations.map((rec, i) => (
+                              <li key={i} className="flex items-start gap-2 text-sm text-slate-700 dark:text-slate-300">
+                                <CheckCircle2 className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
+                                {rec}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {/* Tool Calls and Reviewed Posts - Side by Side */}
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                         {report.tool_calls && report.tool_calls.length > 0 && (
                           <div className="bg-white dark:bg-slate-800/50 rounded-lg p-4 border border-slate-200 dark:border-slate-700">
                             <div className="flex items-center gap-2 mb-3">
@@ -393,7 +390,7 @@ export default function InsightsPage() {
 
                         {/* Reviewed Posts */}
                         {report.reviewed_post_ids && report.reviewed_post_ids.length > 0 && (
-                          <div className="mt-4 bg-white dark:bg-slate-800/50 rounded-lg p-4 border border-slate-200 dark:border-slate-700">
+                          <div className="bg-white dark:bg-slate-800/50 rounded-lg p-4 border border-slate-200 dark:border-slate-700">
                             <div className="flex items-center gap-2 mb-3">
                               <FileText className="w-4 h-4 text-blue-500" />
                               <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Reviewed Posts ({report.reviewed_post_ids.length})</span>
@@ -407,12 +404,12 @@ export default function InsightsPage() {
                             </div>
                           </div>
                         )}
+                      </div>
 
-                        {/* Metadata */}
-                        <div className="mt-4 flex items-center justify-between text-xs text-slate-500 px-1">
-                          <span>Model: <span className="text-slate-700 dark:text-slate-400 font-mono">{report.created_by}</span></span>
-                          <span>ID: <span className="text-slate-700 dark:text-slate-400 font-mono">{report.id.slice(0, 8)}</span></span>
-                        </div>
+                      {/* Metadata - Full Width */}
+                      <div className="flex items-center justify-between text-xs text-slate-500 px-1">
+                        <span>Model: <span className="text-slate-700 dark:text-slate-400 font-mono">{report.created_by}</span></span>
+                        <span>ID: <span className="text-slate-700 dark:text-slate-400 font-mono">{report.id.slice(0, 8)}</span></span>
                       </div>
                     </div>
                   </div>

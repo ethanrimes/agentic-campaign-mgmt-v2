@@ -108,7 +108,7 @@ export default function InstagramPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto animate-fade-in">
+    <div className="max-w-7xl mx-auto animate-fade-in pt-20">
       {/* Header Section with Integrated Insights */}
       <div className="relative mb-12">
         {/* Background Decorative Elements */}
@@ -125,16 +125,16 @@ export default function InstagramPage() {
                   <img
                     src={accountInsights.profile_picture_url}
                     alt={accountInsights.username || 'Instagram Account'}
-                    className="relative w-20 h-20 rounded-2xl object-cover shadow-md border-4 border-white"
+                    className="relative w-16 h-16 rounded-2xl object-cover shadow-md border-4 border-white"
                   />
                 ) : (
-                  <div className="relative w-20 h-20 bg-gradient-to-br from-pink-600 to-rose-600 rounded-2xl flex items-center justify-center shadow-md border-4 border-white">
-                    <Instagram className="w-10 h-10 text-white" />
+                  <div className="relative w-16 h-16 bg-gradient-to-br from-pink-600 to-rose-600 rounded-2xl flex items-center justify-center shadow-md border-4 border-white">
+                    <Instagram className="w-8 h-8 text-white" />
                   </div>
                 )}
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-slate-900 tracking-tight">
+                <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
                   Instagram Overview
                 </h1>
                 <div className="flex items-center gap-2 mt-1.5">
