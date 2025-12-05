@@ -79,6 +79,10 @@ class InsightReport(BaseModel):
         ...,
         description="Detailed findings about what works/doesn't work with the audience",
     )
+    recommendations: List[str] = Field(
+        default_factory=list,
+        description="Actionable recommendations for maximizing engagement",
+    )
     tool_calls: List[ToolCall] = Field(
         default_factory=list,
         description="All tool calls made by the agent to gather data",
@@ -121,6 +125,13 @@ class InsightReport(BaseModel):
 - Deprioritize video until we improve production quality
 - Create more "insider tips" content (study spots, food, etc.)
 - Schedule posts for evening hours""",
+                "recommendations": [
+                    "Focus on student stories and campus aesthetics - these drive 3x more engagement",
+                    "Schedule posts for 6-8 PM on weekdays when engagement peaks",
+                    "Create more 'insider tips' content about study spots, food, and hidden gems",
+                    "Deprioritize video content until production quality improves",
+                    "Feature more behind-the-scenes campus life to capitalize on authenticity preference"
+                ],
                 "tool_calls": [],
                 "created_at": "2025-01-18T16:00:00Z",
                 "created_by": "gpt-4o",

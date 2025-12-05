@@ -30,8 +30,8 @@ logger = get_logger(__name__)
 class InsightReportOutput(BaseModel):
     """Structured engagement insight report."""
     summary: str = Field(..., description="High-level takeaway in 1-2 sentences")
-    findings: str = Field(..., description="Detailed analysis with specific metrics, patterns, and recommendations (2-4 paragraphs in markdown)")
-    key_recommendations: List[str] = Field(default_factory=list, description="Concrete, implementable recommendations")
+    findings: str = Field(..., description="Detailed analysis with specific metrics and patterns (2-4 paragraphs in markdown)")
+    recommendations: List[str] = Field(..., description="5-7 specific, actionable recommendations for maximizing engagement based on the data")
 
 
 class InsightsAgent:
@@ -93,9 +93,16 @@ class InsightsAgent:
 Based on this data, provide:
 1. A high-level summary (1-2 sentences)
 2. Detailed findings with specific metrics and patterns (formatted in markdown)
-3. Key recommendations for improving engagement
+3. 5-7 specific, actionable recommendations for maximizing engagement
 
-Be specific and data-driven. Reference actual numbers from the posts. Identify patterns in what works and what doesn't."""
+For the recommendations section, focus on:
+- What content types/topics to prioritize or deprioritize
+- Optimal posting times based on engagement patterns
+- Specific content themes that resonate with the audience
+- Concrete actions to improve underperforming areas
+- Platform-specific strategies (e.g., Instagram vs Facebook differences)
+
+Be specific and data-driven. Reference actual numbers from the posts. Each recommendation should be actionable and tied to evidence from the data."""
 
             # Step 4: Call the LLM
             logger.info("Calling LLM for analysis...")
@@ -111,6 +118,7 @@ Be specific and data-driven. Reference actual numbers from the posts. Identify p
                 business_asset_id=self.business_asset_id,
                 summary=result.summary,
                 findings=result.findings,
+                recommendations=result.recommendations,
                 tool_calls=[],  # No tool calls in context-stuffing approach
                 created_by=settings.default_model_name
             )
@@ -119,7 +127,6 @@ Be specific and data-driven. Reference actual numbers from the posts. Identify p
             logger.info("Insight report saved", report_id=str(created_report.id))
 
             report = created_report.model_dump(mode="json")
-            report["key_recommendations"] = result.key_recommendations
 
             logger.info("Engagement analysis complete", report_id=report["id"])
             return report
