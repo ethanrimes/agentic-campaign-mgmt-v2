@@ -92,6 +92,7 @@ export interface InsightReport {
   id: string
   summary: string
   findings: string
+  recommendations: string[]
   tool_calls: ToolCall[]
   created_at: string
   created_by: string
