@@ -70,11 +70,27 @@ Example structure:
 ## Areas for Improvement
 
 - Video content averaging only X complete views
-- Recommendation: Focus on...
 ```
 
-### Key Recommendations
-Provide 3-5 specific, actionable recommendations that can be implemented immediately.
+### Recommendations
+Provide 5-7 specific, actionable recommendations for maximizing engagement. Each recommendation should:
+- Be concrete and implementable immediately
+- Be tied to specific evidence from the data
+- Focus on what will drive measurable improvement
+
+Recommendations should cover:
+1. **Content Strategy**: What topics/themes to prioritize or deprioritize based on performance
+2. **Timing Optimization**: When to post based on engagement patterns
+3. **Format Selection**: Which content formats (image, video, carousel, reel) work best
+4. **Audience Engagement**: How to increase saves, shares, and comments
+5. **Platform-Specific Tactics**: Different strategies for Instagram vs Facebook if applicable
+6. **Underperformer Recovery**: How to improve areas that aren't working
+
+Example recommendations:
+- "Prioritize campus photography posts - they generate 3x more engagement than announcements"
+- "Schedule posts between 6-8 PM when engagement peaks based on comment activity"
+- "Reduce video content until production quality improves; focus on high-quality static images"
+- "Create more 'insider tips' content (study spots, food recommendations) - comments show high interest"
 
 ## Quality Guidelines
 
