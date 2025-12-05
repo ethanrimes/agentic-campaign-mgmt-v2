@@ -89,9 +89,9 @@ function VerifierPageContent() {
   const filteredReports = useMemo(() => {
     return reports.filter(report => {
       // Status filter
-      if (filters.status === 'approved' && !report.is_approved) return false
-      if (filters.status === 'rejected' && report.is_approved) return false
-      // manually_overridden is shown in 'all' since we need to check the post status
+      if (filters.status === 'approved' && (!report.is_approved || report.is_manually_overridden)) return false
+      if (filters.status === 'rejected' && (report.is_approved || report.is_manually_overridden)) return false
+      if (filters.status === 'manually_overridden' && !report.is_manually_overridden) return false
 
       // Search filter
       if (filters.search) {
@@ -129,24 +129,18 @@ function VerifierPageContent() {
 
   const stats = useMemo(() => {
     const total = filteredReports.length
-    const approved = filteredReports.filter(r => r.is_approved).length
-    const rejected = filteredReports.filter(r => !r.is_approved).length
-    const overridden = filteredReports.filter(r => {
-      const post = postCache[r.completed_post_id]
-      return post?.verification_status === 'manually_overridden'
-    }).length
+    const approved = filteredReports.filter(r => r.is_approved && !r.is_manually_overridden).length
+    const rejected = filteredReports.filter(r => !r.is_approved && !r.is_manually_overridden).length
+    const overridden = filteredReports.filter(r => r.is_manually_overridden).length
     return { total, approved, rejected, overridden }
-  }, [filteredReports, postCache])
+  }, [filteredReports])
 
   const activeFiltersCount = Object.entries(filters).filter(([key, value]) =>
     (key !== 'search' && value !== 'all') || (key === 'search' && value !== '')
   ).length
 
   const getStatusBadge = (report: VerifierResponse) => {
-    const post = postCache[report.completed_post_id]
-    const isOverridden = post?.verification_status === 'manually_overridden'
-
-    if (isOverridden) {
+    if (report.is_manually_overridden) {
       return (
         <div className="w-7 h-7 rounded-lg bg-orange-500/10 border border-orange-500/20 flex items-center justify-center" title="Manually Overridden">
           <RefreshCw className="w-4 h-4 text-orange-500" />
@@ -263,6 +257,7 @@ function VerifierPageContent() {
                     ['all', 'All Reports', null, Layers],
                     ['approved', 'Approved', 'text-green-500', ShieldCheck],
                     ['rejected', 'Rejected', 'text-red-500', ShieldX],
+                    ['manually_overridden', 'Overridden', 'text-orange-500', RefreshCw],
                   ].map(([value, label, color, Icon]) => (
                     <button
                       key={value as string}
@@ -456,7 +451,7 @@ function VerifierPageContent() {
                           {/* Overall Result */}
                           <div className={cn(
                             "p-4 rounded-lg border",
-                            post?.verification_status === 'manually_overridden'
+                            report.is_manually_overridden
                               ? "bg-orange-50/50 dark:bg-orange-900/10 border-orange-200 dark:border-orange-800"
                               : report.is_approved
                                 ? "bg-green-50/50 dark:bg-green-900/10 border-green-200 dark:border-green-800"
@@ -465,13 +460,13 @@ function VerifierPageContent() {
                             <div className="flex items-center gap-3">
                               <div className={cn(
                                 "p-2 rounded-full",
-                                post?.verification_status === 'manually_overridden'
+                                report.is_manually_overridden
                                   ? "bg-orange-100 dark:bg-orange-900/30 text-orange-600"
                                   : report.is_approved
                                     ? "bg-green-100 dark:bg-green-900/30 text-green-600"
                                     : "bg-red-100 dark:bg-red-900/30 text-red-600"
                               )}>
-                                {post?.verification_status === 'manually_overridden' ? (
+                                {report.is_manually_overridden ? (
                                   <RefreshCw className="w-6 h-6" />
                                 ) : report.is_approved ? (
                                   <ShieldCheck className="w-6 h-6" />
@@ -482,13 +477,13 @@ function VerifierPageContent() {
                               <div>
                                 <h4 className={cn(
                                   "text-base font-bold",
-                                  post?.verification_status === 'manually_overridden'
+                                  report.is_manually_overridden
                                     ? "text-orange-900 dark:text-orange-100"
                                     : report.is_approved
                                       ? "text-green-900 dark:text-green-100"
                                       : "text-red-900 dark:text-red-100"
                                 )}>
-                                  {post?.verification_status === 'manually_overridden'
+                                  {report.is_manually_overridden
                                     ? 'Manually Overridden'
                                     : report.is_approved
                                       ? 'Post Approved'
@@ -496,13 +491,13 @@ function VerifierPageContent() {
                                 </h4>
                                 <p className={cn(
                                   "text-xs mt-0.5",
-                                  post?.verification_status === 'manually_overridden'
+                                  report.is_manually_overridden
                                     ? "text-orange-700 dark:text-orange-300"
                                     : report.is_approved
                                       ? "text-green-700 dark:text-green-300"
                                       : "text-red-700 dark:text-red-300"
                                 )}>
-                                  {post?.verification_status === 'manually_overridden'
+                                  {report.is_manually_overridden
                                     ? 'Initially rejected but manually approved for publishing.'
                                     : report.is_approved
                                       ? 'All safety and fact-check protocols passed.'

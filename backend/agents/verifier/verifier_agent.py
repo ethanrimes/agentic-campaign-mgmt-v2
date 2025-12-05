@@ -310,7 +310,7 @@ class VerifierAgent:
                 ),
                 "has_no_misinformation": types.Schema(
                     type=types.Type.BOOLEAN,
-                    description="For news events: True = NO misinformation found (check passes). Return null/omit if not a news event. Note: misspellings do NOT count as misinformation."
+                    description="True = NO misinformation found (check passes). For non-news content, always return true. Only return false if actual false facts are found in news content. Misspellings, garbled text, and illegible text do NOT count as misinformation."
                 ),
                 "reasoning": types.Schema(
                     type=types.Type.STRING,
@@ -322,7 +322,7 @@ class VerifierAgent:
                     description="List of specific issues found. Empty array if no issues."
                 )
             },
-            required=["has_no_offensive_content", "reasoning", "issues_found"]
+            required=["has_no_offensive_content", "has_no_misinformation", "reasoning", "issues_found"]
         )
 
         try:
