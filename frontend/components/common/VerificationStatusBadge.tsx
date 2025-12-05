@@ -2,11 +2,11 @@
 
 'use client'
 
-import { ShieldCheck, ShieldX, ShieldAlert } from 'lucide-react'
+import { ShieldCheck, ShieldX, ShieldAlert, RefreshCw } from 'lucide-react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 
-type VerificationStatus = 'verified' | 'rejected' | 'unverified'
+type VerificationStatus = 'verified' | 'rejected' | 'unverified' | 'manually_overridden'
 
 interface VerificationStatusBadgeProps {
   status: VerificationStatus
@@ -53,13 +53,20 @@ export default function VerificationStatusBadge({
       icon: ShieldAlert,
       label: 'Unverified',
     },
+    manually_overridden: {
+      bg: 'bg-orange-50 hover:bg-orange-100',
+      text: 'text-orange-700',
+      border: 'border-orange-100 hover:border-orange-200',
+      icon: RefreshCw,
+      label: 'Overridden',
+    },
   }
 
   const config = statusConfig[status]
   const Icon = config.icon
 
-  // Only link to verifier report if verified or rejected (has a report)
-  const isClickable = status === 'verified' || status === 'rejected'
+  // Only link to verifier report if verified, rejected, or manually_overridden (has a report)
+  const isClickable = status === 'verified' || status === 'rejected' || status === 'manually_overridden'
 
   const badgeContent = (
     <span

@@ -29,6 +29,7 @@ from backend.models.posts import CompletedPost
 from backend.models.media import Image, Video
 from backend.services.wavespeed.image_generator import ImageGenerator
 from backend.services.wavespeed.video_generator import VideoGenerator
+from backend.services.wavespeed.model_configs import ImageSize
 from backend.services.supabase.storage import StorageService
 from backend.utils import get_logger
 import asyncio
@@ -54,9 +55,20 @@ class MediaGenerationSpec(BaseModel):
     prompt: str = Field(
         ..., description="The prompt to use for generating this media"
     )
-    # Optional parameters for image generation
-    size: Optional[str] = Field(
-        None, description="Image size (e.g., '1024*1024', '1024*1350'). Defaults to 1024*1024."
+    # Optional parameters for image generation - constrained to valid ImageSize enum values
+    size: Optional[Literal[
+        "SQUARE",           # 4096*4096 - Maximum square resolution
+        "SQUARE_MEDIUM",    # 3072*3072 - High quality square
+        "PORTRAIT_4_5",     # 3277*4096 - Instagram portrait (4:5)
+        "PORTRAIT_9_16",    # 2304*4096 - Stories/Reels (9:16)
+        "PORTRAIT_STORY",   # 2304*4096 - Alias for 9:16
+        "LANDSCAPE_16_9",   # 4096*2304 - 16:9 widescreen
+        "LANDSCAPE_191_1",  # 4096*2144 - Facebook link preview (1.91:1)
+        "LANDSCAPE_WIDE",   # 4096*2160 - Ultra-wide horizontal
+        "LANDSCAPE_FACEBOOK"  # 4096*3277 - Facebook feed landscape (5:4)
+    ]] = Field(
+        None,
+        description="Image size preset. Use SQUARE for general posts, PORTRAIT_4_5 for Instagram feed, PORTRAIT_9_16 for Stories/Reels, LANDSCAPE_16_9 for Facebook/YouTube. Defaults to SQUARE if not specified."
     )
     # Optional parameters for video generation
     orientation: Optional[Literal["landscape", "portrait"]] = Field(
@@ -162,11 +174,17 @@ class ContentCreationAgent:
         file_id = uuid4().hex[:8]
 
         if spec.media_type == "image":
-            # Generate image (defaults to ImageSize.SQUARE if no size specified)
-            size = spec.size  # Let the generator use its default if None
-            logger.info("Generating image from spec", prompt=spec.prompt[:50], size=size or "default")
+            # Convert size string to ImageSize enum (defaults to SQUARE if not specified)
+            image_size = None
+            if spec.size:
+                try:
+                    image_size = ImageSize[spec.size]  # Convert string name to enum
+                except KeyError:
+                    logger.warning(f"Invalid size '{spec.size}', using default SQUARE")
+                    image_size = ImageSize.SQUARE
+            logger.info("Generating image from spec", prompt=spec.prompt[:50], size=image_size.value if image_size else "default")
 
-            image_bytes = await self.image_generator.generate(spec.prompt, size)
+            image_bytes = await self.image_generator.generate(spec.prompt, image_size)
 
             # Upload to storage
             filename = f"{timestamp}_{file_id}.png"
@@ -795,17 +813,23 @@ For each post, specify:
 Instead of generating media directly, you specify WHAT media should be generated:
 
 For IMAGE posts, provide 1 media_spec:
-  {{"media_type": "image", "prompt": "A detailed description of the image to generate..."}}
+  {{"media_type": "image", "prompt": "A detailed description of the image to generate...", "size": "SQUARE"}}
 
 For VIDEO posts, provide 1 media_spec:
   {{"media_type": "video", "prompt": "A detailed description of the video to generate...", "orientation": "portrait"}}
 
 For CAROUSEL posts, provide 2-10 image media_specs:
   [
-    {{"media_type": "image", "prompt": "First slide: ..."}},
-    {{"media_type": "image", "prompt": "Second slide: ..."}},
+    {{"media_type": "image", "prompt": "First slide: ...", "size": "SQUARE"}},
+    {{"media_type": "image", "prompt": "Second slide: ...", "size": "SQUARE"}},
     ...
   ]
+
+** IMAGE SIZE OPTIONS (use exact string values) **
+- "SQUARE" - 4096x4096, best for general posts (default)
+- "PORTRAIT_4_5" - 3277x4096, ideal for Instagram feed
+- "PORTRAIT_9_16" - 2304x4096, for Stories/Reels
+- "LANDSCAPE_16_9" - 4096x2304, for Facebook/YouTube widescreen
 
 The system will generate the media from your specs automatically.
 

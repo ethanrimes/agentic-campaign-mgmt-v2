@@ -55,7 +55,7 @@ export interface CompletedPost {
   music: string | null
   hashtags: string[] | null
   status: 'pending' | 'published' | 'failed'
-  verification_status: 'unverified' | 'verified' | 'rejected'
+  verification_status: 'unverified' | 'verified' | 'rejected' | 'manually_overridden'
   scheduled_posting_time: string | null
   published_at: string | null
   platform_post_id: string | null
@@ -93,6 +93,7 @@ export interface InsightReport {
   summary: string
   findings: string
   recommendations: string[]
+  reviewed_post_ids: string[]
   tool_calls: ToolCall[]
   created_at: string
   created_by: string
