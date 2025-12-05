@@ -4,7 +4,7 @@
 
 import ExpandableCard from '@/components/common/ExpandableCard'
 import { formatDateTime, formatRelativeTime } from '@/lib/utils'
-import { Activity, Brain, Clock, Code } from 'lucide-react'
+import { Activity, Brain, Clock, Code, Lightbulb, CheckCircle2 } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import type { InsightReport } from '@/types'
 
@@ -13,10 +13,18 @@ interface InsightReportCardProps {
 }
 
 export default function InsightReportCard({ report }: InsightReportCardProps) {
+  const recommendationsCount = report.recommendations?.length || 0
+
   const preview = (
     <div className="space-y-3">
       <p className="text-sm font-medium text-slate-700 dark:text-slate-200 leading-relaxed line-clamp-2">{report.summary}</p>
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 flex-wrap">
+        {recommendationsCount > 0 && (
+          <span className="flex items-center gap-1.5 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 px-3 py-1 rounded-full text-xs font-medium border border-amber-100 dark:border-amber-800">
+            <Lightbulb className="w-3.5 h-3.5" />
+            {recommendationsCount} recommendations
+          </span>
+        )}
         <span className="flex items-center gap-1.5 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 px-3 py-1 rounded-full text-xs font-medium border border-green-100 dark:border-green-800">
           <Activity className="w-3.5 h-3.5" />
           {report.tool_calls.length} tool calls
@@ -59,6 +67,33 @@ export default function InsightReportCard({ report }: InsightReportCardProps) {
             </div>
           </div>
         </div>
+
+        {/* Recommendations */}
+        {report.recommendations && report.recommendations.length > 0 && (
+          <div>
+            <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2 pl-1">
+              <Lightbulb className="w-4 h-4 text-amber-500" />
+              Recommendations for Maximizing Engagement
+            </h4>
+            <div className="space-y-3">
+              {report.recommendations.map((recommendation, i) => (
+                <div
+                  key={i}
+                  className="group flex items-start gap-3 p-4 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-900/10 hover:border-amber-300 dark:hover:border-amber-700 transition-all"
+                >
+                  <div className="flex-shrink-0 mt-0.5">
+                    <div className="w-6 h-6 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                      <CheckCircle2 className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                    </div>
+                  </div>
+                  <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+                    {recommendation}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Tool Calls */}
         {report.tool_calls && report.tool_calls.length > 0 && (
