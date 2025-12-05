@@ -11,7 +11,7 @@ import {
   ShieldCheck, ShieldX, ShieldAlert, Calendar, Hash,
   Clock, ChevronRight, Search, SlidersHorizontal, Layers,
   CheckCircle2, XCircle, MinusCircle, AlertTriangle, Check, X,
-  ExternalLink, Sparkles, RefreshCw
+  ExternalLink, Sparkles, RefreshCw, Facebook, Instagram
 } from 'lucide-react'
 import type { VerifierResponse, CompletedPost } from '@/types'
 import Link from 'next/link'
@@ -295,16 +295,16 @@ function VerifierPageContent() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 ml-12 p-6">
+      <div className="flex-1 ml-12 p-6 pt-20">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-cyan-500/20">
-              <ShieldCheck className="w-5 h-5 text-white" />
+            <div className="w-12 h-12 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-cyan-500/20">
+              <ShieldCheck className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-bold">Verifier Reports</h1>
-              <p className="text-xs text-slate-500 dark:text-slate-400">Content safety verification results</p>
+              <h1 className="text-2xl font-bold">Verifier Reports</h1>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Content safety verification results</p>
             </div>
           </div>
 
@@ -388,12 +388,16 @@ function VerifierPageContent() {
                         </span>
                         {post && (
                           <span className={cn(
-                            "text-[10px] px-1.5 py-0.5 rounded font-bold uppercase",
+                            "flex items-center justify-center w-6 h-6 rounded",
                             post.platform === 'facebook'
-                              ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
-                              : "bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300"
+                              ? "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400"
+                              : "bg-pink-100 text-pink-600 dark:bg-pink-900/30 dark:text-pink-400"
                           )}>
-                            {post.platform.slice(0, 2)}
+                            {post.platform === 'facebook' ? (
+                              <Facebook className="w-3.5 h-3.5" />
+                            ) : (
+                              <Instagram className="w-3.5 h-3.5" />
+                            )}
                           </span>
                         )}
                       </div>
