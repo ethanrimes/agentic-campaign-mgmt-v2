@@ -104,8 +104,6 @@ This framework presents several novel contributions to autonomous AI agents:
 | **Multi-Tenant Architecture** | SaaS-ready design with data isolation |
 | **Declarative Media Specs** | Separation of media planning (LLM) from execution (services) |
 
-For detailed descriptions of each contribution, see [docs/SYSTEM_ARCHITECTURE.md](docs/SYSTEM_ARCHITECTURE.md#research-contributions).
-
 ## Project Structure
 
 ```
