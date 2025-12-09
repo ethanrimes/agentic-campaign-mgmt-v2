@@ -5,8 +5,9 @@
 import { useState, useEffect, useMemo } from 'react'
 import { getCompletedPosts, getCachedInsights, refreshInsights } from '@/lib/api-client'
 import { useBusinessAsset } from '@/lib/business-asset-context'
-import { Instagram, RefreshCw, Users, UserPlus, Heart, Eye, Image, ChevronDown } from 'lucide-react'
+import { Instagram, RefreshCw, Users, UserPlus, Heart, Eye, Image, ChevronDown, AlertCircle, Play } from 'lucide-react'
 import InstagramPostGrid from '@/components/posts/InstagramPostGrid'
+import MetricTooltip from '@/components/common/MetricTooltip'
 import type { CompletedPost, InstagramAccountInsights, InstagramMediaInsights } from '@/types'
 import { formatRelativeTime } from '@/lib/utils'
 
@@ -19,6 +20,7 @@ export default function InstagramPage() {
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [pendingExpanded, setPendingExpanded] = useState(true)
   const [publishedExpanded, setPublishedExpanded] = useState(true)
+  const [failedExpanded, setFailedExpanded] = useState(true)
 
   useEffect(() => {
     async function loadData() {
@@ -71,16 +73,20 @@ export default function InstagramPage() {
     }
   }
 
-  // Calculate total interactions from all media insights (must be before early return)
+  // Calculate total interactions from all media insights (likes + comments + saves + shares, NOT views)
   const totalInteractions = useMemo(() => {
     return mediaInsights.reduce((sum, media) => {
       return sum +
         (media.likes || 0) +
         (media.comments || 0) +
         (media.saved || 0) +
-        (media.shares || 0) +
-        (media.views || 0)
+        (media.shares || 0)
     }, 0)
+  }, [mediaInsights])
+
+  // Calculate total views from all media insights
+  const totalViews = useMemo(() => {
+    return mediaInsights.reduce((sum, media) => sum + (media.views || 0), 0)
   }, [mediaInsights])
 
   if (!selectedAsset || loading) {
@@ -169,79 +175,113 @@ export default function InstagramPage() {
           </div>
 
           {/* Metrics Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             {/* Posts */}
-            <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] transition-shadow">
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
-                  <Image className="w-5 h-5" />
+            <MetricTooltip metricKey="posts" metricType="account" position="bottom">
+              <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] transition-shadow cursor-help h-[140px] flex flex-col">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
+                    <Image className="w-5 h-5" />
+                  </div>
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Posts</span>
                 </div>
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Posts</span>
-              </div>
-              <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-bold text-slate-900">{formatNumber(accountInsights?.media_count)}</span>
-              </div>
-              <div className="mt-2 flex gap-2">
-                <div className="flex items-center gap-1 text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-md">
-                  <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
-                  {statusCounts.published} published
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl font-bold text-slate-900">{statusCounts.published}</span>
+                  <span className="text-xs text-slate-500 font-medium">published</span>
                 </div>
-                <div className="flex items-center gap-1 text-xs font-medium text-amber-600 bg-amber-50 px-2 py-1 rounded-md">
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-                  {statusCounts.pending} pending
+                <div className="mt-auto pt-2 flex flex-wrap gap-2">
+                  <div className="flex items-center gap-1 text-xs font-medium text-amber-600 bg-amber-50 px-2 py-1 rounded-md">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                    {statusCounts.pending} pending
+                  </div>
+                  {statusCounts.failed > 0 && (
+                    <div className="flex items-center gap-1 text-xs font-medium text-red-600 bg-red-50 px-2 py-1 rounded-md">
+                      <AlertCircle className="w-3 h-3" />
+                      {statusCounts.failed} failed
+                    </div>
+                  )}
                 </div>
               </div>
-            </div>
+            </MetricTooltip>
 
-            {/* Reach (Day) */}
-            <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] transition-shadow">
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-10 h-10 rounded-xl bg-sky-50 flex items-center justify-center text-sky-600">
-                  <Eye className="w-5 h-5" />
+            {/* Reach */}
+            <MetricTooltip metricKey="reach" metricType="account" position="bottom">
+              <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] transition-shadow cursor-help h-[140px] flex flex-col">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-10 h-10 rounded-xl bg-sky-50 flex items-center justify-center text-sky-600">
+                    <Users className="w-5 h-5" />
+                  </div>
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Reach</span>
                 </div>
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Reach</span>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl font-bold text-slate-900">{formatNumber(accountInsights?.reach_day)}</span>
+                  <span className="text-xs text-slate-500 font-medium">28 days</span>
+                </div>
+                <div className="mt-auto pt-2 text-xs text-slate-400 font-medium">
+                  Unique accounts reached
+                </div>
               </div>
-              <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-bold text-slate-900">{formatNumber(accountInsights?.reach_day)}</span>
-                <span className="text-xs text-slate-500 font-medium">last 24 hours</span>
+            </MetricTooltip>
+
+            {/* Total Views */}
+            <MetricTooltip metricKey="views" metricType="account" position="bottom">
+              <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] transition-shadow cursor-help h-[140px] flex flex-col">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center text-purple-600">
+                    <Play className="w-5 h-5" />
+                  </div>
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Views</span>
+                </div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl font-bold text-slate-900">{formatNumber(totalViews)}</span>
+                  <span className="text-xs text-slate-500 font-medium">total</span>
+                </div>
+                <div className="mt-auto pt-2 text-xs text-slate-400 font-medium">
+                  Total post views
+                </div>
               </div>
-              <div className="mt-2 text-xs text-slate-400 font-medium">
-                The number of unique accounts that have seen any of your posts at least once.
-              </div>
-            </div>
+            </MetricTooltip>
 
             {/* Total Interactions */}
-            <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] transition-shadow">
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600">
-                  <Heart className="w-5 h-5" />
+            <MetricTooltip metricKey="interactions" metricType="account" position="bottom">
+              <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] transition-shadow cursor-help h-[140px] flex flex-col">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600">
+                    <Heart className="w-5 h-5" />
+                  </div>
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Interactions</span>
                 </div>
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Interactions</span>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl font-bold text-slate-900">{formatNumber(totalInteractions)}</span>
+                  <span className="text-xs text-slate-500 font-medium">total</span>
+                </div>
+                <div className="mt-auto pt-2 text-xs text-slate-400 font-medium">
+                  Likes, comments, saves, shares
+                </div>
               </div>
-              <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-bold text-slate-900">{formatNumber(totalInteractions)}</span>
-                <span className="text-xs text-slate-500 font-medium">total</span>
-              </div>
-              <div className="mt-2 text-xs text-slate-400 font-medium">
-                The total number of likes, comments, saves and shares across all your posts.
-              </div>
-            </div>
+            </MetricTooltip>
 
-            {/* Following */}
-            <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] transition-shadow">
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center text-purple-600">
-                  <UserPlus className="w-5 h-5" />
+            {/* Followers */}
+            <MetricTooltip metricKey="followers" metricType="account" position="bottom">
+              <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] transition-shadow cursor-help h-[140px] flex flex-col">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-10 h-10 rounded-xl bg-pink-50 flex items-center justify-center text-pink-600">
+                    <Users className="w-5 h-5" />
+                  </div>
+                  <div className="flex items-center gap-1 text-xs font-medium text-slate-400">
+                    <UserPlus className="w-3 h-3" />
+                    {formatNumber(accountInsights?.follows_count)} following
+                  </div>
                 </div>
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Following</span>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl font-bold text-slate-900">{formatNumber(accountInsights?.followers_count)}</span>
+                  <span className="text-xs text-slate-500 font-medium">followers</span>
+                </div>
+                <div className="mt-auto pt-2 text-xs text-slate-400 font-medium">
+                  Accounts following you
+                </div>
               </div>
-              <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-bold text-slate-900">{formatNumber(accountInsights?.follows_count)}</span>
-              </div>
-              <div className="mt-2 text-xs text-slate-400 font-medium">
-                Accounts you follow
-              </div>
-            </div>
+            </MetricTooltip>
           </div>
         </div>
       </div>
@@ -260,7 +300,7 @@ export default function InstagramPage() {
       ) : (
         <div className="space-y-12">
           {/* Pending Posts Section */}
-          {posts.some(p => p.status === 'pending' || p.status === 'failed') && (
+          {posts.some(p => p.status === 'pending') && (
             <section>
               <button
                 onClick={() => setPendingExpanded(!pendingExpanded)}
@@ -269,13 +309,13 @@ export default function InstagramPage() {
                 <h2 className="text-xl font-bold text-slate-800">Pending & Scheduled</h2>
                 <div className="h-px flex-1 bg-slate-200"></div>
                 <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">
-                  {posts.filter(p => p.status === 'pending' || p.status === 'failed').length} posts
+                  {posts.filter(p => p.status === 'pending').length} posts
                 </span>
                 <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform duration-200 ${pendingExpanded ? '' : '-rotate-90'}`} />
               </button>
               {pendingExpanded && (
                 <InstagramPostGrid
-                  posts={posts.filter(p => p.status === 'pending' || p.status === 'failed')}
+                  posts={posts.filter(p => p.status === 'pending')}
                   accountName={accountInsights?.username || selectedAsset.name}
                   accountProfilePictureUrl={accountInsights?.profile_picture_url}
                   mediaInsights={mediaInsights}
@@ -301,6 +341,31 @@ export default function InstagramPage() {
               {publishedExpanded && (
                 <InstagramPostGrid
                   posts={posts.filter(p => p.status === 'published')}
+                  accountName={accountInsights?.username || selectedAsset.name}
+                  accountProfilePictureUrl={accountInsights?.profile_picture_url}
+                  mediaInsights={mediaInsights}
+                />
+              )}
+            </section>
+          )}
+
+          {/* Failed Posts Section */}
+          {posts.some(p => p.status === 'failed') && (
+            <section>
+              <button
+                onClick={() => setFailedExpanded(!failedExpanded)}
+                className="w-full flex items-center gap-3 mb-6 group cursor-pointer"
+              >
+                <h2 className="text-xl font-bold text-red-700">Failed</h2>
+                <div className="h-px flex-1 bg-red-200"></div>
+                <span className="text-xs font-medium text-red-500 uppercase tracking-wider">
+                  {posts.filter(p => p.status === 'failed').length} posts
+                </span>
+                <ChevronDown className={`w-5 h-5 text-red-400 transition-transform duration-200 ${failedExpanded ? '' : '-rotate-90'}`} />
+              </button>
+              {failedExpanded && (
+                <InstagramPostGrid
+                  posts={posts.filter(p => p.status === 'failed')}
                   accountName={accountInsights?.username || selectedAsset.name}
                   accountProfilePictureUrl={accountInsights?.profile_picture_url}
                   mediaInsights={mediaInsights}

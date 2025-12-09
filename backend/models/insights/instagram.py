@@ -83,6 +83,7 @@ class InstagramMediaInsights(BaseModel):
     saved: int = Field(0, description="Number of saves")
     shares: int = Field(0, description="Number of shares")
     views: int = Field(0, description="Times displayed/played")
+    reach: int = Field(0, description="Unique accounts that have seen this media (estimated)")
 
     # Reel-specific metrics
     ig_reels_avg_watch_time_ms: int = Field(0, description="Average watch time in ms (reels)")

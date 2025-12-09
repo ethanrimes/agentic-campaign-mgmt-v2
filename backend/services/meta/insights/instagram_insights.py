@@ -220,12 +220,13 @@ class InstagramInsightsService(MetaBaseClient):
                             insights.media_type = "image"
 
                 # Determine which insights metrics to request based on media type
+                # Note: 'impressions' is deprecated for media created after July 2024 (API v22.0+)
                 if insights.media_type in ("reel", "video"):
                     # Reel metrics
-                    metrics = "comments,likes,saved,shares,views,ig_reels_avg_watch_time,ig_reels_video_view_total_time"
+                    metrics = "comments,likes,saved,shares,views,reach,ig_reels_avg_watch_time,ig_reels_video_view_total_time"
                 else:
                     # Feed post metrics (no reel-specific metrics)
-                    metrics = "comments,likes,saved,shares,views"
+                    metrics = "comments,likes,saved,shares,views,reach"
 
                 # Fetch insights metrics
                 insights_url = f"{self.INSTAGRAM_BASE_URL}/{media_id}/insights"
@@ -257,6 +258,8 @@ class InstagramInsightsService(MetaBaseClient):
                                 insights.shares = value if isinstance(value, int) else 0
                             elif name == "views":
                                 insights.views = value if isinstance(value, int) else 0
+                            elif name == "reach":
+                                insights.reach = value if isinstance(value, int) else 0
                             elif name == "ig_reels_avg_watch_time":
                                 insights.ig_reels_avg_watch_time_ms = value if isinstance(value, int) else 0
                             elif name == "ig_reels_video_view_total_time":
@@ -288,6 +291,7 @@ class InstagramInsightsService(MetaBaseClient):
             likes=insights.likes,
             comments=insights.comments,
             views=insights.views,
+            reach=insights.reach,
         )
 
         return insights
