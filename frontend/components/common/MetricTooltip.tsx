@@ -236,8 +236,8 @@ export default function MetricTooltip({
   useEffect(() => {
     if (isVisible && triggerRef.current) {
       const rect = triggerRef.current.getBoundingClientRect()
-      const tooltipWidth = 256 // w-64 = 16rem = 256px
-      const tooltipHeight = 140 // approximate height
+      const tooltipWidth = 288 // w-72 = 18rem = 288px
+      const tooltipHeight = 200 // approximate height with metric field
       const gap = 8
 
       let top = 0
@@ -297,18 +297,29 @@ export default function MetricTooltip({
           }}
           className="pointer-events-none"
         >
-          <div className="bg-slate-800 text-white rounded-lg shadow-xl p-3 w-64 text-left">
+          <div className="bg-slate-800 text-white rounded-lg shadow-xl p-3 w-72 text-left">
             <div className="flex items-center gap-2 mb-2">
               <Info className="w-4 h-4 text-blue-400 flex-shrink-0" />
               <span className="font-semibold text-sm">{metric.name}</span>
             </div>
-            <p className="text-xs text-slate-300 leading-relaxed mb-2">
+            <p className="text-xs text-slate-300 leading-relaxed mb-3">
               {metric.description}
             </p>
-            <div className="pt-2 border-t border-slate-700">
-              <p className="text-[10px] text-slate-400 font-mono break-all">
-                {metric.endpoint}
-              </p>
+            <div className="pt-2 border-t border-slate-700 space-y-1.5">
+              <div>
+                <p className="text-[9px] text-slate-500 uppercase tracking-wider font-medium">Endpoint</p>
+                <p className="text-[10px] text-slate-400 font-mono break-all">
+                  {metric.endpoint}
+                </p>
+              </div>
+              {metric.apiField && (
+                <div>
+                  <p className="text-[9px] text-slate-500 uppercase tracking-wider font-medium">Metric Field</p>
+                  <p className="text-[10px] text-blue-400 font-mono break-all">
+                    {metric.apiField}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </motion.div>
@@ -320,7 +331,7 @@ export default function MetricTooltip({
     <>
       <div
         ref={triggerRef}
-        className="h-full"
+        className="inline-block w-full"
         onMouseEnter={() => setIsVisible(true)}
         onMouseLeave={() => setIsVisible(false)}
       >
