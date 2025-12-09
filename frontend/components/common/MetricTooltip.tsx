@@ -54,6 +54,74 @@ export const INSTAGRAM_ACCOUNT_METRICS: Record<string, MetricDefinition> = {
   },
 }
 
+// Facebook page-level metric definitions
+export const FACEBOOK_PAGE_METRICS: Record<string, MetricDefinition> = {
+  posts: {
+    name: 'Posts',
+    description: 'The number of posts tracked in your database. Published posts are live on Facebook, pending posts are scheduled, and failed posts encountered errors during publishing.',
+    endpoint: 'Database: completed_posts table',
+    apiField: 'status counts',
+  },
+  engagement: {
+    name: 'Engagement',
+    description: 'The number of times people have engaged with your posts through reactions, comments, shares, and more over the past 28 days.',
+    endpoint: 'GET /{page_id}/insights?metric=page_post_engagements&period=days_28',
+    apiField: 'page_post_engagements',
+  },
+  media_views: {
+    name: 'Media Views',
+    description: 'The number of times your content was played or displayed over the past 28 days. Content includes videos, posts, stories, and ads.',
+    endpoint: 'GET /{page_id}/insights?metric=page_media_view&period=days_28',
+    apiField: 'page_media_view',
+  },
+  followers: {
+    name: 'Followers',
+    description: 'The total number of people who follow your Facebook page.',
+    endpoint: 'GET /{page_id}/insights?metric=page_follows',
+    apiField: 'page_follows',
+  },
+}
+
+// Facebook post-level metric definitions
+export const FACEBOOK_POST_METRICS: Record<string, MetricDefinition> = {
+  reactions: {
+    name: 'Reactions',
+    description: 'The total number of reactions on this post, including likes, love, wow, haha, sad, and angry.',
+    endpoint: 'GET /{post_id}/insights?metric=post_reactions_by_type_total',
+    apiField: 'reactions_total',
+  },
+  comments: {
+    name: 'Comments',
+    description: 'The number of comments on this post. Only counts top-level comments.',
+    endpoint: 'GET /{post_id}?fields=comments.summary(true)',
+    apiField: 'comments',
+  },
+  shares: {
+    name: 'Shares',
+    description: 'The number of times this post was shared by users.',
+    endpoint: 'GET /{post_id}?fields=shares',
+    apiField: 'shares',
+  },
+  impressions: {
+    name: 'Impressions',
+    description: 'The total number of times your post was displayed on screen, including repeat views.',
+    endpoint: 'GET /{post_id}/insights?metric=post_impressions',
+    apiField: 'post_impressions',
+  },
+  reach: {
+    name: 'Unique Reach',
+    description: 'The number of unique accounts that saw this post at least once.',
+    endpoint: 'GET /{post_id}/insights?metric=post_impressions_unique',
+    apiField: 'post_impressions_unique',
+  },
+  media_view: {
+    name: 'Media Views',
+    description: 'The number of times the media in this post was viewed.',
+    endpoint: 'GET /{post_id}/insights?metric=post_media_view',
+    apiField: 'post_media_view',
+  },
+}
+
 // Instagram media-level metric definitions
 export const INSTAGRAM_MEDIA_METRICS: Record<string, MetricDefinition> = {
   likes: {
@@ -111,20 +179,29 @@ interface MetricTooltipProps {
   children: ReactNode
   position?: 'top' | 'bottom' | 'left' | 'right'
   metricType?: 'media' | 'account'
+  platform?: 'instagram' | 'facebook'
 }
 
 export default function MetricTooltip({
   metricKey,
   children,
   position = 'top',
-  metricType = 'media'
+  metricType = 'media',
+  platform = 'instagram'
 }: MetricTooltipProps) {
   const [isVisible, setIsVisible] = useState(false)
   const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 })
   const triggerRef = useRef<HTMLDivElement>(null)
   const [mounted, setMounted] = useState(false)
 
-  const metrics = metricType === 'account' ? INSTAGRAM_ACCOUNT_METRICS : INSTAGRAM_MEDIA_METRICS
+  // Select metrics based on platform and type
+  const getMetrics = () => {
+    if (platform === 'facebook') {
+      return metricType === 'account' ? FACEBOOK_PAGE_METRICS : FACEBOOK_POST_METRICS
+    }
+    return metricType === 'account' ? INSTAGRAM_ACCOUNT_METRICS : INSTAGRAM_MEDIA_METRICS
+  }
+  const metrics = getMetrics()
   const metric = metrics[metricKey]
 
   useEffect(() => {

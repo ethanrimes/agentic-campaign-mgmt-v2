@@ -2,13 +2,25 @@
 
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { getCompletedPosts, getCachedInsights, refreshInsights } from '@/lib/api-client'
 import { useBusinessAsset } from '@/lib/business-asset-context'
-import { Facebook, RefreshCw, Users, Heart, Play, Share2, ChevronDown } from 'lucide-react'
+import { Facebook, RefreshCw, Users, Heart, Play, Share2, ChevronDown, AlertCircle, Image, Film, Video } from 'lucide-react'
 import FacebookPostGrid from '@/components/posts/FacebookPostGrid'
+import MetricTooltip from '@/components/common/MetricTooltip'
 import type { CompletedPost, FacebookPageInsights, FacebookPostInsights, FacebookVideoInsights } from '@/types'
 import { formatRelativeTime } from '@/lib/utils'
+import { motion } from 'framer-motion'
+import { cn } from '@/lib/utils'
+
+// Facebook post type definitions
+const FACEBOOK_POST_TYPES = [
+  { id: 'all', label: 'All', icon: Share2 },
+  { id: 'facebook_feed', label: 'Feed', icon: Image },
+  { id: 'facebook_video', label: 'Video', icon: Video },
+] as const
+
+type FacebookPostType = typeof FACEBOOK_POST_TYPES[number]['id']
 
 export default function FacebookPage() {
   const { selectedAsset } = useBusinessAsset()
@@ -20,6 +32,8 @@ export default function FacebookPage() {
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [pendingExpanded, setPendingExpanded] = useState(true)
   const [publishedExpanded, setPublishedExpanded] = useState(true)
+  const [failedExpanded, setFailedExpanded] = useState(true)
+  const [selectedPostType, setSelectedPostType] = useState<FacebookPostType>('all')
 
   useEffect(() => {
     async function loadData() {
@@ -73,6 +87,21 @@ export default function FacebookPage() {
       setIsRefreshing(false)
     }
   }
+
+  // Filter posts by selected type
+  const filteredPosts = useMemo(() => {
+    if (selectedPostType === 'all') return posts
+    return posts.filter(p => p.post_type === selectedPostType)
+  }, [posts, selectedPostType])
+
+  // Get counts by post type for display
+  const postTypeCounts = useMemo(() => {
+    const counts: Record<string, number> = { all: posts.length }
+    posts.forEach(p => {
+      counts[p.post_type] = (counts[p.post_type] || 0) + 1
+    })
+    return counts
+  }, [posts])
 
   if (!selectedAsset || loading) {
     return (
@@ -159,71 +188,139 @@ export default function FacebookPage() {
             </div>
           </div>
 
-          {/* Metrics Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Total Posts */}
-            <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] transition-shadow">
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-600">
-                  <Share2 className="w-5 h-5" />
+          {/* Metrics Grid - 4 tiles like Instagram */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-stretch">
+            {/* Posts */}
+            <MetricTooltip metricKey="posts" metricType="account" platform="facebook" position="bottom">
+              <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] transition-shadow cursor-help h-full flex flex-col">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-600">
+                    <Share2 className="w-5 h-5" />
+                  </div>
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Posts</span>
                 </div>
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Posts</span>
-              </div>
-              <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-bold text-slate-900">{posts.length}</span>
-                <span className="text-sm text-slate-500 font-medium">posts</span>
-              </div>
-              <div className="mt-3 flex gap-2">
-                <div className="flex items-center gap-1 text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-md">
-                  <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
-                  {statusCounts.published} published
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl font-bold text-slate-900">{posts.length}</span>
+                  <span className="text-xs text-slate-500 font-medium">posts</span>
                 </div>
-                <div className="flex items-center gap-1 text-xs font-medium text-amber-600 bg-amber-50 px-2 py-1 rounded-md">
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-                  {statusCounts.pending} pending
+                <div className="mt-auto pt-2 flex flex-wrap gap-2">
+                  <div className="flex items-center gap-1 text-xs font-medium text-slate-900 bg-slate-100 px-2 py-1 rounded-md">
+                    <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                    {statusCounts.published} published
+                  </div>
+                  <div className="flex items-center gap-1 text-xs font-medium text-amber-600 bg-amber-50 px-2 py-1 rounded-md">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                    {statusCounts.pending} pending
+                  </div>
+                  {statusCounts.failed > 0 && (
+                    <div className="flex items-center gap-1 text-xs font-medium text-red-600 bg-red-50 px-2 py-1 rounded-md">
+                      <AlertCircle className="w-3 h-3" />
+                      {statusCounts.failed} failed
+                    </div>
+                  )}
                 </div>
               </div>
-            </div>
+            </MetricTooltip>
 
-            {/* Engagements */}
-            <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] transition-shadow">
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-10 h-10 rounded-xl bg-pink-50 flex items-center justify-center text-pink-600">
-                  <Heart className="w-5 h-5" />
+            {/* Engagement */}
+            <MetricTooltip metricKey="engagement" metricType="account" platform="facebook" position="bottom">
+              <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] transition-shadow cursor-help h-full flex flex-col">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-10 h-10 rounded-xl bg-pink-50 flex items-center justify-center text-pink-600">
+                    <Heart className="w-5 h-5" />
+                  </div>
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Engagement</span>
                 </div>
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Engagement</span>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl font-bold text-slate-900">{formatNumber(pageInsights?.page_post_engagements_days_28)}</span>
+                  <span className="text-xs text-slate-500 font-medium">last 28 days</span>
+                </div>
+                <div className="mt-auto pt-2 text-xs text-slate-400 font-medium">
+                  The number of times people have engaged with your posts through reactions, comments, shares and more.
+                </div>
               </div>
-              <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-bold text-slate-900">{formatNumber(pageInsights?.page_post_engagements_days_28)}</span>
-                <span className="text-sm text-slate-500 font-medium">last 28 days</span>
-              </div>
-              <div className="mt-3 text-xs text-slate-400 font-medium">
-                The number of times people have engaged with your posts through reactions, comments, shares and more.
-              </div>
-            </div>
+            </MetricTooltip>
 
             {/* Media Views */}
-            <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] transition-shadow">
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center text-purple-600">
-                  <Play className="w-5 h-5" />
+            <MetricTooltip metricKey="media_views" metricType="account" platform="facebook" position="bottom">
+              <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] transition-shadow cursor-help h-full flex flex-col">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center text-purple-600">
+                    <Play className="w-5 h-5" />
+                  </div>
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Media Views</span>
                 </div>
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Media Views</span>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl font-bold text-slate-900">{formatNumber(pageInsights?.page_media_view_days_28)}</span>
+                  <span className="text-xs text-slate-500 font-medium">last 28 days</span>
+                </div>
+                <div className="mt-auto pt-2 text-xs text-slate-400 font-medium">
+                  The number of times your content was played or displayed. Content includes videos, posts, stories and ads.
+                </div>
               </div>
-              <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-bold text-slate-900">{formatNumber(pageInsights?.page_media_view_days_28)}</span>
-                <span className="text-sm text-slate-500 font-medium">last 28 days</span>
+            </MetricTooltip>
+
+            {/* Followers */}
+            <MetricTooltip metricKey="followers" metricType="account" platform="facebook" position="bottom">
+              <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] transition-shadow cursor-help h-full flex flex-col">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
+                    <Users className="w-5 h-5" />
+                  </div>
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Followers</span>
+                </div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl font-bold text-slate-900">{formatNumber(pageInsights?.page_follows)}</span>
+                  <span className="text-xs text-slate-500 font-medium">followers</span>
+                </div>
+                <div className="mt-auto pt-2 text-xs text-slate-400 font-medium">
+                  People following your page
+                </div>
               </div>
-              <div className="mt-3 text-xs text-slate-400 font-medium">
-                The number of times your content was played or displayed. Content includes videos, posts, stories and ads.
-              </div>
-            </div>
+            </MetricTooltip>
           </div>
         </div>
       </div>
 
+      {/* Media Format Filter Chips */}
+      {posts.length > 0 && (
+        <div className="mb-8">
+          <div className="flex flex-wrap gap-3 justify-center">
+            {FACEBOOK_POST_TYPES.map((type) => {
+              const isActive = selectedPostType === type.id
+              const count = postTypeCounts[type.id] || 0
+              const Icon = type.icon
+
+              return (
+                <motion.button
+                  key={type.id}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setSelectedPostType(type.id)}
+                  className={cn(
+                    "flex items-center gap-2 px-4 py-2 rounded-full border-2 transition-all duration-300 shadow-sm",
+                    isActive
+                      ? "bg-blue-500 border-blue-500 text-white shadow-lg shadow-blue-500/30"
+                      : "bg-white border-slate-200 text-slate-600 hover:border-slate-300"
+                  )}
+                >
+                  <Icon className={cn("w-4 h-4", isActive ? "text-white" : "text-blue-500")} />
+                  <span className="font-bold text-sm">{type.label}</span>
+                  <span className={cn(
+                    "text-xs px-2 py-0.5 rounded-full font-mono",
+                    isActive ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500"
+                  )}>
+                    {count}
+                  </span>
+                </motion.button>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Posts Content */}
-      {posts.length === 0 ? (
+      {filteredPosts.length === 0 && posts.length === 0 ? (
         <div className="text-center py-20 bg-white rounded-3xl border border-dashed border-slate-300">
           <div className="relative inline-block mb-6">
             <Facebook className="w-16 h-16 text-slate-300 mx-auto" />
@@ -233,10 +330,20 @@ export default function FacebookPage() {
             Content will appear here after the content creation agent runs
           </p>
         </div>
+      ) : filteredPosts.length === 0 ? (
+        <div className="text-center py-20 bg-white rounded-3xl border border-dashed border-slate-300">
+          <div className="relative inline-block mb-6">
+            <Facebook className="w-16 h-16 text-slate-300 mx-auto" />
+          </div>
+          <p className="text-lg font-semibold text-slate-900 mb-2">No posts match this filter</p>
+          <p className="text-sm text-slate-500 max-w-md mx-auto">
+            Try selecting a different media format
+          </p>
+        </div>
       ) : (
         <div className="space-y-12">
           {/* Pending Posts Section */}
-          {posts.some(p => p.status === 'pending' || p.status === 'failed') && (
+          {filteredPosts.some(p => p.status === 'pending') && (
             <section>
               <button
                 onClick={() => setPendingExpanded(!pendingExpanded)}
@@ -245,13 +352,13 @@ export default function FacebookPage() {
                 <h2 className="text-xl font-bold text-slate-800">Pending & Scheduled</h2>
                 <div className="h-px flex-1 bg-slate-200"></div>
                 <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">
-                  {posts.filter(p => p.status === 'pending' || p.status === 'failed').length} posts
+                  {filteredPosts.filter(p => p.status === 'pending').length} posts
                 </span>
                 <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform duration-200 ${pendingExpanded ? '' : '-rotate-90'}`} />
               </button>
               {pendingExpanded && (
                 <FacebookPostGrid
-                  posts={posts.filter(p => p.status === 'pending' || p.status === 'failed')}
+                  posts={filteredPosts.filter(p => p.status === 'pending')}
                   postInsights={postInsights}
                   videoInsights={videoInsights}
                   pageName={pageInsights?.page_name}
@@ -262,7 +369,7 @@ export default function FacebookPage() {
           )}
 
           {/* Published Posts Section */}
-          {posts.some(p => p.status === 'published') && (
+          {filteredPosts.some(p => p.status === 'published') && (
             <section>
               <button
                 onClick={() => setPublishedExpanded(!publishedExpanded)}
@@ -271,13 +378,39 @@ export default function FacebookPage() {
                 <h2 className="text-xl font-bold text-slate-800">Published History</h2>
                 <div className="h-px flex-1 bg-slate-200"></div>
                 <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">
-                  {posts.filter(p => p.status === 'published').length} posts
+                  {filteredPosts.filter(p => p.status === 'published').length} posts
                 </span>
                 <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform duration-200 ${publishedExpanded ? '' : '-rotate-90'}`} />
               </button>
               {publishedExpanded && (
                 <FacebookPostGrid
-                  posts={posts.filter(p => p.status === 'published')}
+                  posts={filteredPosts.filter(p => p.status === 'published')}
+                  postInsights={postInsights}
+                  videoInsights={videoInsights}
+                  pageName={pageInsights?.page_name}
+                  pagePictureUrl={pageInsights?.page_picture_url}
+                />
+              )}
+            </section>
+          )}
+
+          {/* Failed Posts Section */}
+          {filteredPosts.some(p => p.status === 'failed') && (
+            <section>
+              <button
+                onClick={() => setFailedExpanded(!failedExpanded)}
+                className="w-full flex items-center gap-3 mb-6 group cursor-pointer"
+              >
+                <h2 className="text-xl font-bold text-red-700">Failed</h2>
+                <div className="h-px flex-1 bg-red-200"></div>
+                <span className="text-xs font-medium text-red-500 uppercase tracking-wider">
+                  {filteredPosts.filter(p => p.status === 'failed').length} posts
+                </span>
+                <ChevronDown className={`w-5 h-5 text-red-400 transition-transform duration-200 ${failedExpanded ? '' : '-rotate-90'}`} />
+              </button>
+              {failedExpanded && (
+                <FacebookPostGrid
+                  posts={filteredPosts.filter(p => p.status === 'failed')}
                   postInsights={postInsights}
                   videoInsights={videoInsights}
                   pageName={pageInsights?.page_name}
