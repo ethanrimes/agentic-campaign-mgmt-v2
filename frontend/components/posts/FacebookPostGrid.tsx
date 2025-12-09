@@ -484,14 +484,13 @@ export default function FacebookPostGrid({ posts, postInsights = [], videoInsigh
                       </div>
                     )}
                     <div className="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-lg border border-slate-100 dark:border-slate-700">
-                      <span className="text-xs text-slate-500 uppercase tracking-wider font-semibold">Verification</span>
-                      <div className="mt-1">
-                        <VerificationStatusBadge
-                          status={selectedPost.verification_status || 'unverified'}
-                          postId={selectedPost.id}
-                          size="sm"
-                        />
-                      </div>
+                      <span className="text-xs text-slate-500 uppercase tracking-wider font-semibold mb-2 block">Verification</span>
+                      <VerificationStatusBadge
+                        status={selectedPost.verification_status || 'unverified'}
+                        postId={selectedPost.id}
+                        size="sm"
+                        fullWidth
+                      />
                     </div>
                   </div>
 

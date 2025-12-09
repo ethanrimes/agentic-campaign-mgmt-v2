@@ -450,11 +450,12 @@ export default function InstagramPostGrid({ posts, accountName = 'Instagram Acco
                   )}
 
                   {/* Verification Status */}
-                  <div className="pt-2">
+                  <div className="pt-3 border-t border-slate-100 dark:border-slate-800">
                     <VerificationStatusBadge
                       status={selectedPost.verification_status || 'unverified'}
                       postId={selectedPost.id}
                       size="sm"
+                      fullWidth
                     />
                   </div>
                 </div>

@@ -13,6 +13,7 @@ interface VerificationStatusBadgeProps {
   postId: string
   size?: 'sm' | 'md'
   className?: string
+  fullWidth?: boolean
 }
 
 export default function VerificationStatusBadge({
@@ -20,6 +21,7 @@ export default function VerificationStatusBadge({
   postId,
   size = 'md',
   className,
+  fullWidth = false,
 }: VerificationStatusBadgeProps) {
   const sizeClasses = {
     sm: 'text-xs px-2 py-0.5 gap-1',
@@ -71,7 +73,8 @@ export default function VerificationStatusBadge({
   const badgeContent = (
     <span
       className={cn(
-        'flex items-center rounded-full font-medium border transition-all',
+        'flex items-center font-medium border transition-all',
+        fullWidth ? 'rounded-lg justify-center w-full py-2' : 'rounded-full',
         sizeClasses[size],
         config.bg,
         config.text,
@@ -90,11 +93,15 @@ export default function VerificationStatusBadge({
       <Link
         href={`/verifier?post=${postId}`}
         onClick={(e) => e.stopPropagation()}
-        className="group relative inline-flex flex-col items-center"
+        className={cn(
+          'group relative flex flex-col',
+          fullWidth ? 'w-full items-stretch' : 'inline-flex items-center'
+        )}
       >
         <span
           className={cn(
-            'flex items-center rounded-full font-medium border transition-all',
+            'flex items-center font-medium border transition-all',
+            fullWidth ? 'rounded-lg justify-center w-full py-2.5' : 'rounded-full',
             sizeClasses[size],
             config.bg,
             config.text,
@@ -106,7 +113,10 @@ export default function VerificationStatusBadge({
           <Icon className={iconSize[size]} />
           {config.label}
         </span>
-        <span className="text-[9px] text-slate-400 group-hover:text-slate-600 transition-colors mt-0.5">
+        <span className={cn(
+          'text-[10px] text-slate-400 group-hover:text-slate-600 transition-colors mt-1',
+          fullWidth && 'text-center'
+        )}>
           see report
         </span>
       </Link>
