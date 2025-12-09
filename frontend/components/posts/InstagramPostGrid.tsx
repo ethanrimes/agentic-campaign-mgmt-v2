@@ -415,7 +415,7 @@ export default function InstagramPostGrid({ posts, accountName = 'Instagram Acco
                       </div>
 
                       {/* Reels-specific metrics */}
-                      {(selectedMediaMetrics.ig_reels_avg_watch_time_ms || selectedMediaMetrics.ig_reels_video_view_total_time_ms) && (
+                      {(selectedMediaMetrics.ig_reels_avg_watch_time_ms != null || selectedMediaMetrics.ig_reels_video_view_total_time_ms != null) && (
                         <div className="pt-3 border-t border-slate-200 dark:border-slate-700">
                           <div className="flex items-center gap-2 mb-3">
                             <Play className="w-4 h-4 text-purple-600" />
