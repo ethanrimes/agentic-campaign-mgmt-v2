@@ -148,17 +148,10 @@ class InstagramCommentChecker:
             )
             results["comments_found"] += len(comments)
 
-            # Process each comment
+            # Process each top-level comment only
+            # We don't fetch or process replies to comments - only direct comments on media
             for comment in comments:
                 await self._process_comment(comment, media_id, results)
-
-                # Also process replies if they exist
-                replies = comment.get("replies", {}).get("data", [])
-                for reply in replies:
-                    # Add parent_id to reply
-                    reply["parent_id"] = comment.get("id")
-                    reply["media"] = {"id": media_id}  # Add media reference
-                    await self._process_comment(reply, media_id, results)
 
         except Exception as e:
             logger.error(
@@ -201,11 +194,15 @@ class InstagramCommentChecker:
 
             # Extract comment details
             comment_text = comment.get("text", "")
-            username = comment.get("username", "")
 
-            # Extract commenter ID
+            # Extract commenter info from 'from' field
+            # Note: Instagram API returns 'username' at top level ONLY for the account owner's comments
+            # For external users, the username is in the 'from' object
             from_data = comment.get("from", {})
             commenter_id = from_data.get("id", "") or from_data.get("self_ig_scoped_id", "")
+
+            # Get username - prefer top-level (only exists for own account), fallback to from.username
+            username = comment.get("username") or from_data.get("username", "")
 
             # Skip comments from our own account by checking if username matches business_asset_id
             # The business_asset_id (e.g., "penndailybuzz") matches the Instagram username
