@@ -88,19 +88,19 @@ export const FACEBOOK_POST_METRICS: Record<string, MetricDefinition> = {
     name: 'Reactions',
     description: 'The total number of reactions on this post, including likes, love, wow, haha, sad, and angry.',
     endpoint: 'GET /{post_id}/insights?metric=post_reactions_by_type_total',
-    apiField: 'reactions_total',
+    apiField: 'post_reactions_by_type_total',
   },
   comments: {
     name: 'Comments',
     description: 'The number of comments on this post. Only counts top-level comments.',
     endpoint: 'GET /{post_id}?fields=comments.summary(true)',
-    apiField: 'comments',
+    apiField: 'comments.summary.total_count',
   },
   shares: {
     name: 'Shares',
     description: 'The number of times this post was shared by users.',
     endpoint: 'GET /{post_id}?fields=shares',
-    apiField: 'shares',
+    apiField: 'shares.count',
   },
   impressions: {
     name: 'Impressions',
@@ -119,6 +119,31 @@ export const FACEBOOK_POST_METRICS: Record<string, MetricDefinition> = {
     description: 'The number of times the media in this post was viewed.',
     endpoint: 'GET /{post_id}/insights?metric=post_media_view',
     apiField: 'post_media_view',
+  },
+  // Video/Reel metrics
+  video_views: {
+    name: 'Total Views',
+    description: 'The number of times your video/reel started playing. For reels, this counts plays with 1ms or more of playback.',
+    endpoint: 'GET /{video_id}?fields=video_insights',
+    apiField: 'blue_reels_play_count / fb_reels_total_plays',
+  },
+  video_views_unique: {
+    name: 'Unique Views',
+    description: 'The number of unique people who saw your video/reel at least once.',
+    endpoint: 'GET /{video_id}?fields=video_insights',
+    apiField: 'post_impressions_unique',
+  },
+  video_avg_watch_time: {
+    name: 'Avg Watch Time',
+    description: 'The average time users spent watching this video/reel, including any time spent replaying.',
+    endpoint: 'GET /{video_id}?fields=video_insights',
+    apiField: 'post_video_avg_time_watched',
+  },
+  video_length: {
+    name: 'Video Length',
+    description: 'The total duration of the video/reel in seconds.',
+    endpoint: 'GET /{video_id}?fields=length',
+    apiField: 'length',
   },
 }
 

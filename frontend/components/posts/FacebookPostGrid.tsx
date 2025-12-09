@@ -5,11 +5,12 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, ChevronLeft, ChevronRight, ExternalLink, Sparkles, MessageCircle, ThumbsUp, Share2, Eye, Clock, Play } from 'lucide-react'
+import { X, ChevronLeft, ChevronRight, ExternalLink, Sparkles, MessageCircle, ThumbsUp, Share2, Eye, Clock, Play, Users } from 'lucide-react'
 import type { CompletedPost, FacebookPostInsights, FacebookVideoInsights } from '@/types'
 import { formatDateTime, formatRelativeTime } from '@/lib/utils'
 import Link from 'next/link'
 import VerificationStatusBadge from '@/components/common/VerificationStatusBadge'
+import MetricTooltip from '@/components/common/MetricTooltip'
 
 interface FacebookPostGridProps {
   posts: CompletedPost[]
@@ -53,7 +54,7 @@ export default function FacebookPostGrid({ posts, postInsights = [], videoInsigh
   const videoInsightsMap = useMemo(() => {
     const map = new Map<string, FacebookVideoInsights>()
     videoInsights.forEach(insight => {
-      map.set(insight.video_id, insight)
+      map.set(insight.platform_video_id, insight)
     })
     return map
   }, [videoInsights])
@@ -366,54 +367,64 @@ export default function FacebookPostGrid({ posts, postInsights = [], videoInsigh
                       </div>
 
                       <div className="grid grid-cols-3 gap-4">
-                        <div className="flex flex-col items-center justify-center p-3 bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800">
-                          <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center mb-2">
-                            <ThumbsUp className="w-4 h-4 text-blue-600" />
+                        <MetricTooltip metricKey="reactions" platform="facebook" position="bottom">
+                          <div className="flex flex-col items-center justify-center p-3 bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 cursor-help hover:border-blue-200 dark:hover:border-blue-800 transition-colors">
+                            <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center mb-2">
+                              <ThumbsUp className="w-4 h-4 text-blue-600" />
+                            </div>
+                            <p className="text-xl font-bold text-slate-900 dark:text-white">
+                              {formatNumber(selectedPostMetrics.reactions_total)}
+                            </p>
+                            <p className="text-xs font-medium text-slate-500">Reactions</p>
                           </div>
-                          <p className="text-xl font-bold text-slate-900 dark:text-white">
-                            {formatNumber(selectedPostMetrics.reactions_total)}
-                          </p>
-                          <p className="text-xs font-medium text-slate-500">Reactions</p>
-                        </div>
-                        <div className="flex flex-col items-center justify-center p-3 bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800">
-                          <div className="w-8 h-8 rounded-full bg-green-50 flex items-center justify-center mb-2">
-                            <MessageCircle className="w-4 h-4 text-green-600" />
+                        </MetricTooltip>
+                        <MetricTooltip metricKey="comments" platform="facebook" position="bottom">
+                          <div className="flex flex-col items-center justify-center p-3 bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 cursor-help hover:border-green-200 dark:hover:border-green-800 transition-colors">
+                            <div className="w-8 h-8 rounded-full bg-green-50 flex items-center justify-center mb-2">
+                              <MessageCircle className="w-4 h-4 text-green-600" />
+                            </div>
+                            <p className="text-xl font-bold text-slate-900 dark:text-white">
+                              {formatNumber(selectedPostMetrics.comments)}
+                            </p>
+                            <p className="text-xs font-medium text-slate-500">Comments</p>
                           </div>
-                          <p className="text-xl font-bold text-slate-900 dark:text-white">
-                            {formatNumber(selectedPostMetrics.comments)}
-                          </p>
-                          <p className="text-xs font-medium text-slate-500">Comments</p>
-                        </div>
-                        <div className="flex flex-col items-center justify-center p-3 bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800">
-                          <div className="w-8 h-8 rounded-full bg-purple-50 flex items-center justify-center mb-2">
-                            <Share2 className="w-4 h-4 text-purple-600" />
+                        </MetricTooltip>
+                        <MetricTooltip metricKey="shares" platform="facebook" position="bottom">
+                          <div className="flex flex-col items-center justify-center p-3 bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 cursor-help hover:border-purple-200 dark:hover:border-purple-800 transition-colors">
+                            <div className="w-8 h-8 rounded-full bg-purple-50 flex items-center justify-center mb-2">
+                              <Share2 className="w-4 h-4 text-purple-600" />
+                            </div>
+                            <p className="text-xl font-bold text-slate-900 dark:text-white">
+                              {formatNumber(selectedPostMetrics.shares)}
+                            </p>
+                            <p className="text-xs font-medium text-slate-500">Shares</p>
                           </div>
-                          <p className="text-xl font-bold text-slate-900 dark:text-white">
-                            {formatNumber(selectedPostMetrics.shares)}
-                          </p>
-                          <p className="text-xs font-medium text-slate-500">Shares</p>
-                        </div>
+                        </MetricTooltip>
                       </div>
 
                       <div className="grid grid-cols-2 gap-4 pt-2">
-                        <div className="flex items-center justify-between p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800">
-                          <div className="flex items-center gap-2">
-                            <Eye className="w-4 h-4 text-slate-400" />
-                            <span className="text-sm font-medium text-slate-600 dark:text-slate-400">Unique Reach</span>
+                        <MetricTooltip metricKey="reach" platform="facebook" position="left">
+                          <div className="flex items-center justify-between p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 cursor-help hover:border-slate-300 dark:hover:border-slate-600 transition-colors">
+                            <div className="flex items-center gap-2">
+                              <Eye className="w-4 h-4 text-slate-400" />
+                              <span className="text-sm font-medium text-slate-600 dark:text-slate-400">Unique Reach</span>
+                            </div>
+                            <span className="font-bold text-slate-900 dark:text-white">
+                              {formatNumber(selectedPostMetrics.post_impressions_unique)}
+                            </span>
                           </div>
-                          <span className="font-bold text-slate-900 dark:text-white">
-                            {formatNumber(selectedPostMetrics.post_impressions_unique)}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800">
-                          <div className="flex items-center gap-2">
-                            <Sparkles className="w-4 h-4 text-slate-400" />
-                            <span className="text-sm font-medium text-slate-600 dark:text-slate-400">Impressions</span>
+                        </MetricTooltip>
+                        <MetricTooltip metricKey="impressions" platform="facebook" position="right">
+                          <div className="flex items-center justify-between p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 cursor-help hover:border-slate-300 dark:hover:border-slate-600 transition-colors">
+                            <div className="flex items-center gap-2">
+                              <Sparkles className="w-4 h-4 text-slate-400" />
+                              <span className="text-sm font-medium text-slate-600 dark:text-slate-400">Impressions</span>
+                            </div>
+                            <span className="font-bold text-slate-900 dark:text-white">
+                              {formatNumber(selectedPostMetrics.post_impressions)}
+                            </span>
                           </div>
-                          <span className="font-bold text-slate-900 dark:text-white">
-                            {formatNumber(selectedPostMetrics.post_impressions)}
-                          </span>
-                        </div>
+                        </MetricTooltip>
                       </div>
                     </div>
                   )}
@@ -427,37 +438,45 @@ export default function FacebookPostGrid({ posts, postInsights = [], videoInsigh
                       </div>
 
                       <div className="grid grid-cols-2 gap-3">
-                        <div className="text-center p-2 bg-white dark:bg-slate-900 rounded-lg">
-                          <p className="text-lg font-bold text-slate-900 dark:text-white">
-                            {formatNumber(selectedVideoMetrics.post_video_views)}
-                          </p>
-                          <p className="text-xs text-slate-500">Total Views</p>
-                        </div>
-                        <div className="text-center p-2 bg-white dark:bg-slate-900 rounded-lg">
-                          <p className="text-lg font-bold text-slate-900 dark:text-white">
-                            {formatNumber(selectedVideoMetrics.post_video_views_unique)}
-                          </p>
-                          <p className="text-xs text-slate-500">Unique Views</p>
-                        </div>
+                        <MetricTooltip metricKey="video_views" platform="facebook" position="bottom">
+                          <div className="text-center p-3 bg-white dark:bg-slate-900 rounded-lg cursor-help hover:border hover:border-purple-200 dark:hover:border-purple-800 transition-colors">
+                            <p className="text-lg font-bold text-slate-900 dark:text-white">
+                              {formatNumber(selectedVideoMetrics.post_video_views)}
+                            </p>
+                            <p className="text-xs text-slate-500">Total Views</p>
+                          </div>
+                        </MetricTooltip>
+                        <MetricTooltip metricKey="video_views_unique" platform="facebook" position="bottom">
+                          <div className="text-center p-3 bg-white dark:bg-slate-900 rounded-lg cursor-help hover:border hover:border-purple-200 dark:hover:border-purple-800 transition-colors">
+                            <p className="text-lg font-bold text-slate-900 dark:text-white">
+                              {formatNumber(selectedVideoMetrics.post_video_views_unique)}
+                            </p>
+                            <p className="text-xs text-slate-500">Unique Views</p>
+                          </div>
+                        </MetricTooltip>
                       </div>
 
-                      <div className="pt-2 border-t border-purple-200 dark:border-purple-800">
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-slate-600 dark:text-slate-400 flex items-center gap-1">
-                            <Clock className="w-4 h-4" />
-                            Avg Watch Time
-                          </span>
-                          <span className="font-semibold text-slate-900 dark:text-white">
-                            {formatDuration(selectedVideoMetrics.post_video_avg_time_watched_ms)}
-                          </span>
-                        </div>
-                        {selectedVideoMetrics.video_length_ms && (
-                          <div className="flex items-center justify-between text-sm mt-1">
-                            <span className="text-slate-600 dark:text-slate-400">Video Length</span>
+                      <div className="pt-2 border-t border-purple-200 dark:border-purple-800 space-y-2">
+                        <MetricTooltip metricKey="video_avg_watch_time" platform="facebook" position="left">
+                          <div className="flex items-center justify-between text-sm p-2 rounded-lg cursor-help hover:bg-white dark:hover:bg-slate-900 transition-colors">
+                            <span className="text-slate-600 dark:text-slate-400 flex items-center gap-1">
+                              <Clock className="w-4 h-4" />
+                              Avg Watch Time
+                            </span>
                             <span className="font-semibold text-slate-900 dark:text-white">
-                              {formatDuration(selectedVideoMetrics.video_length_ms)}
+                              {formatDuration(selectedVideoMetrics.post_video_avg_time_watched_ms)}
                             </span>
                           </div>
+                        </MetricTooltip>
+                        {selectedVideoMetrics.post_video_length_ms && (
+                          <MetricTooltip metricKey="video_length" platform="facebook" position="left">
+                            <div className="flex items-center justify-between text-sm p-2 rounded-lg cursor-help hover:bg-white dark:hover:bg-slate-900 transition-colors">
+                              <span className="text-slate-600 dark:text-slate-400">Video Length</span>
+                              <span className="font-semibold text-slate-900 dark:text-white">
+                                {formatDuration(selectedVideoMetrics.post_video_length_ms)}
+                              </span>
+                            </div>
+                          </MetricTooltip>
                         )}
                       </div>
                     </div>

@@ -418,6 +418,9 @@ class FacebookInsightsService(MetaBaseClient):
         """
         Fetch video-level insights for a Facebook video or reel.
 
+        Uses the video node's fields approach rather than the /video_insights edge,
+        which can be unreliable for certain video types (especially reels).
+
         Args:
             video_id: The Facebook video ID
 
@@ -435,16 +438,11 @@ class FacebookInsightsService(MetaBaseClient):
 
         try:
             async with aiohttp.ClientSession() as session:
-                url = f"{self.BASE_URL}/{video_id}/video_insights"
-                metrics = [
-                    "post_video_views",
-                    "post_video_views_unique",
-                    "post_video_view_time",
-                    "post_video_avg_time_watched",
-                    "post_video_length",
-                ]
+                # Use the video node with video_insights as a field
+                # This approach is more reliable than the /video_insights edge
+                url = f"{self.BASE_URL}/{video_id}"
                 params = {
-                    "metric": ",".join(metrics),
+                    "fields": "id,video_insights,length",
                     "access_token": self.page_token,
                 }
 
@@ -459,9 +457,18 @@ class FacebookInsightsService(MetaBaseClient):
                         return None
 
                     data = await response.json()
-                    raw_metrics["video_insights"] = data.get("data", [])
+                    raw_metrics["video_data"] = data
 
-                    for metric in data.get("data", []):
+                    # Get video length from the video object itself
+                    if "length" in data:
+                        # length is in seconds, convert to ms
+                        insights.post_video_length_ms = int(data["length"] * 1000)
+
+                    # Process video_insights
+                    video_insights_data = data.get("video_insights", {}).get("data", [])
+                    raw_metrics["video_insights"] = video_insights_data
+
+                    for metric in video_insights_data:
                         name = metric.get("name")
                         values = metric.get("values", [])
                         if not values:
@@ -469,6 +476,7 @@ class FacebookInsightsService(MetaBaseClient):
 
                         value = values[0].get("value", 0)
 
+                        # Map the metric names to our model fields
                         if name == "post_video_views":
                             insights.post_video_views = value if isinstance(value, int) else 0
                         elif name == "post_video_views_unique":
@@ -479,6 +487,15 @@ class FacebookInsightsService(MetaBaseClient):
                             insights.post_video_avg_time_watched_ms = value if isinstance(value, int) else 0
                         elif name == "post_video_length":
                             insights.post_video_length_ms = value if isinstance(value, int) else 0
+                        # Reel-specific metrics
+                        elif name == "blue_reels_play_count":
+                            insights.post_video_views = value if isinstance(value, int) else 0
+                        elif name == "fb_reels_total_plays":
+                            # Use total plays if views not available
+                            if not insights.post_video_views:
+                                insights.post_video_views = value if isinstance(value, int) else 0
+                        elif name == "post_impressions_unique":
+                            insights.post_video_views_unique = value if isinstance(value, int) else 0
 
         except Exception as e:
             logger.error("Error fetching video insights", video_id=video_id, error=str(e))
