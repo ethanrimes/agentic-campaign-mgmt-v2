@@ -238,5 +238,5 @@ export async function getVideoInsights(
   video_id: string
 ): Promise<FacebookVideoInsights | null> {
   const insights = await getCachedInsights(business_asset_id, 'facebook')
-  return insights.facebook_videos?.find(v => v.video_id === video_id) || null
+  return insights.facebook_videos?.find(v => v.platform_video_id === video_id) || null
 }

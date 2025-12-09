@@ -190,7 +190,7 @@ export interface FacebookPostInsights {
 export interface FacebookVideoInsights {
   id: string
   business_asset_id: string
-  video_id: string
+  platform_video_id: string  // Changed from video_id to match database column
   completed_post_id: string | null
   // View counts
   post_video_views: number | null
@@ -200,7 +200,7 @@ export interface FacebookVideoInsights {
   // Watch time
   post_video_view_time_ms: number | null
   post_video_avg_time_watched_ms: number | null
-  video_length_ms: number | null
+  post_video_length_ms: number | null
   // Completion rates
   post_video_complete_views_organic: number | null
   post_video_complete_views_paid: number | null
