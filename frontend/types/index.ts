@@ -241,9 +241,8 @@ export interface InstagramMediaInsights {
   shares: number | null
   saved: number | null
   views: number | null
-  // Reach & Impressions
+  // Reach (impressions is deprecated for media created after July 2024)
   reach: number | null
-  impressions: number | null
   // Reels specific
   ig_reels_avg_watch_time_ms: number | null
   ig_reels_video_view_total_time_ms: number | null

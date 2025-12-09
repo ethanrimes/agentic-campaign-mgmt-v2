@@ -5,11 +5,12 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, ChevronLeft, ChevronRight, ExternalLink, Play, Sparkles, Heart, MessageCircle, Send, Bookmark, Eye, Clock, Share2, Users } from 'lucide-react'
+import { X, ChevronLeft, ChevronRight, ExternalLink, Play, Sparkles, Heart, MessageCircle, Send, Bookmark, Eye, Clock, Share2, Users, Info } from 'lucide-react'
 import type { CompletedPost, InstagramMediaInsights } from '@/types'
 import { formatDateTime, formatRelativeTime } from '@/lib/utils'
 import Link from 'next/link'
 import VerificationStatusBadge from '@/components/common/VerificationStatusBadge'
+import MetricTooltip from '@/components/common/MetricTooltip'
 
 interface InstagramPostGridProps {
   posts: CompletedPost[]
@@ -346,70 +347,71 @@ export default function InstagramPostGrid({ posts, accountName = 'Instagram Acco
                       </div>
 
                       <div className="grid grid-cols-4 gap-3">
-                        <div className="flex flex-col items-center justify-center p-3 bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800">
-                          <Heart className="w-5 h-5 text-pink-500 mb-1" fill="currentColor" />
-                          <p className="text-lg font-bold text-slate-900 dark:text-white">
-                            {formatNumber(selectedMediaMetrics.likes)}
-                          </p>
-                          <p className="text-[10px] font-medium text-slate-500 uppercase tracking-wide">Likes</p>
-                        </div>
-                        <div className="flex flex-col items-center justify-center p-3 bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800">
-                          <MessageCircle className="w-5 h-5 text-blue-500 mb-1" />
-                          <p className="text-lg font-bold text-slate-900 dark:text-white">
-                            {formatNumber(selectedMediaMetrics.comments)}
-                          </p>
-                          <p className="text-[10px] font-medium text-slate-500 uppercase tracking-wide">Comments</p>
-                        </div>
-                        <div className="flex flex-col items-center justify-center p-3 bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800">
-                          <Bookmark className="w-5 h-5 text-amber-500 mb-1" />
-                          <p className="text-lg font-bold text-slate-900 dark:text-white">
-                            {formatNumber(selectedMediaMetrics.saved)}
-                          </p>
-                          <p className="text-[10px] font-medium text-slate-500 uppercase tracking-wide">Saves</p>
-                        </div>
-                        <div className="flex flex-col items-center justify-center p-3 bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800">
-                          <Share2 className="w-5 h-5 text-green-500 mb-1" />
-                          <p className="text-lg font-bold text-slate-900 dark:text-white">
-                            {formatNumber(selectedMediaMetrics.shares)}
-                          </p>
-                          <p className="text-[10px] font-medium text-slate-500 uppercase tracking-wide">Shares</p>
-                        </div>
+                        <MetricTooltip metricKey="likes" position="bottom">
+                          <div className="flex flex-col items-center justify-center p-3 bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 cursor-help hover:border-pink-200 dark:hover:border-pink-800 transition-colors">
+                            <Heart className="w-5 h-5 text-pink-500 mb-1" fill="currentColor" />
+                            <p className="text-lg font-bold text-slate-900 dark:text-white">
+                              {formatNumber(selectedMediaMetrics.likes)}
+                            </p>
+                            <p className="text-[10px] font-medium text-slate-500 uppercase tracking-wide">Likes</p>
+                          </div>
+                        </MetricTooltip>
+                        <MetricTooltip metricKey="comments" position="bottom">
+                          <div className="flex flex-col items-center justify-center p-3 bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 cursor-help hover:border-blue-200 dark:hover:border-blue-800 transition-colors">
+                            <MessageCircle className="w-5 h-5 text-blue-500 mb-1" />
+                            <p className="text-lg font-bold text-slate-900 dark:text-white">
+                              {formatNumber(selectedMediaMetrics.comments)}
+                            </p>
+                            <p className="text-[10px] font-medium text-slate-500 uppercase tracking-wide">Comments</p>
+                          </div>
+                        </MetricTooltip>
+                        <MetricTooltip metricKey="saved" position="bottom">
+                          <div className="flex flex-col items-center justify-center p-3 bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 cursor-help hover:border-amber-200 dark:hover:border-amber-800 transition-colors">
+                            <Bookmark className="w-5 h-5 text-amber-500 mb-1" />
+                            <p className="text-lg font-bold text-slate-900 dark:text-white">
+                              {formatNumber(selectedMediaMetrics.saved)}
+                            </p>
+                            <p className="text-[10px] font-medium text-slate-500 uppercase tracking-wide">Saves</p>
+                          </div>
+                        </MetricTooltip>
+                        <MetricTooltip metricKey="shares" position="bottom">
+                          <div className="flex flex-col items-center justify-center p-3 bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 cursor-help hover:border-green-200 dark:hover:border-green-800 transition-colors">
+                            <Share2 className="w-5 h-5 text-green-500 mb-1" />
+                            <p className="text-lg font-bold text-slate-900 dark:text-white">
+                              {formatNumber(selectedMediaMetrics.shares)}
+                            </p>
+                            <p className="text-[10px] font-medium text-slate-500 uppercase tracking-wide">Shares</p>
+                          </div>
+                        </MetricTooltip>
                       </div>
 
                       <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-slate-700">
-                        <div className="flex items-center justify-between p-2 rounded-lg hover:bg-white dark:hover:bg-slate-900 transition-colors">
-                          <div className="flex items-center gap-2">
-                            <div className="p-1.5 bg-white dark:bg-slate-800 rounded-md shadow-sm">
-                              <Eye className="w-4 h-4 text-slate-500" />
+                        <MetricTooltip metricKey="views" position="left">
+                          <div className="flex items-center justify-between p-2 rounded-lg hover:bg-white dark:hover:bg-slate-900 transition-colors cursor-help">
+                            <div className="flex items-center gap-2">
+                              <div className="p-1.5 bg-white dark:bg-slate-800 rounded-md shadow-sm">
+                                <Eye className="w-4 h-4 text-slate-500" />
+                              </div>
+                              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Total Views</span>
                             </div>
-                            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Total Views</span>
+                            <span className="font-bold text-slate-900 dark:text-white">
+                              {formatNumber(selectedMediaMetrics.views)}
+                            </span>
                           </div>
-                          <span className="font-bold text-slate-900 dark:text-white">
-                            {formatNumber(selectedMediaMetrics.views)}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between p-2 rounded-lg hover:bg-white dark:hover:bg-slate-900 transition-colors">
-                          <div className="flex items-center gap-2">
-                            <div className="p-1.5 bg-white dark:bg-slate-800 rounded-md shadow-sm">
-                              <Users className="w-4 h-4 text-slate-500" />
+                        </MetricTooltip>
+                        <MetricTooltip metricKey="reach" position="left">
+                          <div className="flex items-center justify-between p-2 rounded-lg hover:bg-white dark:hover:bg-slate-900 transition-colors cursor-help">
+                            <div className="flex items-center gap-2">
+                              <div className="p-1.5 bg-white dark:bg-slate-800 rounded-md shadow-sm">
+                                <Users className="w-4 h-4 text-slate-500" />
+                              </div>
+                              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Reach</span>
                             </div>
-                            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Reach</span>
+                            <span className="font-bold text-slate-900 dark:text-white">
+                              {formatNumber(selectedMediaMetrics.reach)}
+                            </span>
                           </div>
-                          <span className="font-bold text-slate-900 dark:text-white">
-                            {formatNumber(selectedMediaMetrics.reach)}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between p-2 rounded-lg hover:bg-white dark:hover:bg-slate-900 transition-colors">
-                          <div className="flex items-center gap-2">
-                            <div className="p-1.5 bg-white dark:bg-slate-800 rounded-md shadow-sm">
-                              <Sparkles className="w-4 h-4 text-slate-500" />
-                            </div>
-                            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Impressions</span>
-                          </div>
-                          <span className="font-bold text-slate-900 dark:text-white">
-                            {formatNumber(selectedMediaMetrics.impressions)}
-                          </span>
-                        </div>
+                        </MetricTooltip>
                       </div>
 
                       {/* Reels-specific metrics */}
@@ -419,15 +421,17 @@ export default function InstagramPostGrid({ posts, accountName = 'Instagram Acco
                             <Play className="w-4 h-4 text-purple-600" />
                             <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Reel Performance</span>
                           </div>
-                          <div className="flex items-center justify-between p-3 bg-purple-50/50 dark:bg-purple-900/10 rounded-xl border border-purple-100 dark:border-purple-900/30">
-                            <span className="text-sm font-medium text-slate-600 dark:text-slate-400 flex items-center gap-2">
-                              <Clock className="w-4 h-4" />
-                              Avg Watch Time
-                            </span>
-                            <span className="font-bold text-slate-900 dark:text-white">
-                              {formatDuration(selectedMediaMetrics.ig_reels_avg_watch_time_ms)}
-                            </span>
-                          </div>
+                          <MetricTooltip metricKey="ig_reels_avg_watch_time_ms" position="left">
+                            <div className="flex items-center justify-between p-3 bg-purple-50/50 dark:bg-purple-900/10 rounded-xl border border-purple-100 dark:border-purple-900/30 cursor-help hover:border-purple-200 dark:hover:border-purple-800 transition-colors">
+                              <span className="text-sm font-medium text-slate-600 dark:text-slate-400 flex items-center gap-2">
+                                <Clock className="w-4 h-4" />
+                                Avg Watch Time
+                              </span>
+                              <span className="font-bold text-slate-900 dark:text-white">
+                                {formatDuration(selectedMediaMetrics.ig_reels_avg_watch_time_ms)}
+                              </span>
+                            </div>
+                          </MetricTooltip>
                         </div>
                       )}
                     </div>
