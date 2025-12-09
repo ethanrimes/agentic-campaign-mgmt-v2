@@ -5,9 +5,10 @@
 import { useState, useEffect, useMemo } from 'react'
 import { getCompletedPosts, getCachedInsights, refreshInsights } from '@/lib/api-client'
 import { useBusinessAsset } from '@/lib/business-asset-context'
-import { Instagram, RefreshCw, Users, UserPlus, Heart, Eye, Image, ChevronDown, AlertCircle, Play, Film, Layers } from 'lucide-react'
+import { Instagram, RefreshCw, Users, UserPlus, Heart, Eye, Image, ChevronDown, AlertCircle, Play, Film, Layers, MessageCircle, Bookmark, Share2, Calendar } from 'lucide-react'
 import InstagramPostGrid from '@/components/posts/InstagramPostGrid'
 import MetricTooltip from '@/components/common/MetricTooltip'
+import SortControls, { SortMetric, SortDirection, SortOption } from '@/components/common/SortControls'
 import type { CompletedPost, InstagramAccountInsights, InstagramMediaInsights } from '@/types'
 import { formatRelativeTime } from '@/lib/utils'
 import { motion } from 'framer-motion'
@@ -34,6 +35,19 @@ export default function InstagramPage() {
   const [publishedExpanded, setPublishedExpanded] = useState(true)
   const [failedExpanded, setFailedExpanded] = useState(true)
   const [selectedPostType, setSelectedPostType] = useState<InstagramPostType>('all')
+  const [sortMetric, setSortMetric] = useState<SortMetric>('scheduled_time')
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
+
+  // Define sort options for Instagram
+  const sortOptions: SortOption[] = useMemo(() => [
+    { id: 'scheduled_time', label: 'Schedule Time', icon: <Calendar className="w-4 h-4 text-slate-400" /> },
+    { id: 'likes', label: 'Likes', icon: <Heart className="w-4 h-4 text-pink-500" /> },
+    { id: 'comments', label: 'Comments', icon: <MessageCircle className="w-4 h-4 text-blue-500" /> },
+    { id: 'saves', label: 'Saves', icon: <Bookmark className="w-4 h-4 text-amber-500" /> },
+    { id: 'shares', label: 'Shares', icon: <Share2 className="w-4 h-4 text-green-500" /> },
+    { id: 'views', label: 'Views', icon: <Eye className="w-4 h-4 text-purple-500" /> },
+    { id: 'reach', label: 'Reach', icon: <Users className="w-4 h-4 text-sky-500" /> },
+  ], [])
 
   useEffect(() => {
     async function loadData() {
@@ -102,11 +116,65 @@ export default function InstagramPage() {
     return mediaInsights.reduce((sum, media) => sum + (media.views || 0), 0)
   }, [mediaInsights])
 
+  // Create insight lookup map
+  const mediaInsightsMap = useMemo(() => {
+    const map = new Map<string, InstagramMediaInsights>()
+    mediaInsights.forEach(insight => {
+      map.set(insight.platform_media_id, insight)
+    })
+    return map
+  }, [mediaInsights])
+
+  // Get metric value for a post
+  const getMetricValue = (post: CompletedPost): number => {
+    // Pending/failed posts have 0 for all metrics
+    if (post.status !== 'published') return 0
+
+    const metrics = post.platform_post_id ? mediaInsightsMap.get(post.platform_post_id) : null
+
+    switch (sortMetric) {
+      case 'likes':
+        return metrics?.likes || 0
+      case 'comments':
+        return metrics?.comments || 0
+      case 'saves':
+        return metrics?.saved || 0
+      case 'shares':
+        return metrics?.shares || 0
+      case 'views':
+        return metrics?.views || 0
+      case 'reach':
+        return metrics?.reach || 0
+      case 'scheduled_time':
+      default:
+        return 0 // Will use date sorting for this
+    }
+  }
+
   // Filter posts by selected type
   const filteredPosts = useMemo(() => {
     if (selectedPostType === 'all') return posts
     return posts.filter(p => p.post_type === selectedPostType)
   }, [posts, selectedPostType])
+
+  // Sort posts by selected metric
+  const sortedPosts = useMemo(() => {
+    if (sortMetric === 'scheduled_time') {
+      // Default sort: by scheduled_posting_time descending (most recent first)
+      return [...filteredPosts].sort((a, b) => {
+        const dateA = a.scheduled_posting_time ? new Date(a.scheduled_posting_time).getTime() : 0
+        const dateB = b.scheduled_posting_time ? new Date(b.scheduled_posting_time).getTime() : 0
+        return dateB - dateA // Most recent first
+      })
+    }
+
+    // Sort by metric value
+    return [...filteredPosts].sort((a, b) => {
+      const valueA = getMetricValue(a)
+      const valueB = getMetricValue(b)
+      return sortDirection === 'desc' ? valueB - valueA : valueA - valueB
+    })
+  }, [filteredPosts, sortMetric, sortDirection, mediaInsightsMap])
 
   // Get counts by post type for display
   const postTypeCounts = useMemo(() => {
@@ -316,7 +384,7 @@ export default function InstagramPage() {
 
       {/* Media Format Filter Chips */}
       {posts.length > 0 && (
-        <div className="mb-8">
+        <div className="mb-8 space-y-4">
           <div className="flex flex-wrap gap-3 justify-center">
             {INSTAGRAM_POST_TYPES.map((type) => {
               const isActive = selectedPostType === type.id
@@ -348,11 +416,23 @@ export default function InstagramPage() {
               )
             })}
           </div>
+
+          {/* Sort Controls */}
+          <div className="flex justify-center">
+            <SortControls
+              options={sortOptions}
+              selectedMetric={sortMetric}
+              direction={sortDirection}
+              onMetricChange={setSortMetric}
+              onDirectionChange={setSortDirection}
+              accentColor="pink"
+            />
+          </div>
         </div>
       )}
 
       {/* Posts Content */}
-      {filteredPosts.length === 0 && posts.length === 0 ? (
+      {sortedPosts.length === 0 && posts.length === 0 ? (
         <div className="text-center py-20 bg-white rounded-3xl border border-dashed border-slate-300">
           <div className="relative inline-block mb-6">
             <Instagram className="w-16 h-16 text-slate-300 mx-auto" />
@@ -362,7 +442,7 @@ export default function InstagramPage() {
             Content will appear here after the content creation agent runs
           </p>
         </div>
-      ) : filteredPosts.length === 0 ? (
+      ) : sortedPosts.length === 0 ? (
         <div className="text-center py-20 bg-white rounded-3xl border border-dashed border-slate-300">
           <div className="relative inline-block mb-6">
             <Instagram className="w-16 h-16 text-slate-300 mx-auto" />
@@ -374,33 +454,8 @@ export default function InstagramPage() {
         </div>
       ) : (
         <div className="space-y-12">
-          {/* Pending Posts Section */}
-          {filteredPosts.some(p => p.status === 'pending') && (
-            <section>
-              <button
-                onClick={() => setPendingExpanded(!pendingExpanded)}
-                className="w-full flex items-center gap-3 mb-6 group cursor-pointer"
-              >
-                <h2 className="text-xl font-bold text-slate-800">Pending & Scheduled</h2>
-                <div className="h-px flex-1 bg-slate-200"></div>
-                <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">
-                  {filteredPosts.filter(p => p.status === 'pending').length} posts
-                </span>
-                <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform duration-200 ${pendingExpanded ? '' : '-rotate-90'}`} />
-              </button>
-              {pendingExpanded && (
-                <InstagramPostGrid
-                  posts={filteredPosts.filter(p => p.status === 'pending')}
-                  accountName={accountInsights?.username || selectedAsset.name}
-                  accountProfilePictureUrl={accountInsights?.profile_picture_url}
-                  mediaInsights={mediaInsights}
-                />
-              )}
-            </section>
-          )}
-
           {/* Published Posts Section */}
-          {filteredPosts.some(p => p.status === 'published') && (
+          {sortedPosts.some(p => p.status === 'published') && (
             <section>
               <button
                 onClick={() => setPublishedExpanded(!publishedExpanded)}
@@ -409,13 +464,38 @@ export default function InstagramPage() {
                 <h2 className="text-xl font-bold text-slate-800">Published History</h2>
                 <div className="h-px flex-1 bg-slate-200"></div>
                 <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">
-                  {filteredPosts.filter(p => p.status === 'published').length} posts
+                  {sortedPosts.filter(p => p.status === 'published').length} posts{sortMetric !== 'scheduled_time' ? ` • sorted by ${sortOptions.find(o => o.id === sortMetric)?.label}` : ''}
                 </span>
                 <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform duration-200 ${publishedExpanded ? '' : '-rotate-90'}`} />
               </button>
               {publishedExpanded && (
                 <InstagramPostGrid
-                  posts={filteredPosts.filter(p => p.status === 'published')}
+                  posts={sortedPosts.filter(p => p.status === 'published')}
+                  accountName={accountInsights?.username || selectedAsset.name}
+                  accountProfilePictureUrl={accountInsights?.profile_picture_url}
+                  mediaInsights={mediaInsights}
+                />
+              )}
+            </section>
+          )}
+
+          {/* Pending Posts Section */}
+          {sortedPosts.some(p => p.status === 'pending') && (
+            <section>
+              <button
+                onClick={() => setPendingExpanded(!pendingExpanded)}
+                className="w-full flex items-center gap-3 mb-6 group cursor-pointer"
+              >
+                <h2 className="text-xl font-bold text-slate-800">Pending & Scheduled</h2>
+                <div className="h-px flex-1 bg-slate-200"></div>
+                <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+                  {sortedPosts.filter(p => p.status === 'pending').length} posts
+                </span>
+                <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform duration-200 ${pendingExpanded ? '' : '-rotate-90'}`} />
+              </button>
+              {pendingExpanded && (
+                <InstagramPostGrid
+                  posts={sortedPosts.filter(p => p.status === 'pending')}
                   accountName={accountInsights?.username || selectedAsset.name}
                   accountProfilePictureUrl={accountInsights?.profile_picture_url}
                   mediaInsights={mediaInsights}
@@ -425,7 +505,7 @@ export default function InstagramPage() {
           )}
 
           {/* Failed Posts Section */}
-          {filteredPosts.some(p => p.status === 'failed') && (
+          {sortedPosts.some(p => p.status === 'failed') && (
             <section>
               <button
                 onClick={() => setFailedExpanded(!failedExpanded)}
@@ -434,13 +514,13 @@ export default function InstagramPage() {
                 <h2 className="text-xl font-bold text-red-700">Failed</h2>
                 <div className="h-px flex-1 bg-red-200"></div>
                 <span className="text-xs font-medium text-red-500 uppercase tracking-wider">
-                  {filteredPosts.filter(p => p.status === 'failed').length} posts
+                  {sortedPosts.filter(p => p.status === 'failed').length} posts
                 </span>
                 <ChevronDown className={`w-5 h-5 text-red-400 transition-transform duration-200 ${failedExpanded ? '' : '-rotate-90'}`} />
               </button>
               {failedExpanded && (
                 <InstagramPostGrid
-                  posts={filteredPosts.filter(p => p.status === 'failed')}
+                  posts={sortedPosts.filter(p => p.status === 'failed')}
                   accountName={accountInsights?.username || selectedAsset.name}
                   accountProfilePictureUrl={accountInsights?.profile_picture_url}
                   mediaInsights={mediaInsights}
