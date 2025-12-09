@@ -5,9 +5,10 @@
 import { useState, useEffect, useMemo } from 'react'
 import { getCompletedPosts, getCachedInsights, refreshInsights } from '@/lib/api-client'
 import { useBusinessAsset } from '@/lib/business-asset-context'
-import { Facebook, RefreshCw, Users, Heart, Play, Share2, ChevronDown, AlertCircle, Image, Film, Video } from 'lucide-react'
+import { Facebook, RefreshCw, Users, Heart, Play, Share2, ChevronDown, AlertCircle, Image, Film, Video, ThumbsUp, MessageCircle, Eye, Calendar } from 'lucide-react'
 import FacebookPostGrid from '@/components/posts/FacebookPostGrid'
 import MetricTooltip from '@/components/common/MetricTooltip'
+import SortControls, { SortMetric, SortDirection, SortOption } from '@/components/common/SortControls'
 import type { CompletedPost, FacebookPageInsights, FacebookPostInsights, FacebookVideoInsights } from '@/types'
 import { formatRelativeTime } from '@/lib/utils'
 import { motion } from 'framer-motion'
@@ -34,6 +35,18 @@ export default function FacebookPage() {
   const [publishedExpanded, setPublishedExpanded] = useState(true)
   const [failedExpanded, setFailedExpanded] = useState(true)
   const [selectedPostType, setSelectedPostType] = useState<FacebookPostType>('all')
+  const [sortMetric, setSortMetric] = useState<SortMetric>('scheduled_time')
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
+
+  // Define sort options for Facebook
+  const sortOptions: SortOption[] = useMemo(() => [
+    { id: 'scheduled_time', label: 'Schedule Time', icon: <Calendar className="w-4 h-4 text-slate-400" /> },
+    { id: 'reactions', label: 'Reactions', icon: <ThumbsUp className="w-4 h-4 text-blue-500" /> },
+    { id: 'comments', label: 'Comments', icon: <MessageCircle className="w-4 h-4 text-green-500" /> },
+    { id: 'shares', label: 'Shares', icon: <Share2 className="w-4 h-4 text-purple-500" /> },
+    { id: 'reach', label: 'Reach', icon: <Eye className="w-4 h-4 text-slate-500" /> },
+    { id: 'views', label: 'Media Views', icon: <Play className="w-4 h-4 text-amber-500" /> },
+  ], [])
 
   useEffect(() => {
     async function loadData() {
@@ -88,11 +101,72 @@ export default function FacebookPage() {
     }
   }
 
+  // Create insight lookup maps
+  const postInsightsMap = useMemo(() => {
+    const map = new Map<string, FacebookPostInsights>()
+    postInsights.forEach(insight => {
+      map.set(insight.platform_post_id, insight)
+    })
+    return map
+  }, [postInsights])
+
+  const videoInsightsMap = useMemo(() => {
+    const map = new Map<string, FacebookVideoInsights>()
+    videoInsights.forEach(insight => {
+      map.set(insight.platform_video_id, insight)
+    })
+    return map
+  }, [videoInsights])
+
+  // Get metric value for a post
+  const getMetricValue = (post: CompletedPost): number => {
+    // Pending/failed posts have 0 for all metrics
+    if (post.status !== 'published') return 0
+
+    const postMetrics = post.platform_post_id ? postInsightsMap.get(post.platform_post_id) : null
+    const videoMetrics = post.platform_post_id ? videoInsightsMap.get(post.platform_post_id) : null
+
+    switch (sortMetric) {
+      case 'reactions':
+        return postMetrics?.reactions_total || 0
+      case 'comments':
+        return postMetrics?.comments || 0
+      case 'shares':
+        return postMetrics?.shares || 0
+      case 'reach':
+        return postMetrics?.post_impressions_unique || 0
+      case 'views':
+        return postMetrics?.post_media_view || videoMetrics?.post_video_views || 0
+      case 'scheduled_time':
+      default:
+        return 0 // Will use date sorting for this
+    }
+  }
+
   // Filter posts by selected type
   const filteredPosts = useMemo(() => {
     if (selectedPostType === 'all') return posts
     return posts.filter(p => p.post_type === selectedPostType)
   }, [posts, selectedPostType])
+
+  // Sort posts by selected metric
+  const sortedPosts = useMemo(() => {
+    if (sortMetric === 'scheduled_time') {
+      // Default sort: by scheduled_posting_time descending (most recent first)
+      return [...filteredPosts].sort((a, b) => {
+        const dateA = a.scheduled_posting_time ? new Date(a.scheduled_posting_time).getTime() : 0
+        const dateB = b.scheduled_posting_time ? new Date(b.scheduled_posting_time).getTime() : 0
+        return dateB - dateA // Most recent first
+      })
+    }
+
+    // Sort by metric value
+    return [...filteredPosts].sort((a, b) => {
+      const valueA = getMetricValue(a)
+      const valueB = getMetricValue(b)
+      return sortDirection === 'desc' ? valueB - valueA : valueA - valueB
+    })
+  }, [filteredPosts, sortMetric, sortDirection, postInsightsMap, videoInsightsMap])
 
   // Get counts by post type for display
   const postTypeCounts = useMemo(() => {
@@ -284,7 +358,7 @@ export default function FacebookPage() {
 
       {/* Media Format Filter Chips */}
       {posts.length > 0 && (
-        <div className="mb-8">
+        <div className="mb-8 space-y-4">
           <div className="flex flex-wrap gap-3 justify-center">
             {FACEBOOK_POST_TYPES.map((type) => {
               const isActive = selectedPostType === type.id
@@ -316,11 +390,23 @@ export default function FacebookPage() {
               )
             })}
           </div>
+
+          {/* Sort Controls */}
+          <div className="flex justify-center">
+            <SortControls
+              options={sortOptions}
+              selectedMetric={sortMetric}
+              direction={sortDirection}
+              onMetricChange={setSortMetric}
+              onDirectionChange={setSortDirection}
+              accentColor="blue"
+            />
+          </div>
         </div>
       )}
 
       {/* Posts Content */}
-      {filteredPosts.length === 0 && posts.length === 0 ? (
+      {sortedPosts.length === 0 && posts.length === 0 ? (
         <div className="text-center py-20 bg-white rounded-3xl border border-dashed border-slate-300">
           <div className="relative inline-block mb-6">
             <Facebook className="w-16 h-16 text-slate-300 mx-auto" />
@@ -330,7 +416,7 @@ export default function FacebookPage() {
             Content will appear here after the content creation agent runs
           </p>
         </div>
-      ) : filteredPosts.length === 0 ? (
+      ) : sortedPosts.length === 0 ? (
         <div className="text-center py-20 bg-white rounded-3xl border border-dashed border-slate-300">
           <div className="relative inline-block mb-6">
             <Facebook className="w-16 h-16 text-slate-300 mx-auto" />
@@ -342,23 +428,23 @@ export default function FacebookPage() {
         </div>
       ) : (
         <div className="space-y-12">
-          {/* Pending Posts Section */}
-          {filteredPosts.some(p => p.status === 'pending') && (
+          {/* Published Posts Section */}
+          {sortedPosts.some(p => p.status === 'published') && (
             <section>
               <button
-                onClick={() => setPendingExpanded(!pendingExpanded)}
+                onClick={() => setPublishedExpanded(!publishedExpanded)}
                 className="w-full flex items-center gap-3 mb-6 group cursor-pointer"
               >
-                <h2 className="text-xl font-bold text-slate-800">Pending & Scheduled</h2>
+                <h2 className="text-xl font-bold text-slate-800">Published History</h2>
                 <div className="h-px flex-1 bg-slate-200"></div>
                 <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">
-                  {filteredPosts.filter(p => p.status === 'pending').length} posts
+                  {sortedPosts.filter(p => p.status === 'published').length} posts{sortMetric !== 'scheduled_time' ? ` • sorted by ${sortOptions.find(o => o.id === sortMetric)?.label}` : ''}
                 </span>
-                <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform duration-200 ${pendingExpanded ? '' : '-rotate-90'}`} />
+                <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform duration-200 ${publishedExpanded ? '' : '-rotate-90'}`} />
               </button>
-              {pendingExpanded && (
+              {publishedExpanded && (
                 <FacebookPostGrid
-                  posts={filteredPosts.filter(p => p.status === 'pending')}
+                  posts={sortedPosts.filter(p => p.status === 'published')}
                   postInsights={postInsights}
                   videoInsights={videoInsights}
                   pageName={pageInsights?.page_name}
@@ -368,23 +454,23 @@ export default function FacebookPage() {
             </section>
           )}
 
-          {/* Published Posts Section */}
-          {filteredPosts.some(p => p.status === 'published') && (
+          {/* Pending Posts Section */}
+          {sortedPosts.some(p => p.status === 'pending') && (
             <section>
               <button
-                onClick={() => setPublishedExpanded(!publishedExpanded)}
+                onClick={() => setPendingExpanded(!pendingExpanded)}
                 className="w-full flex items-center gap-3 mb-6 group cursor-pointer"
               >
-                <h2 className="text-xl font-bold text-slate-800">Published History</h2>
+                <h2 className="text-xl font-bold text-slate-800">Pending & Scheduled</h2>
                 <div className="h-px flex-1 bg-slate-200"></div>
                 <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">
-                  {filteredPosts.filter(p => p.status === 'published').length} posts
+                  {sortedPosts.filter(p => p.status === 'pending').length} posts
                 </span>
-                <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform duration-200 ${publishedExpanded ? '' : '-rotate-90'}`} />
+                <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform duration-200 ${pendingExpanded ? '' : '-rotate-90'}`} />
               </button>
-              {publishedExpanded && (
+              {pendingExpanded && (
                 <FacebookPostGrid
-                  posts={filteredPosts.filter(p => p.status === 'published')}
+                  posts={sortedPosts.filter(p => p.status === 'pending')}
                   postInsights={postInsights}
                   videoInsights={videoInsights}
                   pageName={pageInsights?.page_name}
@@ -395,7 +481,7 @@ export default function FacebookPage() {
           )}
 
           {/* Failed Posts Section */}
-          {filteredPosts.some(p => p.status === 'failed') && (
+          {sortedPosts.some(p => p.status === 'failed') && (
             <section>
               <button
                 onClick={() => setFailedExpanded(!failedExpanded)}
@@ -404,13 +490,13 @@ export default function FacebookPage() {
                 <h2 className="text-xl font-bold text-red-700">Failed</h2>
                 <div className="h-px flex-1 bg-red-200"></div>
                 <span className="text-xs font-medium text-red-500 uppercase tracking-wider">
-                  {filteredPosts.filter(p => p.status === 'failed').length} posts
+                  {sortedPosts.filter(p => p.status === 'failed').length} posts
                 </span>
                 <ChevronDown className={`w-5 h-5 text-red-400 transition-transform duration-200 ${failedExpanded ? '' : '-rotate-90'}`} />
               </button>
               {failedExpanded && (
                 <FacebookPostGrid
-                  posts={filteredPosts.filter(p => p.status === 'failed')}
+                  posts={sortedPosts.filter(p => p.status === 'failed')}
                   postInsights={postInsights}
                   videoInsights={videoInsights}
                   pageName={pageInsights?.page_name}

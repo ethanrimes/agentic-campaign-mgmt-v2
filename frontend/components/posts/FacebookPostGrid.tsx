@@ -103,6 +103,10 @@ export default function FacebookPostGrid({ posts, postInsights = [], videoInsigh
 
   const selectedPostMetrics = selectedPost ? getPostMetrics(selectedPost) : null
   const selectedVideoMetrics = selectedPost ? getVideoMetrics(selectedPost) : null
+  const selectedPostIsVideo = selectedPost ? (
+    selectedPost.post_type === 'facebook_video' ||
+    (selectedPost.media_urls?.[0] && (selectedPost.media_urls[0].includes('.mp4') || selectedPost.media_urls[0].includes('video')))
+  ) : false
 
   return (
     <>
@@ -110,8 +114,9 @@ export default function FacebookPostGrid({ posts, postInsights = [], videoInsigh
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
         {posts.map((post, index) => {
           const previewMedia = post.media_urls && post.media_urls.length > 0 ? post.media_urls[0] : null
-          const isVideo = previewMedia && (previewMedia.includes('.mp4') || previewMedia.includes('video'))
-          const metrics = getPostMetrics(post)
+          const isVideo = post.post_type === 'facebook_video' || (previewMedia && (previewMedia.includes('.mp4') || previewMedia.includes('video')))
+          const postMetrics = getPostMetrics(post)
+          const videoMetrics = getVideoMetrics(post)
 
           return (
             <motion.div
@@ -156,37 +161,66 @@ export default function FacebookPostGrid({ posts, postInsights = [], videoInsigh
                 </div>
               )}
 
-              {/* Hover Stats Overlay */}
-              {metrics && (
+              {/* Hover Stats Overlay - Video Posts */}
+              {isVideo && videoMetrics && (
+                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-[2px]">
+                  <div className="text-white text-center space-y-3">
+                    <div className="flex items-center gap-4 justify-center">
+                      <div className="flex flex-col items-center gap-1">
+                        <Play className="w-5 h-5 fill-white/20" />
+                        <span className="font-bold text-sm">{formatNumber(videoMetrics.post_video_views)}</span>
+                        <span className="text-[10px] text-white/70">Views</span>
+                      </div>
+                      <div className="flex flex-col items-center gap-1">
+                        <Users className="w-5 h-5" />
+                        <span className="font-bold text-sm">{formatNumber(videoMetrics.post_video_views_unique)}</span>
+                        <span className="text-[10px] text-white/70">Unique</span>
+                      </div>
+                    </div>
+
+                    {videoMetrics.post_video_avg_time_watched_ms && (
+                      <div className="flex items-center gap-4 justify-center pt-2 border-t border-white/20">
+                        <div className="flex items-center gap-1.5 text-xs font-medium text-white/90">
+                          <Clock className="w-3.5 h-3.5" />
+                          <span>Avg: {formatDuration(videoMetrics.post_video_avg_time_watched_ms)}</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Hover Stats Overlay - Feed Posts (non-video) */}
+              {!isVideo && postMetrics && (
                 <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-[2px]">
                   <div className="text-white text-center space-y-3">
                     <div className="flex items-center gap-4 justify-center">
                       <div className="flex flex-col items-center gap-1">
                         <ThumbsUp className="w-5 h-5 fill-white/20" />
-                        <span className="font-bold text-sm">{formatNumber(metrics.reactions_total)}</span>
+                        <span className="font-bold text-sm">{formatNumber(postMetrics.reactions_total)}</span>
                       </div>
                       <div className="flex flex-col items-center gap-1">
                         <MessageCircle className="w-5 h-5 fill-white/20" />
-                        <span className="font-bold text-sm">{formatNumber(metrics.comments)}</span>
+                        <span className="font-bold text-sm">{formatNumber(postMetrics.comments)}</span>
                       </div>
                       <div className="flex flex-col items-center gap-1">
                         <Share2 className="w-5 h-5 fill-white/20" />
-                        <span className="font-bold text-sm">{formatNumber(metrics.shares)}</span>
+                        <span className="font-bold text-sm">{formatNumber(postMetrics.shares)}</span>
                       </div>
                     </div>
 
-                    {(metrics.post_impressions_unique || metrics.post_media_view) && (
+                    {(postMetrics.post_impressions_unique || postMetrics.post_media_view) && (
                       <div className="flex items-center gap-4 justify-center pt-2 border-t border-white/20">
-                        {metrics.post_impressions_unique && (
+                        {postMetrics.post_impressions_unique && (
                           <div className="flex items-center gap-1.5 text-xs font-medium text-white/90">
                             <Eye className="w-3.5 h-3.5" />
-                            <span>{formatNumber(metrics.post_impressions_unique)}</span>
+                            <span>{formatNumber(postMetrics.post_impressions_unique)}</span>
                           </div>
                         )}
-                        {metrics.post_media_view !== null && metrics.post_media_view !== undefined && (
+                        {postMetrics.post_media_view !== null && postMetrics.post_media_view !== undefined && (
                           <div className="flex items-center gap-1.5 text-xs font-medium text-white/90">
                             <Play className="w-3.5 h-3.5" />
-                            <span>{formatNumber(metrics.post_media_view)}</span>
+                            <span>{formatNumber(postMetrics.post_media_view)}</span>
                           </div>
                         )}
                       </div>
@@ -354,8 +388,8 @@ export default function FacebookPostGrid({ posts, postInsights = [], videoInsigh
                     </div>
                   )}
 
-                  {/* Engagement Metrics - Post Level */}
-                  {selectedPostMetrics && (
+                  {/* Engagement Metrics - Post Level (only for non-video posts) */}
+                  {selectedPostMetrics && !selectedPostIsVideo && (
                     <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-5 space-y-4">
                       <div className="flex items-center justify-between">
                         <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200">Engagement Overview</h4>
@@ -483,7 +517,7 @@ export default function FacebookPostGrid({ posts, postInsights = [], videoInsigh
                   )}
 
                   {/* No metrics available */}
-                  {!selectedPostMetrics && !selectedVideoMetrics && selectedPost.status === 'published' && (
+                  {(selectedPostIsVideo ? !selectedVideoMetrics : !selectedPostMetrics) && selectedPost.status === 'published' && (
                     <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 text-center">
                       <p className="text-sm text-slate-500">
                         No engagement metrics cached yet.
