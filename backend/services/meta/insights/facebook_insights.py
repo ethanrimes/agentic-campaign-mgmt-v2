@@ -203,17 +203,32 @@ class FacebookInsightsService(MetaBaseClient):
         metrics_data: List[Dict[str, Any]],
         period: str
     ) -> None:
-        """Process page metrics from API response."""
+        """Process page metrics from API response.
+
+        For 'day' period: Sum all daily values to get the total over the time range.
+        For 'week' and 'days_28' periods: Take only the most recent value, since
+        each value already represents a rolling total (7-day or 28-day respectively).
+        """
         for metric in metrics_data:
             name = metric.get("name")
             values = metric.get("values", [])
 
-            # Sum up all values for the period
-            total = 0
-            for v in values:
-                val = v.get("value", 0)
-                if isinstance(val, (int, float)):
-                    total += val
+            if period == "day":
+                # Sum up all daily values for the period
+                total = 0
+                for v in values:
+                    val = v.get("value", 0)
+                    if isinstance(val, (int, float)):
+                        total += val
+            else:
+                # For week and days_28: each value is already a rolling total,
+                # so we only need the most recent value
+                total = 0
+                if values:
+                    # Get the most recent value (last in the array)
+                    val = values[-1].get("value", 0)
+                    if isinstance(val, (int, float)):
+                        total = val
 
             # Map to insights fields
             if period == "day":
