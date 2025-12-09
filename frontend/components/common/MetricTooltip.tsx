@@ -218,7 +218,7 @@ export default function MetricTooltip({
     <>
       <div
         ref={triggerRef}
-        className="inline-block"
+        className="h-full"
         onMouseEnter={() => setIsVisible(true)}
         onMouseLeave={() => setIsVisible(false)}
       >

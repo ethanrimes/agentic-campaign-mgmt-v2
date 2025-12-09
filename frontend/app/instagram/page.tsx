@@ -175,10 +175,10 @@ export default function InstagramPage() {
           </div>
 
           {/* Metrics Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-stretch">
             {/* Posts */}
             <MetricTooltip metricKey="posts" metricType="account" position="bottom">
-              <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] transition-shadow cursor-help h-[140px] flex flex-col">
+              <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] transition-shadow cursor-help h-full flex flex-col">
                 <div className="flex items-center justify-between mb-4">
                   <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
                     <Image className="w-5 h-5" />
@@ -206,7 +206,7 @@ export default function InstagramPage() {
 
             {/* Reach */}
             <MetricTooltip metricKey="reach" metricType="account" position="bottom">
-              <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] transition-shadow cursor-help h-[140px] flex flex-col">
+              <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] transition-shadow cursor-help h-full flex flex-col">
                 <div className="flex items-center justify-between mb-4">
                   <div className="w-10 h-10 rounded-xl bg-sky-50 flex items-center justify-center text-sky-600">
                     <Users className="w-5 h-5" />
@@ -225,7 +225,7 @@ export default function InstagramPage() {
 
             {/* Total Views */}
             <MetricTooltip metricKey="views" metricType="account" position="bottom">
-              <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] transition-shadow cursor-help h-[140px] flex flex-col">
+              <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] transition-shadow cursor-help h-full flex flex-col">
                 <div className="flex items-center justify-between mb-4">
                   <div className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center text-purple-600">
                     <Play className="w-5 h-5" />
@@ -244,7 +244,7 @@ export default function InstagramPage() {
 
             {/* Total Interactions */}
             <MetricTooltip metricKey="interactions" metricType="account" position="bottom">
-              <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] transition-shadow cursor-help h-[140px] flex flex-col">
+              <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] transition-shadow cursor-help h-full flex flex-col">
                 <div className="flex items-center justify-between mb-4">
                   <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600">
                     <Heart className="w-5 h-5" />
@@ -263,7 +263,7 @@ export default function InstagramPage() {
 
             {/* Followers */}
             <MetricTooltip metricKey="followers" metricType="account" position="bottom">
-              <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] transition-shadow cursor-help h-[140px] flex flex-col">
+              <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] transition-shadow cursor-help h-full flex flex-col">
                 <div className="flex items-center justify-between mb-4">
                   <div className="w-10 h-10 rounded-xl bg-pink-50 flex items-center justify-center text-pink-600">
                     <Users className="w-5 h-5" />
