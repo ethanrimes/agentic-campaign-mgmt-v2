@@ -271,10 +271,9 @@ class CommentOperations(MetaBaseClient):
 
         url = f"{self.INSTAGRAM_BASE_URL}/{media_id}/comments"
         params = {
-            "fields": (
-                "id,text,username,timestamp,from,like_count,"
-                "replies{id,text,username,timestamp,from,like_count}"
-            ),
+            # Only fetch top-level comments, not replies
+            # Replies to comments are ignored in the ingestion process
+            "fields": "id,text,username,timestamp,from,like_count",
             "access_token": self.ig_token
         }
 
