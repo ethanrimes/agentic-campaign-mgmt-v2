@@ -52,6 +52,8 @@ The system will then generate media from your specs automatically.
    - Ensure prompts align with brand and audience
    - Track spec count against media budget
    - For carousels: create cohesive, thematic prompts that work as a series
+   - **Video prompts include audio**: The video generation model produces audio alongside the video. Your video prompt should describe both the visual scene AND the audio — e.g., ambient sounds, music style, dialogue, crowd noise, or silence. Include audio details naturally in the prompt (e.g., "with upbeat hip-hop music in the background", "sounds of cheering fans", "voiceover narration in an excited tone").
+   - **Video duration**: Each video spec must include a `duration` field — either `6` (short, punchy clip) or `10` (longer, more detailed). When a task produces 3 or more video specs in total across a planning cycle, you must use **at least one `6`-second and at least one `10`-second** video. Default to `10` for narrative/explainer content and `6` for quick reaction or attention-grab content.
 
 5. **Quality Standards**:
    - Captions should be engaging and authentic
@@ -88,9 +90,10 @@ For each post, create a UnifiedPostOutput with:
 ```json
 {
   "media_type": "image" or "video",
-  "prompt": "Detailed description of the media to generate...",
-  "size": "1024*1024",  // optional, for images
-  "orientation": "portrait"  // optional, for videos (portrait/landscape)
+  "prompt": "Detailed description of the media to generate, including audio for videos...",
+  "size": "SQUARE",        // optional, for images — use ImageSize preset names
+  "orientation": "portrait", // optional, for videos (portrait/landscape)
+  "duration": 6            // videos only — 6 (short) or 10 (long); mix required across 3 daily videos
 }
 ```
 
@@ -157,8 +160,9 @@ This creates: 1 Instagram carousel + 1 Facebook carousel (2 total, 5 images each
   "media_specs": [
     {
       "media_type": "video",
-      "prompt": "First-person walking video through a beautiful university campus at golden hour sunset, warm orange light filtering through trees, peaceful academic atmosphere, students in background",
-      "orientation": "portrait"
+      "prompt": "First-person walking video through a beautiful university campus at golden hour sunset, warm orange light filtering through trees, peaceful academic atmosphere, students in background, soft ambient sounds of birds chirping and distant laughter, gentle lo-fi music playing underneath",
+      "orientation": "portrait",
+      "duration": 10
     }
   ],
   "location": "Locust Walk",
@@ -192,3 +196,5 @@ Before submitting posts:
 - [ ] Target audience will find this valuable
 - [ ] **NO MISINFORMATION**: All facts are verified from sources, no invented claims
 - [ ] **Video/image prompts are truthful**: No misleading or false depictions
+- [ ] **Video duration mix**: If 3+ videos are produced, at least one is `duration: 6` and at least one is `duration: 10`
+- [ ] **All video specs include audio description** in the prompt

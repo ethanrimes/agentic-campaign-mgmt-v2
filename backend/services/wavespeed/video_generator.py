@@ -49,6 +49,7 @@ class VideoGenerator(WavespeedBaseClient):
         aspect_ratio: str = "16:9",
         camera_fixed: bool = False,
         seed: int = -1,
+        duration: Optional[int] = None,
     ) -> bytes:
         """
         Generate a video from a text prompt.
@@ -59,6 +60,8 @@ class VideoGenerator(WavespeedBaseClient):
             aspect_ratio: Aspect ratio for seedance ("21:9", "16:9", "4:3", "1:1", "3:4", "9:16")
             camera_fixed: Whether to fix camera (only for seedance)
             seed: Random seed (-1 for random)
+            duration: Video duration in seconds — passed through to models that support it
+                      (e.g. GrokVideoConfig: 6 or 10). Ignored by other models.
 
         Returns:
             Video bytes (MP4)
@@ -72,15 +75,18 @@ class VideoGenerator(WavespeedBaseClient):
             prompt=prompt[:50],
             size=size,
             aspect_ratio=aspect_ratio,
+            duration=duration,
         )
 
         # Build payload using model-specific configuration
+        # duration is passed as a kwarg; models that don't support it will ignore it via **kwargs
         payload = self._config.build_payload(
             prompt=prompt,
             size=size,
             aspect_ratio=aspect_ratio,
             camera_fixed=camera_fixed,
             seed=seed,
+            **({"duration": duration} if duration is not None else {}),
         )
 
         # Submit task
