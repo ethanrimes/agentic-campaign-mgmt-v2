@@ -49,44 +49,44 @@ class PlannerValidator:
         guardrails_config = GuardrailsConfig()
 
         # Validate total posts (counting both platforms)
-        if totals["posts"] < guardrails_config.min_posts_per_week:
+        if totals["posts"] < guardrails_config.min_posts_per_day:
             errors.append(
-                f"Total posts ({totals['posts']}) is below minimum ({guardrails_config.min_posts_per_week})"
+                f"Total posts ({totals['posts']}) is below minimum ({guardrails_config.min_posts_per_day})"
             )
-        if totals["posts"] > guardrails_config.max_posts_per_week:
+        if totals["posts"] > guardrails_config.max_posts_per_day:
             errors.append(
-                f"Total posts ({totals['posts']}) exceeds maximum ({guardrails_config.max_posts_per_week})"
+                f"Total posts ({totals['posts']}) exceeds maximum ({guardrails_config.max_posts_per_day})"
             )
 
         # Validate total seeds
         num_seeds = len(allocations)
-        if num_seeds < guardrails_config.min_content_seeds_per_week:
+        if num_seeds < guardrails_config.min_content_seeds_per_day:
             errors.append(
-                f"Number of content seeds ({num_seeds}) is below minimum ({guardrails_config.min_content_seeds_per_week})"
+                f"Number of content seeds ({num_seeds}) is below minimum ({guardrails_config.min_content_seeds_per_day})"
             )
-        if num_seeds > guardrails_config.max_content_seeds_per_week:
+        if num_seeds > guardrails_config.max_content_seeds_per_day:
             errors.append(
-                f"Number of content seeds ({num_seeds}) exceeds maximum ({guardrails_config.max_content_seeds_per_week})"
+                f"Number of content seeds ({num_seeds}) exceeds maximum ({guardrails_config.max_content_seeds_per_day})"
             )
 
         # Validate total video posts (post units, not platform count)
-        if totals["video_posts"] < guardrails_config.min_videos_per_week:
+        if totals["video_posts"] < guardrails_config.min_videos_per_day:
             errors.append(
-                f"Total video posts ({totals['video_posts']}) is below minimum ({guardrails_config.min_videos_per_week})"
+                f"Total video posts ({totals['video_posts']}) is below minimum ({guardrails_config.min_videos_per_day})"
             )
-        if totals["video_posts"] > guardrails_config.max_videos_per_week:
+        if totals["video_posts"] > guardrails_config.max_videos_per_day:
             errors.append(
-                f"Total video posts ({totals['video_posts']}) exceeds maximum ({guardrails_config.max_videos_per_week})"
+                f"Total video posts ({totals['video_posts']}) exceeds maximum ({guardrails_config.max_videos_per_day})"
             )
 
         # Validate total image posts (post units, not platform count)
-        if totals["image_posts"] < guardrails_config.min_images_per_week:
+        if totals["image_posts"] < guardrails_config.min_images_per_day:
             errors.append(
-                f"Total image posts ({totals['image_posts']}) is below minimum ({guardrails_config.min_images_per_week})"
+                f"Total image posts ({totals['image_posts']}) is below minimum ({guardrails_config.min_images_per_day})"
             )
-        if totals["image_posts"] > guardrails_config.max_images_per_week:
+        if totals["image_posts"] > guardrails_config.max_images_per_day:
             errors.append(
-                f"Total image posts ({totals['image_posts']}) exceeds maximum ({guardrails_config.max_images_per_week})"
+                f"Total image posts ({totals['image_posts']}) exceeds maximum ({guardrails_config.max_images_per_day})"
             )
 
         # Validate individual allocations

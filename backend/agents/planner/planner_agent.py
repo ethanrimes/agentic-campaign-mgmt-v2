@@ -4,7 +4,7 @@
 
 from pathlib import Path
 from datetime import datetime, timedelta
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from langchain.agents import create_agent
 from langchain.agents.structured_output import ToolStrategy
 from langchain_openai import ChatOpenAI
@@ -54,7 +54,7 @@ class PlannerAgent:
         # Create tools - empty list as context is provided in the prompt
         self.tools = []
 
-    async def create_weekly_plan(self) -> Dict[str, Any]:
+    async def create_weekly_plan(self, feedback: Optional[str] = None) -> Dict[str, Any]:
         """
         Create a weekly content plan.
 
@@ -78,8 +78,8 @@ class PlannerAgent:
                 response_format=ToolStrategy(PlannerOutput)
             )
 
-            # Build input with context
-            input_text = self._format_input(context)
+            # Build input with context (and any retry feedback)
+            input_text = self._format_input(context, feedback=feedback)
 
             # Run agent
             config = {"verbose": True, "max_iterations": 10}
@@ -141,7 +141,7 @@ class PlannerAgent:
             "ungrounded_seeds": ungrounded_seeds,
             "insights": recent_insights,  # Now a list of reports
             "scheduled_posts": scheduled_posts,  # Pending posts in the pipeline
-            "week_start": self._get_next_monday().isoformat()
+            "week_start": self._get_plan_start_date().isoformat()
         }
 
         logger.info(
@@ -157,19 +157,22 @@ class PlannerAgent:
     def _format_prompt_with_guardrails(self) -> str:
         """Fill in guardrail values in prompt template."""
         return self.agent_prompt_template.format(
-            min_posts_per_week=guardrails_config.min_posts_per_week,
-            max_posts_per_week=guardrails_config.max_posts_per_week,
-            min_content_seeds_per_week=guardrails_config.min_content_seeds_per_week,
-            max_content_seeds_per_week=guardrails_config.max_content_seeds_per_week,
-            min_videos_per_week=guardrails_config.min_videos_per_week,
-            max_videos_per_week=guardrails_config.max_videos_per_week,
-            min_images_per_week=guardrails_config.min_images_per_week,
-            max_images_per_week=guardrails_config.max_images_per_week
+            min_posts_per_day=guardrails_config.min_posts_per_day,
+            max_posts_per_day=guardrails_config.max_posts_per_day,
+            min_content_seeds_per_day=guardrails_config.min_content_seeds_per_day,
+            max_content_seeds_per_day=guardrails_config.max_content_seeds_per_day,
+            min_videos_per_day=guardrails_config.min_videos_per_day,
+            max_videos_per_day=guardrails_config.max_videos_per_day,
+            min_images_per_day=guardrails_config.min_images_per_day,
+            max_images_per_day=guardrails_config.max_images_per_day
         )
 
-    def _format_input(self, context: Dict[str, Any]) -> str:
+    def _format_input(self, context: Dict[str, Any], feedback: Optional[str] = None) -> str:
         """Format input text with context for the agent."""
-        input_text = f"""Create a weekly content plan for the week starting {context['week_start']}.
+        input_text = f"""Create a content plan for the next 24 hours. Today's date is {context['week_start'][:10]}.
+
+IMPORTANT SCHEDULING RULE: All scheduled_times MUST fall on {context['week_start'][:10]} (today). You choose the time of day for each post — spread them strategically — but the date must always be today.
+
 
 Available Content Seeds:
 
@@ -237,11 +240,11 @@ Your plan must include:
 4. Scheduled posting times for each post unit
 5. Reasoning for your choices
 
-⚠️ CRITICAL REMINDER - YOUR PLAN MUST STAY WITHIN THESE LIMITS:
-- Maximum {guardrails_config.max_posts_per_week} total posts (counting BOTH platforms)
-- Maximum {guardrails_config.max_images_per_week} image_posts (each creates 2 platform posts)
-- Maximum {guardrails_config.max_videos_per_week} video_posts (each creates 2 platform posts)
-- Between {guardrails_config.min_content_seeds_per_week} and {guardrails_config.max_content_seeds_per_week} content seeds
+⚠️ CRITICAL REMINDER - YOUR PLAN MUST STAY WITHIN THESE LIMITS (24-HOUR WINDOW):
+- Maximum {guardrails_config.max_posts_per_day} total posts (counting BOTH platforms)
+- Maximum {guardrails_config.max_images_per_day} image_posts (each creates 2 platform posts)
+- Maximum {guardrails_config.max_videos_per_day} video_posts (each creates 2 platform posts)
+- Between {guardrails_config.min_content_seeds_per_day} and {guardrails_config.max_content_seeds_per_day} content seeds
 
 Before you finalize your plan:
 1. Count total posts: (image_posts × 2) + (video_posts × 2) + text_only_posts
@@ -253,12 +256,12 @@ Before you finalize your plan:
 DO NOT submit a plan that exceeds these limits - it will be automatically rejected!
 """
 
+        if feedback:
+            input_text += f"\n\n⚠️ PREVIOUS ATTEMPT REJECTED:\n{feedback}\n"
+
         return input_text
 
-    def _get_next_monday(self) -> datetime:
-        """Get the date of the next Monday."""
+    def _get_plan_start_date(self) -> datetime:
+        """Get the start date for the content plan (today)."""
         today = datetime.utcnow().date()
-        days_ahead = 0 - today.weekday()  # Monday is 0
-        if days_ahead <= 0:
-            days_ahead += 7
-        return datetime.combine(today + timedelta(days=days_ahead), datetime.min.time())
+        return datetime.combine(today, datetime.min.time())

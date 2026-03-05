@@ -64,17 +64,17 @@ class Settings(BaseSettings):
     default_model_provider: Literal["openai", "gemini", "anthropic"] = "openai"
     default_model_name: str = "gpt-5-mini"
 
-    # Content generation guardrails
-    # Target: 4-5 content pieces/day, 3 being videos → ~28-35 pieces/week
+    # Content generation guardrails (daily planning window)
+    # Target: 4-5 content pieces/day, 3 being videos
     # Each piece cross-posts to IG + FB, so platform post total = pieces × 2
-    min_posts_per_week: int = 56   # 4 pieces/day × 2 platforms × 7 days
-    max_posts_per_week: int = 70   # 5 pieces/day × 2 platforms × 7 days
-    min_content_seeds_per_week: int = 20
-    max_content_seeds_per_week: int = 30
-    min_videos_per_week: int = 21  # 3 videos/day × 7 days
-    max_videos_per_week: int = 25
-    min_images_per_week: int = 7   # 1 image/day × 7 days
-    max_images_per_week: int = 14  # 2 images/day × 7 days
+    min_posts_per_day: int = 8    # 4 pieces/day × 2 platforms
+    max_posts_per_day: int = 10   # 5 pieces/day × 2 platforms
+    min_content_seeds_per_day: int = 2
+    max_content_seeds_per_day: int = 5
+    min_videos_per_day: int = 3
+    max_videos_per_day: int = 4
+    min_images_per_day: int = 1
+    max_images_per_day: int = 2
 
     # Wavespeed configuration
     wavespeed_image_model: str = "bytedance/seedream-v4.5"
