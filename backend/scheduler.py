@@ -105,7 +105,7 @@ class SchedulingConfig:
     # Publishing pipeline check frequency (minutes)
     # How often to run: verification -> facebook publishing -> instagram publishing
     # The pipeline ensures verification happens before any publishing
-    PUBLISH_CHECK_INTERVAL_MINUTES = 30
+    PUBLISH_CHECK_INTERVAL_MINUTES = 60
 
     # Comment management (minutes)
     INSTAGRAM_COMMENT_CHECK_INTERVAL_MINUTES = 180  # Check for new Instagram comments
@@ -115,7 +115,7 @@ class SchedulingConfig:
     NEWS_PIPELINE_INTERVAL_HOURS = 12  # News ingestion + deduplication
     TREND_DISCOVERY_INTERVAL_HOURS = 24  # Trend discovery
     UNGROUNDED_GENERATION_INTERVAL_HOURS = 12  # Ungrounded idea generation
-    PLANNING_PIPELINE_INTERVAL_HOURS = 6  # Insights + planner + content creation
+    PLANNING_PIPELINE_INTERVAL_HOURS = 24  # Insights + planner + content creation (daily)
 
     # Insights fetching (from settings)
     @property
