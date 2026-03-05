@@ -81,7 +81,7 @@ class Settings(BaseSettings):
     wavespeed_video_model: str = "bytedance/seedance-v1-pro-t2v-480p"
     wavespeed_api_base: str = "https://api.wavespeed.ai/api/v3"
     wavespeed_polling_interval: float = 2.0
-    wavespeed_max_poll_attempts: int = 120
+    wavespeed_max_poll_attempts: int = 1200
 
     # Planner context limits (how many recent seeds to fetch for planning)
     planner_news_seeds_limit: int = 10
