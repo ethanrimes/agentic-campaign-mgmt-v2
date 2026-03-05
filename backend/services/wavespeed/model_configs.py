@@ -194,6 +194,92 @@ class SeedreamV45Config(ModelConfig):
 
 
 # =============================================================================
+# GROK MODELS (x-ai)
+# =============================================================================
+
+class GrokAspectRatio(str, Enum):
+    """
+    Supported aspect ratios for Grok Imagine models.
+    Only 16:9 and 9:16 are supported.
+    """
+    LANDSCAPE_16_9 = "16:9"
+    PORTRAIT_9_16 = "9:16"
+
+
+@dataclass
+class GrokImageConfig(ModelConfig):
+    """Configuration for x-ai/grok-imagine-image/text-to-image model."""
+
+    model_id: str = "x-ai/grok-imagine-image/text-to-image"
+
+    @property
+    def media_type(self) -> Literal["image", "video"]:
+        return "image"
+
+    def build_payload(
+        self,
+        prompt: str,
+        aspect_ratio: GrokAspectRatio = GrokAspectRatio.LANDSCAPE_16_9,
+        output_format: str = "jpeg",
+        **kwargs,
+    ) -> Dict[str, Any]:
+        """
+        Build payload for Grok Imagine Image.
+
+        Args:
+            prompt: Text prompt for generation
+            aspect_ratio: GrokAspectRatio enum value (16:9 or 9:16)
+            output_format: Output format - "jpeg" or "png"
+        """
+        if isinstance(aspect_ratio, GrokAspectRatio):
+            aspect_ratio = aspect_ratio.value
+
+        return {
+            "prompt": prompt,
+            "aspect_ratio": aspect_ratio,
+            "output_format": output_format,
+        }
+
+
+@dataclass
+class GrokVideoConfig(ModelConfig):
+    """Configuration for x-ai/grok-imagine-video/text-to-video model."""
+
+    model_id: str = "x-ai/grok-imagine-video/text-to-video"
+
+    @property
+    def media_type(self) -> Literal["image", "video"]:
+        return "video"
+
+    def build_payload(
+        self,
+        prompt: str,
+        aspect_ratio: GrokAspectRatio = GrokAspectRatio.LANDSCAPE_16_9,
+        duration: int = 6,
+        resolution: str = "720p",
+        **kwargs,
+    ) -> Dict[str, Any]:
+        """
+        Build payload for Grok Imagine Video.
+
+        Args:
+            prompt: Text prompt for generation
+            aspect_ratio: GrokAspectRatio enum value (16:9 or 9:16 only)
+            duration: Video duration in seconds
+            resolution: Video resolution - "720p"
+        """
+        if isinstance(aspect_ratio, GrokAspectRatio):
+            aspect_ratio = aspect_ratio.value
+
+        return {
+            "prompt": prompt,
+            "aspect_ratio": aspect_ratio,
+            "duration": duration,
+            "resolution": resolution,
+        }
+
+
+# =============================================================================
 # VIDEO MODELS
 # =============================================================================
 
@@ -284,11 +370,13 @@ IMAGE_MODEL_CONFIGS: Dict[str, type[ModelConfig]] = {
     "stability-ai/sdxl-lora": SDXLLoraConfig,
     "bytedance/seedream-v4": SeedreamV4Config,
     "bytedance/seedream-v4.5": SeedreamV45Config,
+    "x-ai/grok-imagine-image/text-to-image": GrokImageConfig,
 }
 
 VIDEO_MODEL_CONFIGS: Dict[str, type[ModelConfig]] = {
     "wavespeed-ai/wan-2.2/i2v-5b-720p": WAN22I2VConfig,
     "bytedance/seedance-v1-pro-t2v-480p": SeedanceV1ProT2VConfig,
+    "x-ai/grok-imagine-video/text-to-video": GrokVideoConfig,
 }
 
 ALL_MODEL_CONFIGS: Dict[str, type[ModelConfig]] = {

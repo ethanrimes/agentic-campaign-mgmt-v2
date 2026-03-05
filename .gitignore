@@ -8,7 +8,7 @@
 .env.local
 .env.*.local
 frontend/.env.local
-assets.json 
+assets.json
 
 # docs
 docs
@@ -17,6 +17,7 @@ backend/database/migrations/migrations.md
 MULTI_TENANT_IMPLEMENTATION.md
 table_columns.csv
 scripts/manual_override_ids.txt
+scripts/download_engagement_charts.py
 
 # Python
 __pycache__/
