@@ -65,14 +65,16 @@ class Settings(BaseSettings):
     default_model_name: str = "gpt-5-mini"
 
     # Content generation guardrails
-    min_posts_per_week: int = 10
-    max_posts_per_week: int = 20
-    min_content_seeds_per_week: int = 8
-    max_content_seeds_per_week: int = 15
-    min_videos_per_week: int = 2
-    max_videos_per_week: int = 10
-    min_images_per_week: int = 10
-    max_images_per_week: int = 30
+    # Target: 4-5 content pieces/day, 3 being videos → ~28-35 pieces/week
+    # Each piece cross-posts to IG + FB, so platform post total = pieces × 2
+    min_posts_per_week: int = 56   # 4 pieces/day × 2 platforms × 7 days
+    max_posts_per_week: int = 70   # 5 pieces/day × 2 platforms × 7 days
+    min_content_seeds_per_week: int = 20
+    max_content_seeds_per_week: int = 30
+    min_videos_per_week: int = 21  # 3 videos/day × 7 days
+    max_videos_per_week: int = 25
+    min_images_per_week: int = 7   # 1 image/day × 7 days
+    max_images_per_week: int = 14  # 2 images/day × 7 days
 
     # Wavespeed configuration
     wavespeed_image_model: str = "bytedance/seedream-v4.5"

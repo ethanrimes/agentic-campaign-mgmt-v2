@@ -54,6 +54,8 @@ ASSET_NAMES = {
     "blueplanetbeachstewards": "Blue Planet Beach Stewards",
     "airesearchinsightslab": "AI Research Insights Lab",
     "aifirstnewsreport": "AI First News Report",
+    "atlasecho": "Atlas Echo",
+    "ideaengine01": "Idea Engine",
 }
 
 

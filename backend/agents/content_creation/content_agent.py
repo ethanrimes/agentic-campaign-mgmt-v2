@@ -74,6 +74,10 @@ class MediaGenerationSpec(BaseModel):
     orientation: Optional[Literal["landscape", "portrait"]] = Field(
         None, description="Video orientation. Defaults to 'portrait' for reels."
     )
+    duration: Optional[Literal[6, 10]] = Field(
+        None,
+        description="Video duration in seconds. Only applies to Grok video model. Use 6 for short-form or 10 for longer clips. Of 3 daily videos, use at least one 6s and at least one 10s."
+    )
 
 
 class UnifiedPostOutput(BaseModel):
@@ -211,9 +215,9 @@ class ContentCreationAgent:
             orientation = spec.orientation or "portrait"
             size_map = {"landscape": "1280*720", "portrait": "720*1280"}
             size = size_map.get(orientation, "720*1280")
-            logger.info("Generating video from spec", prompt=spec.prompt[:50], orientation=orientation)
+            logger.info("Generating video from spec", prompt=spec.prompt[:50], orientation=orientation, duration=spec.duration)
 
-            video_bytes = await self.video_generator.generate(spec.prompt, size)
+            video_bytes = await self.video_generator.generate(spec.prompt, size, duration=spec.duration)
 
             # Upload to storage
             filename = f"{timestamp}_{file_id}.mp4"

@@ -206,6 +206,15 @@ class GrokAspectRatio(str, Enum):
     PORTRAIT_9_16 = "9:16"
 
 
+class GrokVideoDuration(int, Enum):
+    """
+    Supported durations for Grok Imagine Video.
+    Mix of SHORT (6s) and LONG (10s) is required — at least one of each per 3 daily videos.
+    """
+    SHORT = 6
+    LONG = 10
+
+
 @dataclass
 class GrokImageConfig(ModelConfig):
     """Configuration for x-ai/grok-imagine-image/text-to-image model."""
@@ -255,7 +264,7 @@ class GrokVideoConfig(ModelConfig):
         self,
         prompt: str,
         aspect_ratio: GrokAspectRatio = GrokAspectRatio.LANDSCAPE_16_9,
-        duration: int = 6,
+        duration: "int | GrokVideoDuration" = GrokVideoDuration.LONG,
         resolution: str = "720p",
         **kwargs,
     ) -> Dict[str, Any]:
@@ -265,11 +274,13 @@ class GrokVideoConfig(ModelConfig):
         Args:
             prompt: Text prompt for generation
             aspect_ratio: GrokAspectRatio enum value (16:9 or 9:16 only)
-            duration: Video duration in seconds
+            duration: GrokVideoDuration.SHORT (6s) or GrokVideoDuration.LONG (10s). Default: LONG.
             resolution: Video resolution - "720p"
         """
         if isinstance(aspect_ratio, GrokAspectRatio):
             aspect_ratio = aspect_ratio.value
+        if isinstance(duration, GrokVideoDuration):
+            duration = duration.value
 
         return {
             "prompt": prompt,

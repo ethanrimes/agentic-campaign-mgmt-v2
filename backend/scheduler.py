@@ -94,8 +94,9 @@ class SchedulingConfig:
     """
 
     # Publishing frequency (hours between posts)
-    FACEBOOK_POST_INTERVAL_HOURS = 6  # Post to Facebook every 6 hours
-    INSTAGRAM_POST_INTERVAL_HOURS = 6  # Post to Instagram every 6 hours
+    # 5h interval → ~4-5 posts/day per platform, matching 4-5 publications/day target
+    FACEBOOK_POST_INTERVAL_HOURS = 5
+    INSTAGRAM_POST_INTERVAL_HOURS = 5
 
     # Initial delay before first post (hours from content creation)
     FACEBOOK_INITIAL_DELAY_HOURS = 0  # No delay for Facebook posts
