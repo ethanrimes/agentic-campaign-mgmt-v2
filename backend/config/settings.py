@@ -62,7 +62,7 @@ class Settings(BaseSettings):
 
     # Model configuration
     default_model_provider: Literal["openai", "gemini", "anthropic"] = "openai"
-    default_model_name: str = "gpt-5-mini"
+    default_model_name: str = "gpt-5.4"
 
     # Content generation guardrails (daily planning window)
     # Target: 4-5 content pieces/day, 3 being videos
