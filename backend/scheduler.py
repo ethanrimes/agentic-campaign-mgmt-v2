@@ -12,8 +12,12 @@ This scheduler orchestrates all automated tasks including:
 
 Multi-Tenancy Support:
 - Set BUSINESS_ASSETS environment variable with comma-separated list of asset IDs
-- Example: BUSINESS_ASSETS=penndailybuzz,eaglesnationfanhuddle,flyeaglesflycommunity
-- Each job will run for all active business assets
+  for content actions (creation, planning, verification, publishing, comments)
+- Set METRICS_BUSINESS_ASSETS environment variable with comma-separated list of asset IDs
+  for metrics/insights gathering (can be different accounts)
+- Example: BUSINESS_ASSETS=atlasecho,ideaengine01
+           METRICS_BUSINESS_ASSETS=atlasecho,ideaengine01
+- Each job will run for all assets in the relevant list
 
 See SCHEDULER_README.md for usage instructions.
 """
@@ -44,25 +48,18 @@ BASE_CMD = [sys.executable, "-m", "backend.cli.main"]
 # BUSINESS ASSET MANAGEMENT
 # ============================================================================
 
-def get_active_business_assets() -> list[str]:
-    """
-    Get list of active business asset IDs.
-
-    Reads from BUSINESS_ASSETS environment variable (comma-separated list),
-    or falls back to fetching all active assets from the database.
-
-    Returns:
-        List of business asset IDs
-    """
-    # Check environment variable first
-    env_assets = os.getenv("BUSINESS_ASSETS", "").strip()
-
+def _load_assets_from_env(env_var: str) -> list[str] | None:
+    """Load asset IDs from an environment variable (comma-separated)."""
+    env_assets = os.getenv(env_var, "").strip()
     if env_assets:
         assets = [asset.strip() for asset in env_assets.split(",") if asset.strip()]
-        logger.info(f"Using business assets from BUSINESS_ASSETS env var: {assets}")
+        logger.info(f"Using business assets from {env_var} env var: {assets}")
         return assets
+    return None
 
-    # Fall back to database
+
+def _load_assets_from_db() -> list[str]:
+    """Fall back to loading all active assets from the database."""
     try:
         repo = BusinessAssetRepository()
         active_assets = repo.get_all_active()
@@ -73,6 +70,34 @@ def get_active_business_assets() -> list[str]:
         logger.error(f"Failed to load business assets from database: {e}")
         logger.warning("No business assets configured - scheduler will not run any jobs")
         return []
+
+
+def get_content_business_assets() -> list[str]:
+    """
+    Get business asset IDs for content actions.
+
+    Used for: seed creation, planning, content creation, verification,
+    publishing, and comment management.
+
+    Reads from BUSINESS_ASSETS env var, or falls back to the database.
+    """
+    return _load_assets_from_env("BUSINESS_ASSETS") or _load_assets_from_db()
+
+
+def get_metrics_business_assets() -> list[str]:
+    """
+    Get business asset IDs for metrics/insights gathering.
+
+    Used for: insights fetching and insights analysis.
+
+    Reads from METRICS_BUSINESS_ASSETS env var, falls back to BUSINESS_ASSETS,
+    or falls back to the database.
+    """
+    return (
+        _load_assets_from_env("METRICS_BUSINESS_ASSETS")
+        or _load_assets_from_env("BUSINESS_ASSETS")
+        or _load_assets_from_db()
+    )
 
 
 # ============================================================================
@@ -174,8 +199,8 @@ def run_command(cmd_args: list, description: str):
 # ============================================================================
 
 def run_news_ingestion():
-    """Ingest news events from Perplexity Sonar for all business assets."""
-    assets = get_active_business_assets()
+    """Ingest news events from Perplexity Sonar for all content business assets."""
+    assets = get_content_business_assets()
     for asset_id in assets:
         run_command(
             ["news-events", "ingest-perplexity", "--business-asset-id", asset_id, "--count", "3"],
@@ -184,8 +209,8 @@ def run_news_ingestion():
 
 
 def run_news_deduplication():
-    """Deduplicate news events after ingestion for all business assets."""
-    assets = get_active_business_assets()
+    """Deduplicate news events after ingestion for all content business assets."""
+    assets = get_content_business_assets()
     for asset_id in assets:
         run_command(
             ["news-events", "deduplicate", "--business-asset-id", asset_id],
@@ -203,8 +228,8 @@ def run_news_pipeline():
 
 
 def run_trend_discovery():
-    """Discover trending content on social media for all business assets."""
-    assets = get_active_business_assets()
+    """Discover trending content on social media for all content business assets."""
+    assets = get_content_business_assets()
     for asset_id in assets:
         run_command(
             ["trends", "discover", "--business-asset-id", asset_id, "--count", "2"],
@@ -213,8 +238,8 @@ def run_trend_discovery():
 
 
 def run_ungrounded_generation():
-    """Generate creative ungrounded content ideas for all business assets."""
-    assets = get_active_business_assets()
+    """Generate creative ungrounded content ideas for all content business assets."""
+    assets = get_content_business_assets()
     for asset_id in assets:
         run_command(
             ["ungrounded", "generate", "--business-asset-id", asset_id, "--count", "3"],
@@ -227,7 +252,7 @@ def run_ungrounded_generation():
 # ============================================================================
 
 def run_insights_fetch():
-    """Fetch and cache insights metrics from Facebook and Instagram for all business assets.
+    """Fetch and cache insights metrics from Facebook and Instagram for all metrics business assets.
 
     This fetches:
     - Page-level metrics (Facebook page insights, Instagram account insights)
@@ -235,7 +260,7 @@ def run_insights_fetch():
 
     Metrics are cached in the database and used by the insights agent.
     """
-    assets = get_active_business_assets()
+    assets = get_metrics_business_assets()
     for asset_id in assets:
         # Fetch page/account level insights
         run_command(
@@ -254,8 +279,8 @@ def run_insights_fetch():
 # ============================================================================
 
 def run_insights_analysis():
-    """Analyze published content performance for all business assets."""
-    assets = get_active_business_assets()
+    """Analyze published content performance for all metrics business assets."""
+    assets = get_metrics_business_assets()
     for asset_id in assets:
         run_command(
             ["insights", "analyze", "--business-asset-id", asset_id, "--days", "30"],
@@ -264,8 +289,8 @@ def run_insights_analysis():
 
 
 def run_planner():
-    """Run content planning to create tasks from seeds for all business assets."""
-    assets = get_active_business_assets()
+    """Run content planning to create tasks from seeds for all content business assets."""
+    assets = get_content_business_assets()
     for asset_id in assets:
         run_command(
             ["planner", "run", "--business-asset-id", asset_id, "--max-retries", "3"],
@@ -274,8 +299,8 @@ def run_planner():
 
 
 def run_content_creation():
-    """Create content for all pending tasks for all business assets."""
-    assets = get_active_business_assets()
+    """Create content for all pending tasks for all content business assets."""
+    assets = get_content_business_assets()
     for asset_id in assets:
         run_command(
             ["content", "create-all", "--business-asset-id", asset_id],
@@ -298,13 +323,13 @@ def run_planning_pipeline():
 # ============================================================================
 
 def run_verification():
-    """Verify all unverified pending posts for all business assets.
+    """Verify all unverified pending posts for all content business assets.
 
     This should run before publishing to ensure only verified content is published.
     Uses shared media verification groups - only primary posts are verified,
     secondary posts automatically inherit the verification result.
     """
-    assets = get_active_business_assets()
+    assets = get_content_business_assets()
     for asset_id in assets:
         run_command(
             ["verifier", "verify-all", "--business-asset-id", asset_id],
@@ -317,11 +342,11 @@ def run_verification():
 # ============================================================================
 
 def run_facebook_publishing():
-    """Check for and publish scheduled Facebook posts for all business assets.
+    """Check for and publish scheduled Facebook posts for all content business assets.
 
     Only publishes posts that have been verified (verification_status='verified').
     """
-    assets = get_active_business_assets()
+    assets = get_content_business_assets()
     for asset_id in assets:
         run_command(
             ["publish", "facebook", "--business-asset-id", asset_id],
@@ -330,11 +355,11 @@ def run_facebook_publishing():
 
 
 def run_instagram_publishing():
-    """Check for and publish scheduled Instagram posts for all business assets.
+    """Check for and publish scheduled Instagram posts for all content business assets.
 
     Only publishes posts that have been verified (verification_status='verified').
     """
-    assets = get_active_business_assets()
+    assets = get_content_business_assets()
     for asset_id in assets:
         run_command(
             ["publish", "instagram", "--business-asset-id", asset_id],
@@ -363,8 +388,8 @@ def run_publishing_pipeline():
 # ============================================================================
 
 def run_instagram_comment_check():
-    """Check for new comments on Instagram posts for all business assets."""
-    assets = get_active_business_assets()
+    """Check for new comments on Instagram posts for all content business assets."""
+    assets = get_content_business_assets()
     for asset_id in assets:
         run_command(
             ["comments", "check-instagram", "--business-asset-id", asset_id],
@@ -373,8 +398,8 @@ def run_instagram_comment_check():
 
 
 def run_comment_responder():
-    """Process pending comments and generate responses for all business assets."""
-    assets = get_active_business_assets()
+    """Process pending comments and generate responses for all content business assets."""
+    assets = get_content_business_assets()
     for asset_id in assets:
         run_command(
             ["comments", "respond", "--business-asset-id", asset_id],
