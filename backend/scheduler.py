@@ -367,18 +367,40 @@ def run_instagram_publishing():
         )
 
 
+def get_publish_platforms() -> set[str]:
+    """Get the set of platforms to publish to from PUBLISH_PLATFORMS env var."""
+    raw = settings.publish_platforms.lower().strip()
+    platforms = {p.strip() for p in raw.split(",") if p.strip()}
+    valid = {"facebook", "instagram"}
+    invalid = platforms - valid
+    if invalid:
+        logger.warning(f"Ignoring unknown publish platforms: {invalid}")
+    result = platforms & valid
+    if not result:
+        logger.warning("No valid publish platforms configured, defaulting to both")
+        return valid
+    return result
+
+
 def run_publishing_pipeline():
-    """Run verification then publish to both platforms.
+    """Run verification then publish to configured platforms.
 
     This pipeline ensures:
     1. All unverified posts are verified first
     2. Only verified posts are published
     3. Media sharing groups are handled correctly (verify once, publish to both)
+
+    Controlled by PUBLISH_PLATFORMS env var (default: "facebook,instagram").
+    Set to "facebook" or "instagram" to publish to only one platform.
     """
     try:
+        platforms = get_publish_platforms()
+        logger.info(f"Publishing pipeline running for platforms: {platforms}")
         run_verification()
-        run_facebook_publishing()
-        run_instagram_publishing()
+        if "facebook" in platforms:
+            run_facebook_publishing()
+        if "instagram" in platforms:
+            run_instagram_publishing()
     except Exception as e:
         logger.error("Publishing pipeline failed", error=str(e))
 
