@@ -117,6 +117,7 @@ class Settings(BaseSettings):
 
     # Publishing
     publishing_check_interval: int = 6  # hours
+    publish_platforms: str = "facebook,instagram"  # Comma-separated: "facebook", "instagram", or "facebook,instagram"
 
     # Logging
     log_level: str = "INFO"
