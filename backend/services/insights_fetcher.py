@@ -65,61 +65,75 @@ async def fetch_account_insights(business_asset_id: str) -> Dict[str, Any]:
         # Get credentials
         credentials = get_business_asset_credentials(business_asset_id)
 
-        # Fetch Facebook page insights
-        try:
-            fb_service = FacebookInsightsService(business_asset_id)
-            fb_insights = await fb_service.fetch_page_insights()
+        publish_platforms = settings.publish_platforms_set
 
-            # Save to database
-            fb_repo = FacebookPageInsightsRepository()
-            saved = await fb_repo.upsert(fb_insights)
+        # Fetch Facebook page insights (only if facebook is in publish_platforms)
+        if "facebook" in publish_platforms:
+            try:
+                fb_service = FacebookInsightsService(business_asset_id)
+                fb_insights = await fb_service.fetch_page_insights()
 
-            result["facebook"] = {
-                "page_name": saved.page_name,
-                "page_views_total": saved.page_views_total,
-                "page_post_engagements": saved.page_post_engagements,
-                "page_follows": saved.page_follows,
-                "metrics_fetched_at": saved.metrics_fetched_at.isoformat() if saved.metrics_fetched_at else None,
-            }
+                # Save to database
+                fb_repo = FacebookPageInsightsRepository()
+                saved = await fb_repo.upsert(fb_insights)
 
+                result["facebook"] = {
+                    "page_name": saved.page_name,
+                    "page_views_total": saved.page_views_total,
+                    "page_post_engagements": saved.page_post_engagements,
+                    "page_follows": saved.page_follows,
+                    "metrics_fetched_at": saved.metrics_fetched_at.isoformat() if saved.metrics_fetched_at else None,
+                }
+
+                logger.info(
+                    "Facebook page insights fetched and saved",
+                    business_asset_id=business_asset_id,
+                    page_name=saved.page_name,
+                )
+
+            except Exception as e:
+                error_msg = f"Failed to fetch Facebook page insights: {e}"
+                logger.error(error_msg, business_asset_id=business_asset_id)
+                result["errors"].append(error_msg)
+        else:
             logger.info(
-                "Facebook page insights fetched and saved",
+                "Skipping Facebook page insights (not in publish_platforms)",
                 business_asset_id=business_asset_id,
-                page_name=saved.page_name,
             )
 
-        except Exception as e:
-            error_msg = f"Failed to fetch Facebook page insights: {e}"
-            logger.error(error_msg, business_asset_id=business_asset_id)
-            result["errors"].append(error_msg)
+        # Fetch Instagram account insights (only if instagram is in publish_platforms)
+        if "instagram" in publish_platforms:
+            try:
+                ig_service = InstagramInsightsService(business_asset_id)
+                ig_insights = await ig_service.fetch_account_insights()
 
-        # Fetch Instagram account insights
-        try:
-            ig_service = InstagramInsightsService(business_asset_id)
-            ig_insights = await ig_service.fetch_account_insights()
+                # Save to database
+                ig_repo = InstagramAccountInsightsRepository()
+                saved = await ig_repo.upsert(ig_insights)
 
-            # Save to database
-            ig_repo = InstagramAccountInsightsRepository()
-            saved = await ig_repo.upsert(ig_insights)
+                result["instagram"] = {
+                    "username": saved.username,
+                    "followers_count": saved.followers_count,
+                    "reach_day": saved.reach_day,
+                    "reach_week": saved.reach_week,
+                    "metrics_fetched_at": saved.metrics_fetched_at.isoformat() if saved.metrics_fetched_at else None,
+                }
 
-            result["instagram"] = {
-                "username": saved.username,
-                "followers_count": saved.followers_count,
-                "reach_day": saved.reach_day,
-                "reach_week": saved.reach_week,
-                "metrics_fetched_at": saved.metrics_fetched_at.isoformat() if saved.metrics_fetched_at else None,
-            }
+                logger.info(
+                    "Instagram account insights fetched and saved",
+                    business_asset_id=business_asset_id,
+                    username=saved.username,
+                )
 
+            except Exception as e:
+                error_msg = f"Failed to fetch Instagram account insights: {e}"
+                logger.error(error_msg, business_asset_id=business_asset_id)
+                result["errors"].append(error_msg)
+        else:
             logger.info(
-                "Instagram account insights fetched and saved",
+                "Skipping Instagram account insights (not in publish_platforms)",
                 business_asset_id=business_asset_id,
-                username=saved.username,
             )
-
-        except Exception as e:
-            error_msg = f"Failed to fetch Instagram account insights: {e}"
-            logger.error(error_msg, business_asset_id=business_asset_id)
-            result["errors"].append(error_msg)
 
     except Exception as e:
         error_msg = f"Failed to get credentials: {e}"
@@ -173,25 +187,41 @@ async def fetch_post_insights(
     }
 
     try:
+        publish_platforms = settings.publish_platforms_set
+
         # Get completed posts from database
         posts_repo = CompletedPostRepository()
         cutoff_date = datetime.now(timezone.utc) - timedelta(days=days_back)
 
-        # Get Facebook posts (published with platform_post_id)
-        fb_posts = await posts_repo.get_recent_published_for_insights(
-            business_asset_id=business_asset_id,
-            platform="facebook",
-            limit=limit,
-            since=cutoff_date,
-        )
+        # Get Facebook posts (only if facebook is in publish_platforms)
+        fb_posts = []
+        if "facebook" in publish_platforms:
+            fb_posts = await posts_repo.get_recent_published_for_insights(
+                business_asset_id=business_asset_id,
+                platform="facebook",
+                limit=limit,
+                since=cutoff_date,
+            )
+        else:
+            logger.info(
+                "Skipping Facebook post insights (not in publish_platforms)",
+                business_asset_id=business_asset_id,
+            )
 
-        # Get Instagram posts (published with platform_post_id)
-        ig_posts = await posts_repo.get_recent_published_for_insights(
-            business_asset_id=business_asset_id,
-            platform="instagram",
-            limit=limit,
-            since=cutoff_date,
-        )
+        # Get Instagram posts (only if instagram is in publish_platforms)
+        ig_posts = []
+        if "instagram" in publish_platforms:
+            ig_posts = await posts_repo.get_recent_published_for_insights(
+                business_asset_id=business_asset_id,
+                platform="instagram",
+                limit=limit,
+                since=cutoff_date,
+            )
+        else:
+            logger.info(
+                "Skipping Instagram post insights (not in publish_platforms)",
+                business_asset_id=business_asset_id,
+            )
 
         logger.info(
             "Found posts to fetch insights for",

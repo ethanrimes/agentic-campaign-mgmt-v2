@@ -14,9 +14,9 @@ from pydantic import BaseModel, Field
 
 class BusinessAssetCredentials(BaseModel):
     """Decrypted credentials for a business asset."""
-    facebook_page_id: str
+    facebook_page_id: Optional[str] = None
     app_users_instagram_account_id: str
-    facebook_page_access_token: str
+    facebook_page_access_token: Optional[str] = None
     instagram_page_access_token: str
     target_audience: str
 
@@ -32,11 +32,11 @@ class BusinessAsset(BaseModel):
     name: str = Field(..., description="Display name for the business asset")
 
     # Platform identifiers (not sensitive)
-    facebook_page_id: str
+    facebook_page_id: Optional[str] = None
     app_users_instagram_account_id: str
 
     # Encrypted access tokens
-    facebook_page_access_token_encrypted: str
+    facebook_page_access_token_encrypted: Optional[str] = None
     instagram_page_access_token_encrypted: str
 
     # Target audience (plain text)
@@ -59,11 +59,11 @@ class BusinessAssetCreate(BaseModel):
     name: str = Field(..., description="Display name for the business asset")
 
     # Platform identifiers
-    facebook_page_id: str
+    facebook_page_id: Optional[str] = None
     app_users_instagram_account_id: str
 
     # Unencrypted access tokens (will be encrypted before storage)
-    facebook_page_access_token: str
+    facebook_page_access_token: Optional[str] = None
     instagram_page_access_token: str
 
     # Target audience (plain text)

@@ -117,7 +117,7 @@ class Settings(BaseSettings):
 
     # Publishing
     publishing_check_interval: int = 6  # hours
-    publish_platforms: str = "facebook,instagram"  # Comma-separated: "facebook", "instagram", or "facebook,instagram"
+    publish_platforms: str = "instagram"  # Comma-separated: "facebook", "instagram", or "facebook,instagram"
 
     # Logging
     log_level: str = "INFO"
@@ -125,6 +125,15 @@ class Settings(BaseSettings):
     # =============================================================================
     # COMPUTED PROPERTIES
     # =============================================================================
+
+    @property
+    def publish_platforms_set(self) -> set:
+        """Get the set of platforms to publish to."""
+        raw = self.publish_platforms.lower().strip()
+        platforms = {p.strip() for p in raw.split(",") if p.strip()}
+        valid = {"facebook", "instagram"}
+        result = platforms & valid
+        return result if result else valid
 
     @property
     def fernet(self) -> Fernet:

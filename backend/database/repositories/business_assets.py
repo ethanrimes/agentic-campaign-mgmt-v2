@@ -83,8 +83,9 @@ class BusinessAssetRepository:
             "name": business_asset.name,
             "facebook_page_id": business_asset.facebook_page_id,
             "app_users_instagram_account_id": business_asset.app_users_instagram_account_id,
-            "facebook_page_access_token_encrypted": settings.encrypt_token(
-                business_asset.facebook_page_access_token
+            "facebook_page_access_token_encrypted": (
+                settings.encrypt_token(business_asset.facebook_page_access_token)
+                if business_asset.facebook_page_access_token else None
             ),
             "instagram_page_access_token_encrypted": settings.encrypt_token(
                 business_asset.instagram_page_access_token
@@ -189,8 +190,9 @@ class BusinessAssetRepository:
         return BusinessAssetCredentials(
             facebook_page_id=business_asset.facebook_page_id,
             app_users_instagram_account_id=business_asset.app_users_instagram_account_id,
-            facebook_page_access_token=settings.decrypt_token(
-                business_asset.facebook_page_access_token_encrypted
+            facebook_page_access_token=(
+                settings.decrypt_token(business_asset.facebook_page_access_token_encrypted)
+                if business_asset.facebook_page_access_token_encrypted else None
             ),
             instagram_page_access_token=settings.decrypt_token(
                 business_asset.instagram_page_access_token_encrypted
