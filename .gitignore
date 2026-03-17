@@ -5,6 +5,7 @@
 
 # Environment variables
 .env
+.env.prod
 .env.local
 .env.*.local
 frontend/.env.local
