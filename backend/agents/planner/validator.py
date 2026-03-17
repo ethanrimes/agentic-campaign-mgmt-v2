@@ -2,8 +2,8 @@
 
 """Planner output validation against guardrails.
 
-Uses unified format-based validation (image_posts, video_posts, carousel_posts, text_only_posts)
-where each image/video/carousel post creates both an Instagram and Facebook post.
+Uses unified format-based validation (image_posts, video_posts, carousel_posts, text_only_posts).
+Each post unit counts as one post (Instagram).
 """
 
 from typing import Dict, Any, List, Tuple
@@ -17,11 +17,7 @@ class PlannerValidator:
     Validates planner output against guardrails.
 
     Ensures plans meet all min/max constraints before execution.
-    Uses unified format counting:
-    - Each image_post creates 2 posts (IG + FB)
-    - Each video_post creates 2 posts (IG + FB)
-    - Each carousel_post creates 2 posts (IG carousel + FB carousel)
-    - Each text_only_post creates 1 post (FB only)
+    Each post unit (image, video, carousel, text_only) counts as one post.
     """
 
     @staticmethod
@@ -105,14 +101,7 @@ class PlannerValidator:
 
     @staticmethod
     def _calculate_totals(allocations: List[Dict[str, Any]]) -> Dict[str, int]:
-        """Calculate total posts, video_posts, image_posts, and carousel_posts from allocations.
-
-        Uses unified format counting:
-        - Each image_post creates 2 posts (IG + FB)
-        - Each video_post creates 2 posts (IG + FB)
-        - Each carousel_post creates 2 posts (IG carousel + FB carousel)
-        - Each text_only_post creates 1 post (FB only)
-        """
+        """Calculate total posts, video_posts, image_posts, and carousel_posts from allocations."""
         totals = {
             "posts": 0,           # Total platform posts (counting both IG + FB)
             "post_units": 0,      # Total post units (not counting duplication)
@@ -135,8 +124,8 @@ class PlannerValidator:
             totals["text_only_posts"] += text_only_posts
             totals["post_units"] += image_posts + video_posts + carousel_posts + text_only_posts
 
-            # Count total platform posts (each image/video/carousel creates 2, text_only creates 1)
-            totals["posts"] += (image_posts * 2) + (video_posts * 2) + (carousel_posts * 2) + text_only_posts
+            # Count total posts (1:1 — each unit is one Instagram post)
+            totals["posts"] += image_posts + video_posts + carousel_posts + text_only_posts
 
         return totals
 

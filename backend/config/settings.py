@@ -65,10 +65,9 @@ class Settings(BaseSettings):
     default_model_name: str = "gpt-5.4"
 
     # Content generation guardrails (daily planning window)
-    # Target: 4-5 content pieces/day, 3 being videos
-    # Each piece cross-posts to IG + FB, so platform post total = pieces × 2
-    min_posts_per_day: int = 8    # 4 pieces/day × 2 platforms
-    max_posts_per_day: int = 10   # 5 pieces/day × 2 platforms
+    # Target: 4-5 posts/day, mostly videos
+    min_posts_per_day: int = 4
+    max_posts_per_day: int = 5
     min_content_seeds_per_day: int = 2
     max_content_seeds_per_day: int = 5
     min_videos_per_day: int = 3
