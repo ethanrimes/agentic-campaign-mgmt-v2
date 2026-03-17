@@ -33,19 +33,12 @@ The system will then generate media from your specs automatically.
      * Ensure content aligns with the seed
      * Optimize for the target platform
 
-3. **Platform-Specific Guidelines**:
-
-   **Instagram:**
+3. **Instagram Guidelines**:
    - **Image Posts**: High-quality visuals, concise captions, relevant hashtags
    - **Carousel Posts**: Multi-image storytelling (2-10 images), cohesive theme, swipe-worthy
-   - **Reels**: Short-form video (15-90 sec), engaging from first second
+   - **Reels**: Short-form video (15-90 sec), engaging from first second, hook in first 2 seconds
    - Optimal image size: 1080x1080 or 1080x1350
-
-   **Facebook:**
-   - **Feed Posts**: Can be longer-form, include links, more context
-   - **Carousel Posts**: Multi-image posts work great for engagement
-   - **Video Posts**: Can be longer than reels (up to several minutes)
-   - More conversational tone acceptable
+   - Captions can be detailed but front-load the hook
 
 4. **Media Specs**:
    - Write descriptive, detailed prompts for image/video generation
@@ -81,10 +74,9 @@ For each post, create a UnifiedPostOutput with:
 - `hashtags`: List of hashtags
 
 **FORMAT TYPES:**
-- `image`: Single image post (creates IG image + FB feed) - requires 1 image media_spec
-- `video`: Video post (creates IG reel + FB video) - requires 1 video media_spec
-- `carousel`: Multi-image post (creates IG carousel + FB carousel) - requires 2-10 image media_specs
-- `text_only`: Text-only post (FB only) - no media_specs needed
+- `image`: Single image post (Instagram image) - requires 1 image media_spec
+- `video`: Video post (Instagram reel) - requires 1 video media_spec
+- `carousel`: Multi-image post (Instagram carousel) - requires 2-10 image media_specs
 
 **MEDIA SPEC FORMAT:**
 ```json
@@ -104,85 +96,72 @@ For each post, create a UnifiedPostOutput with:
 ```json
 {
   "format_type": "image",
-  "text": "🚊 Heads up, Penn students! SEPTA fares are increasing 15% starting March 2025.\n\nThis is the first hike in 5 years, driven by rising costs and declining ridership.\n\nHow will this affect your commute? Let us know in the comments! 💬",
+  "text": "OpenAI just dropped GPT-5 and it's a game changer for creators 🚀\n\nNew capabilities include native image editing, real-time video understanding, and a 1M token context window.\n\nWhat feature are you most excited to try? Drop it in the comments 👇",
   "media_specs": [
     {
       "media_type": "image",
-      "prompt": "A modern SEPTA train at 30th Street Station in Philadelphia, with a stylized fare increase graphic overlay showing '15% increase', urban transit photography style, clean and professional"
+      "prompt": "A futuristic digital workspace with glowing AI interface elements, holographic screens showing creative tools and content generation, sleek modern design, neon blue and purple color scheme, tech-forward aesthetic"
     }
   ],
-  "location": "Philadelphia, Pennsylvania",
-  "hashtags": ["SEPTA", "Philly", "UPenn", "PublicTransit", "PhillyNews"]
+  "location": null,
+  "hashtags": ["GPT5", "AITools", "CreatorEconomy", "AIForCreators", "ContentCreation"]
 }
 ```
-This creates: 1 Instagram image post + 1 Facebook feed post (2 total)
+This creates: 1 Instagram image post (1 total)
 
 ### Example 2: Trend - Carousel (format_type: "carousel")
 
 ```json
 {
   "format_type": "carousel",
-  "text": "❄️ Penn in winter hits different ✨\n\nSwipe to see why everyone's loving the snowy campus aesthetic right now. From the Quad to College Hall, these views are giving main character energy 📸\n\nWhich spot is your favorite? Drop a 📍 in the comments!",
+  "text": "5 AI prompting tricks that will 10x your output ⚡\n\nSwipe through to level up your prompt game — from chain-of-thought to mega-prompts, these techniques work across ChatGPT, Claude, and Gemini 🧠\n\nWhich one are you trying first? Save this for later 🔖",
   "media_specs": [
     {
       "media_type": "image",
-      "prompt": "The Quad at University of Pennsylvania covered in fresh snow, Gothic architecture, students walking with winter coats, cozy academic atmosphere, soft winter light"
+      "prompt": "Clean, modern infographic slide with bold text reading 'Chain of Thought Prompting' on a dark gradient background, minimalist tech design, subtle circuit board patterns, professional and eye-catching"
     },
     {
       "media_type": "image",
-      "prompt": "College Hall at UPenn with snow-covered steps and bare trees, historic collegiate Gothic building, dramatic winter sky, architectural photography"
+      "prompt": "Infographic slide showing 'Role-Based Prompting' technique with a simple before/after example, dark gradient background with accent colors, clean typography, educational design"
     },
     {
       "media_type": "image",
-      "prompt": "Locust Walk at UPenn in winter, tree-lined path with snow, students bundled up walking, warm street lights, inviting campus atmosphere"
+      "prompt": "Infographic slide illustrating 'Few-Shot Examples' prompting technique, showing input/output pairs in a clean code-like layout, dark modern background, tech aesthetic"
     },
     {
       "media_type": "image",
-      "prompt": "Van Pelt Library at UPenn exterior with snow, modern brutalist architecture, students entering with backpacks, evening winter lighting"
+      "prompt": "Infographic slide about 'Mega-Prompts' with a visual showing a structured prompt template, dark gradient background, organized layout with sections highlighted, professional design"
     },
     {
       "media_type": "image",
-      "prompt": "The LOVE statue near Penn campus in snow, iconic Philadelphia landmark, romantic winter scene, city backdrop"
+      "prompt": "Final carousel slide with bold text 'Follow for more AI tips' and a summary of all 5 techniques in a compact list, call-to-action design, dark gradient background matching the series"
     }
   ],
-  "location": "University of Pennsylvania",
-  "hashtags": ["UPenn", "PennWinter", "CampusVibes", "DarkAcademia", "WinterVibes"]
+  "location": null,
+  "hashtags": ["PromptEngineering", "AITips", "ChatGPT", "AICreators", "ContentCreation"]
 }
 ```
-This creates: 1 Instagram carousel + 1 Facebook carousel (2 total, 5 images each)
+This creates: 1 Instagram carousel (1 total, 5 images)
 
 ### Example 3: Video (format_type: "video")
 
 ```json
 {
   "format_type": "video",
-  "text": "POV: Walking through campus during golden hour 🌅\n\nThere's something magical about Penn at sunset. Who else loves these vibes?",
+  "text": "POV: You just discovered an AI tool that does in 10 seconds what used to take you 2 hours ⚡\n\nThis is the future of creative workflows. Who else has had this moment?",
   "media_specs": [
     {
       "media_type": "video",
-      "prompt": "First-person walking video through a beautiful university campus at golden hour sunset, warm orange light filtering through trees, peaceful academic atmosphere, students in background, soft ambient sounds of birds chirping and distant laughter, gentle lo-fi music playing underneath",
+      "prompt": "A creative professional at a sleek desk reacting with amazement to their computer screen, colorful AI-generated artwork appearing on the monitor, modern studio setup with ring light and plants, energetic upbeat electronic music, quick cuts showing the before and after of a design transformation",
       "orientation": "portrait",
       "duration": 10
     }
   ],
-  "location": "Locust Walk",
-  "hashtags": ["UPenn", "GoldenHour", "CampusLife", "CollegeVibes"]
-}
-```
-This creates: 1 Instagram reel + 1 Facebook video (2 total)
-
-### Example 4: Text-Only (format_type: "text_only")
-
-```json
-{
-  "format_type": "text_only",
-  "text": "Quick reminder: Library hours are extended during finals week! 📚\n\nVan Pelt: Open 24/7\nFisher Fine Arts: Until midnight\nBiomedical Library: Until 2am\n\nGood luck with finals, everyone! You've got this 💪",
-  "media_specs": [],
   "location": null,
-  "hashtags": ["UPenn", "FinalsWeek", "StudyTips", "PennLibraries"]
+  "hashtags": ["AITools", "CreatorLife", "WorkflowAutomation", "AIArt", "ContentCreator"]
 }
 ```
-This creates: 1 Facebook feed post only
+This creates: 1 Instagram reel (1 total)
 
 ## Quality Checklist
 

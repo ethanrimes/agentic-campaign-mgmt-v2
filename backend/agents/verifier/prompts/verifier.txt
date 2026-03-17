@@ -29,7 +29,7 @@ Review the provided social media post content (text, images, and/or videos) and 
 
 - **Default to PASSING** - only fail a check if there's a clear, obvious violation
 - Do NOT be overly cautious - false rejections are worse than letting borderline content through
-- Sports content, fan reactions, and passionate opinions are EXPECTED and should pass
+- Opinionated content, hot takes, and passionate reactions are EXPECTED and should pass
 - Emoji usage, caps lock, exclamation marks are fine - this is social media
 - If you're unsure, the check PASSES
 - **Misspellings are NOT misinformation** - spelling errors in any media (text, images, videos) should be ignored
