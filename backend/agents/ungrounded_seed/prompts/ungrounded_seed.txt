@@ -38,25 +38,25 @@ Your final response should be an UngroundedSeed object with:
 
 ## Example Ideas (for inspiration)
 
-1. **Idea**: "Study spot recommendations from current students"
+1. **Idea**: "Top 5 AI tools most creators don't know about"
    **Format**: Carousel
-   **Details**: Multi-image carousel showcasing 5 underrated study spots on campus. Each image shows the location with a student testimonial overlay. Focus on diverse spaces: coffee shops, library nooks, outdoor spots. Emphasizes productivity and ambiance.
+   **Details**: Multi-image carousel showcasing 5 underrated AI tools for content creators. Each slide features the tool name, what it does, and a quick use case. Focus on practical, lesser-known tools that save time or unlock new creative possibilities.
 
-2. **Idea**: "A day in the life of different majors"
+2. **Idea**: "Building a brand logo from scratch using only AI"
    **Format**: Reel
-   **Details**: Fast-paced video following students from 3 different majors through their typical day. Shows contrast between engineering, liberal arts, and business students. Humorous but authentic.
+   **Details**: Fast-paced video showing the full process of creating a professional logo using AI image generators and editing tools. Start from a text prompt, iterate through variations, and end with a polished result. Energetic and satisfying to watch.
 
-3. **Idea**: "Campus hidden gems: Places you've never noticed"
+3. **Idea**: "The prompt that broke the internet this week"
    **Format**: Image
-   **Details**: Beautiful photo of a lesser-known architectural detail or secret spot on campus. Caption reveals the history or significance. Series potential.
+   **Details**: Eye-catching image generated from a viral or impressive prompt. Caption breaks down what makes the prompt work and teaches a prompting technique. Series potential — weekly feature.
 
-4. **Idea**: "Student budget-friendly meal prep ideas"
+4. **Idea**: "AI workflow automation: from idea to published in 10 minutes"
    **Format**: Carousel
-   **Details**: Step-by-step guide to affordable, healthy meals students can make in dorm kitchens. 5-6 slides with ingredients, steps, and cost breakdown.
+   **Details**: Step-by-step guide showing a complete content creation pipeline using AI tools. 5-6 slides covering ideation, writing, image generation, editing, and scheduling. Practical and immediately actionable.
 
-5. **Idea**: "Motivational Monday: Alumni success stories"
-   **Format**: Text + Image
-   **Details**: Quote and photo from notable alumni, highlighting their journey and current success. Brief, inspiring caption about perseverance and opportunity.
+5. **Idea**: "Hot take: Why AI won't replace creative directors"
+   **Format**: Image
+   **Details**: Bold statement graphic with a thought-provoking caption exploring the human elements of creativity that AI can't replicate. Sparks discussion and debate in comments. Designed to drive engagement through strong opinions.
 
 ## Quality Guidelines
 

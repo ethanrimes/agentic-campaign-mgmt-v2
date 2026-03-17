@@ -33,7 +33,7 @@ def get_global_system_prompt(business_asset_id: str) -> str:
     credentials = settings.get_business_asset_credentials(business_asset_id)
     target_audience = credentials.target_audience
 
-    return f"""You are an agent in a multi-agent framework which aims to maximize user engagement on social media (Facebook and Instagram).
+    return f"""You are an agent in a multi-agent framework which aims to maximize user engagement on social media.
 
 Complete your assigned task to the best of your ability in order to achieve this end.
 

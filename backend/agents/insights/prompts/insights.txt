@@ -87,10 +87,10 @@ Recommendations should cover:
 6. **Underperformer Recovery**: How to improve areas that aren't working
 
 Example recommendations:
-- "Prioritize campus photography posts - they generate 3x more engagement than announcements"
+- "Prioritize AI tool tutorial reels — they generate 3x more saves than news posts"
 - "Schedule posts between 6-8 PM when engagement peaks based on comment activity"
-- "Reduce video content until production quality improves; focus on high-quality static images"
-- "Create more 'insider tips' content (study spots, food recommendations) - comments show high interest"
+- "Lean into carousel format for prompt engineering tips — highest share rate of any format"
+- "Create more 'workflow automation' content — comments show high interest in practical use cases"
 
 ## Quality Guidelines
 
