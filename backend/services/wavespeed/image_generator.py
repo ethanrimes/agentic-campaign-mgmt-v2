@@ -98,11 +98,8 @@ class ImageGenerator(WavespeedBaseClient):
             num_inference_steps=num_inference_steps,
         )
 
-        # Submit task
-        request_id = await self._submit_task(self.model_id, payload)
-
-        # Poll for completion
-        output_url = await self._poll_for_completion(request_id)
+        # Submit task and poll for completion with retry on transient errors
+        output_url = await self._submit_and_poll_with_retry(self.model_id, payload)
 
         # Download image
         image_bytes = await self._download_media(output_url)

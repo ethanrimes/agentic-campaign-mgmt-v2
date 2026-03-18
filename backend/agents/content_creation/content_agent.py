@@ -429,8 +429,14 @@ class ContentCreationAgent:
                 except Exception as e:
                     logger.error("Error creating posts from unified output", error=str(e))
 
-            # Update task status
-            await self.tasks_repo.update(self.business_asset_id, task_id, {"status": "completed"})
+            # Update task status — mark failed if no posts were created (e.g. transient media generation errors)
+            if posts:
+                await self.tasks_repo.update(self.business_asset_id, task_id, {"status": "completed"})
+            else:
+                await self.tasks_repo.update(self.business_asset_id, task_id, {
+                    "status": "failed",
+                    "error_message": "No posts created - media generation likely failed"
+                })
 
             logger.info(
                 "Content creation complete",

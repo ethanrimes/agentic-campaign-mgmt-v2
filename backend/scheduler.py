@@ -141,6 +141,7 @@ class SchedulingConfig:
     TREND_DISCOVERY_INTERVAL_HOURS = 24  # Trend discovery
     UNGROUNDED_GENERATION_INTERVAL_HOURS = 12  # Ungrounded idea generation
     PLANNING_PIPELINE_INTERVAL_HOURS = 24  # Insights + planner + content creation (daily)
+    CONTENT_CREATION_RETRY_INTERVAL_HOURS = 4  # Retry failed content creation tasks
 
     # Insights fetching (from settings)
     @property
@@ -539,6 +540,17 @@ def create_scheduler():
         max_instances=1,
         coalesce=True,
         next_run_time=datetime.now()
+    )
+
+    # Content creation retry (picks up failed tasks and retries them)
+    scheduler.add_job(
+        run_content_creation,
+        'interval',
+        hours=SCHEDULING_CONFIG.CONTENT_CREATION_RETRY_INTERVAL_HOURS,
+        id='content_creation_retry',
+        name='Content Creation Retry (Failed Tasks)',
+        max_instances=1,
+        coalesce=True,
     )
 
     # ========================================================================

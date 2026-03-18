@@ -13,9 +13,15 @@ from backend.utils import get_logger, APIError, MediaGenerationError
 
 logger = get_logger(__name__)
 
+# Transient error patterns that are safe to retry
+TRANSIENT_ERROR_PATTERNS = ["Internal Error", "Please try again", "temporarily unavailable"]
+
 
 class WavespeedBaseClient:
     """Base client for Wavespeed AI API operations."""
+
+    MAX_RETRIES = 2
+    RETRY_DELAY = 10  # seconds between retries
 
     def __init__(self):
         self.api_base = settings.wavespeed_api_base
@@ -112,7 +118,9 @@ class WavespeedBaseClient:
 
                         elif status == "failed":
                             error = result["data"].get("error", "Unknown error")
-                            raise MediaGenerationError(f"Generation failed: {error}")
+                            raise MediaGenerationError(f"Generation failed: {error}", transient=any(
+                                p.lower() in error.lower() for p in TRANSIENT_ERROR_PATTERNS
+                            ))
 
                         # Still processing
                         if attempt < self.max_poll_attempts:
@@ -126,6 +134,32 @@ class WavespeedBaseClient:
             raise MediaGenerationError(
                 f"Generation timeout after {self.max_poll_attempts} attempts"
             )
+
+    async def _submit_and_poll_with_retry(self, model_endpoint: str, payload: Dict[str, Any]) -> str:
+        """
+        Submit a task and poll for completion, retrying on transient errors.
+
+        Returns:
+            Output URL of the generated media
+        """
+        last_error = None
+        for attempt in range(1, self.MAX_RETRIES + 1):
+            try:
+                request_id = await self._submit_task(model_endpoint, payload)
+                return await self._poll_for_completion(request_id)
+            except MediaGenerationError as e:
+                last_error = e
+                if e.transient and attempt < self.MAX_RETRIES:
+                    logger.warning(
+                        "Transient generation error, retrying",
+                        attempt=attempt,
+                        max_retries=self.MAX_RETRIES,
+                        error=str(e),
+                    )
+                    await asyncio.sleep(self.RETRY_DELAY)
+                    continue
+                raise
+        raise last_error
 
     async def _download_media(self, url: str) -> bytes:
         """

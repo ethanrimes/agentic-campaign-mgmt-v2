@@ -3,6 +3,7 @@
 """Repository for content creation tasks."""
 
 from typing import List
+from datetime import datetime, timedelta
 from uuid import UUID
 from backend.models import ContentCreationTask
 from .base import BaseRepository
@@ -30,6 +31,33 @@ class ContentCreationTaskRepository(BaseRepository[ContentCreationTask]):
                 .select("*")
                 .eq("business_asset_id", business_asset_id)
                 .eq("status", "pending")
+                .order("created_at", desc=False)
+                .limit(limit)
+                .execute()
+            )
+            return [self.model_class(**item) for item in result.data]
+        except Exception as e:
+            return []
+
+    async def get_failed_tasks(self, business_asset_id: str, max_age_hours: int = 24, limit: int = 10) -> List[ContentCreationTask]:
+        """
+        Get failed tasks eligible for retry (created within max_age_hours).
+
+        Args:
+            business_asset_id: Business asset ID to filter by
+            max_age_hours: Only retry tasks created within this many hours
+            limit: Maximum number of tasks to return
+        """
+        from backend.database import get_supabase_admin_client
+        try:
+            cutoff = (datetime.utcnow() - timedelta(hours=max_age_hours)).isoformat()
+            client = await get_supabase_admin_client()
+            result = (
+                await client.table(self.table_name)
+                .select("*")
+                .eq("business_asset_id", business_asset_id)
+                .eq("status", "failed")
+                .gte("created_at", cutoff)
                 .order("created_at", desc=False)
                 .limit(limit)
                 .execute()
