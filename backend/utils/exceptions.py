@@ -82,7 +82,10 @@ class GuardrailViolationError(ValidationError):
 
 class MediaGenerationError(APIError):
     """Raised when media generation fails."""
-    pass
+
+    def __init__(self, message: str, status_code: int = None, response_body: str = None, transient: bool = False):
+        super().__init__(message, status_code, response_body)
+        self.transient = transient
 
 
 class PublishingError(APIError):

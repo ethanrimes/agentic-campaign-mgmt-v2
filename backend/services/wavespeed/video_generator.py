@@ -89,11 +89,8 @@ class VideoGenerator(WavespeedBaseClient):
             **({"duration": duration} if duration is not None else {}),
         )
 
-        # Submit task
-        request_id = await self._submit_task(self.model_id, payload)
-
-        # Poll for completion (videos take much longer than images)
-        output_url = await self._poll_for_completion(request_id)
+        # Submit task and poll for completion with retry on transient errors
+        output_url = await self._submit_and_poll_with_retry(self.model_id, payload)
 
         # Download video
         video_bytes = await self._download_media(output_url)

@@ -19,6 +19,7 @@ MULTI_TENANT_IMPLEMENTATION.md
 table_columns.csv
 scripts/manual_override_ids.txt
 scripts/download_engagement_charts.py
+bios_prompts.txt
 
 # Python
 __pycache__/

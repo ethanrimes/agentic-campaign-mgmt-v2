@@ -133,14 +133,24 @@ class ContentCreationRunner:
         Returns:
             Summary of results
         """
-        logger.info("Starting content creation for all pending tasks")
+        logger.info("Starting content creation for all pending and retryable tasks")
 
         try:
-            # Get all pending tasks
+            # Get pending tasks and failed tasks eligible for retry
             pending_tasks = await self.tasks_repo.get_pending_tasks(self.business_asset_id)
+            failed_tasks = await self.tasks_repo.get_failed_tasks(self.business_asset_id)
 
-            if not pending_tasks:
-                logger.info("No pending tasks found")
+            # Reset failed tasks to pending so they get reprocessed
+            for task in failed_tasks:
+                await self.tasks_repo.update(self.business_asset_id, task.id, {
+                    "status": "pending",
+                    "error_message": None
+                })
+
+            all_tasks = pending_tasks + failed_tasks
+
+            if not all_tasks:
+                logger.info("No pending or retryable tasks found")
                 return {
                     "success": True,
                     "tasks_processed": 0,
@@ -149,13 +159,13 @@ class ContentCreationRunner:
                     "verification": {"verified": 0, "approved": 0, "rejected": 0}
                 }
 
-            logger.info(f"Found {len(pending_tasks)} pending tasks")
+            logger.info(f"Found {len(pending_tasks)} pending tasks and {len(failed_tasks)} failed tasks to retry")
 
             results = []
             total_posts = 0
             all_post_ids = []
 
-            for task in pending_tasks:
+            for task in all_tasks:
                 task_id = str(task.id)
 
                 try:
