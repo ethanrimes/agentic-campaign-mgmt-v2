@@ -22,9 +22,9 @@ class CompletedPost(BaseModel):
     id: UUID = Field(default_factory=uuid4, description="Unique post ID")
     business_asset_id: str = Field(..., description="Business asset ID for multi-tenancy")
 
-    # Task reference
-    task_id: UUID = Field(
-        ..., description="ID of the content creation task that produced this post"
+    # Task reference (NULL for externally-posted content discovered via API)
+    task_id: Optional[UUID] = Field(
+        None, description="ID of the content creation task that produced this post (NULL for external posts)"
     )
 
     # Content seed references (exactly one must be set)

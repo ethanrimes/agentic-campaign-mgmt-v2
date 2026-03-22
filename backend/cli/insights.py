@@ -96,6 +96,49 @@ def latest(business_asset_id: str):
 # =============================================================================
 
 
+@insights.command(name="discover-media")
+@click.option(
+    '--business-asset-id',
+    required=True,
+    type=str,
+    help='Business asset ID (e.g., aiforcreators82, nextgencreators24)'
+)
+@click.option(
+    '--limit',
+    default=50,
+    type=int,
+    help='Max media items to fetch from Instagram API (default: 50)'
+)
+def discover_media(business_asset_id: str, limit: int):
+    """Discover and ingest externally-posted Instagram media.
+
+    Fetches recent media from the Instagram account and creates
+    completed_post entries for any that don't already exist.
+    This allows the metrics pipeline to track human-posted content.
+    """
+    import asyncio
+    from backend.services.insights_fetcher import discover_and_ingest_external_media
+
+    logger.info(
+        "Discovering external media",
+        business_asset_id=business_asset_id,
+        limit=limit
+    )
+    click.echo(f"Discovering external media for {business_asset_id}...")
+
+    result = asyncio.run(discover_and_ingest_external_media(business_asset_id, limit=limit))
+
+    click.echo(f"\nDiscovery Complete:")
+    click.echo(f"   Found on account: {result['discovered']}")
+    click.echo(f"   Newly ingested:   {result['ingested']}")
+    click.echo(f"   Already known:    {result['skipped']}")
+
+    if result.get("errors"):
+        click.echo(f"\n   Errors: {len(result['errors'])}")
+        for error in result["errors"][:5]:
+            click.echo(f"   - {error}")
+
+
 @insights.command(name="fetch-account")
 @click.option(
     '--business-asset-id',

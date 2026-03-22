@@ -313,7 +313,7 @@ class InstagramInsightsService(MetaBaseClient):
         try:
             url = f"{self.INSTAGRAM_BASE_URL}/{self.ig_user_id}/media"
             params = {
-                "fields": "id,media_type,timestamp,permalink",
+                "fields": "id,media_type,timestamp,permalink,caption,media_url,thumbnail_url",
                 "limit": min(limit, 100),  # API max is 100
                 "access_token": self.ig_token,
             }

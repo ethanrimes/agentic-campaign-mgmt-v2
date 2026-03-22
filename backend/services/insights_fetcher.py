@@ -28,10 +28,26 @@ from backend.database.repositories.insights_metrics import (
     InstagramMediaInsightsRepository,
 )
 
-# Import completed posts repository
+# Import completed posts repository and model
 from backend.database.repositories.completed_posts import CompletedPostRepository
+from backend.database.repositories.media import MediaRepository
+from backend.models.posts import CompletedPost
+from backend.models.media import Image, Video
+from backend.services.supabase.storage import StorageService
 
 logger = get_logger(__name__)
+
+
+# =============================================================================
+# MEDIA TYPE MAPPING
+# =============================================================================
+
+# Maps Instagram API media_type values to our post_type enum
+_IG_MEDIA_TYPE_TO_POST_TYPE = {
+    "IMAGE": "instagram_image",
+    "VIDEO": "instagram_reel",
+    "CAROUSEL_ALBUM": "instagram_carousel",
+}
 
 
 # =============================================================================
@@ -305,6 +321,196 @@ async def fetch_post_insights(
 
     except Exception as e:
         error_msg = f"Failed to fetch post insights: {e}"
+        logger.error(error_msg, business_asset_id=business_asset_id)
+        result["errors"].append(error_msg)
+
+    return result
+
+
+# =============================================================================
+# EXTERNAL MEDIA DISCOVERY (for human-managed accounts)
+# =============================================================================
+
+
+async def discover_and_ingest_external_media(
+    business_asset_id: str,
+    limit: int = 50,
+) -> Dict[str, Any]:
+    """
+    Discover media posted externally (by humans) on Instagram and ingest
+    into completed_posts so the metrics pipeline can track them.
+
+    For each media found on the account:
+    - Checks if a completed_post with that platform_post_id already exists
+    - If not, creates a new completed_post row (task_id=NULL, no seed)
+    - Skips already-known posts
+
+    Args:
+        business_asset_id: The business asset ID
+        limit: Max media items to fetch from Instagram API
+
+    Returns:
+        Dictionary with counts of discovered/ingested/skipped media
+    """
+    logger.info(
+        "Discovering external media",
+        business_asset_id=business_asset_id,
+        limit=limit,
+    )
+
+    result = {
+        "discovered": 0,
+        "ingested": 0,
+        "skipped": 0,
+        "errors": [],
+    }
+
+    try:
+        # Fetch recent media from Instagram API
+        ig_service = InstagramInsightsService(business_asset_id)
+        media_list = await ig_service.fetch_recent_media_list(limit=limit)
+        result["discovered"] = len(media_list)
+
+        if not media_list:
+            logger.info("No media found on account", business_asset_id=business_asset_id)
+            return result
+
+        # Get existing platform_post_ids to avoid duplicates
+        posts_repo = CompletedPostRepository()
+        existing_posts = await posts_repo.get_recent_published_for_insights(
+            business_asset_id=business_asset_id,
+            platform="instagram",
+            limit=500,
+            since=datetime.now(timezone.utc) - timedelta(days=365),
+        )
+        existing_ids = {post.platform_post_id for post in existing_posts if post.platform_post_id}
+
+        for media in media_list:
+            media_id = media.get("id")
+            if not media_id:
+                continue
+
+            # Skip if already ingested
+            if media_id in existing_ids:
+                result["skipped"] += 1
+                continue
+
+            try:
+                # Map Instagram media_type to our post_type
+                api_media_type = media.get("media_type", "IMAGE")
+                post_type = _IG_MEDIA_TYPE_TO_POST_TYPE.get(api_media_type, "instagram_image")
+
+                # Parse timestamp
+                timestamp_str = media.get("timestamp")
+                published_at = datetime.now(timezone.utc)
+                if timestamp_str:
+                    published_at = datetime.fromisoformat(timestamp_str.replace("+0000", "+00:00"))
+
+                # Download media from Instagram and upload to Supabase storage
+                media_ids = []
+                media_url = media.get("media_url")
+                thumbnail_url = media.get("thumbnail_url")
+                # For videos: download the thumbnail for display, media_url for the video
+                download_url = media_url or thumbnail_url
+
+                if download_url:
+                    try:
+                        import aiohttp
+                        async with aiohttp.ClientSession() as session:
+                            async with session.get(download_url) as resp:
+                                if resp.status == 200:
+                                    media_bytes = await resp.read()
+
+                                    storage = StorageService()
+                                    media_repo = MediaRepository()
+                                    storage_prefix = f"external/{business_asset_id}"
+
+                                    if api_media_type == "VIDEO":
+                                        # Upload thumbnail for display
+                                        thumb_url = thumbnail_url or media_url
+                                        thumb_bytes = media_bytes
+                                        if thumbnail_url and thumbnail_url != download_url:
+                                            async with session.get(thumbnail_url) as thumb_resp:
+                                                if thumb_resp.status == 200:
+                                                    thumb_bytes = await thumb_resp.read()
+
+                                        storage_path = f"{storage_prefix}/{media_id}.jpg"
+                                        public_url = await storage.upload_media(
+                                            storage_path, thumb_bytes, "image/jpeg"
+                                        )
+                                        video_obj = Video(
+                                            business_asset_id=business_asset_id,
+                                            storage_path=storage_path,
+                                            public_url=public_url,
+                                            mime_type="image/jpeg",
+                                            created_at=published_at,
+                                        )
+                                        saved_media = await media_repo.create_video(video_obj)
+                                    else:
+                                        storage_path = f"{storage_prefix}/{media_id}.jpg"
+                                        public_url = await storage.upload_media(
+                                            storage_path, media_bytes, "image/jpeg"
+                                        )
+                                        image_obj = Image(
+                                            business_asset_id=business_asset_id,
+                                            storage_path=storage_path,
+                                            public_url=public_url,
+                                            mime_type="image/jpeg",
+                                            created_at=published_at,
+                                        )
+                                        saved_media = await media_repo.create_image(image_obj)
+
+                                    media_ids = [saved_media.id]
+                                else:
+                                    logger.warning(
+                                        "Failed to download media from Instagram",
+                                        media_id=media_id,
+                                        status=resp.status,
+                                    )
+                    except Exception as e:
+                        logger.warning("Failed to upload media to storage", media_id=media_id, error=str(e))
+
+                # Create completed_post for this external media
+                post = CompletedPost(
+                    business_asset_id=business_asset_id,
+                    task_id=None,
+                    platform="instagram",
+                    post_type=post_type,
+                    text=media.get("caption") or "(external post)",
+                    media_ids=media_ids,
+                    status="published",
+                    verification_status="verified",
+                    published_at=published_at,
+                    platform_post_id=media_id,
+                    platform_post_url=media.get("permalink"),
+                    created_at=published_at,
+                )
+
+                await posts_repo.create(post)
+                result["ingested"] += 1
+
+                logger.debug(
+                    "Ingested external media",
+                    media_id=media_id,
+                    post_type=post_type,
+                )
+
+            except Exception as e:
+                error_msg = f"Failed to ingest media {media_id}: {e}"
+                logger.warning(error_msg)
+                result["errors"].append(error_msg)
+
+        logger.info(
+            "External media discovery complete",
+            business_asset_id=business_asset_id,
+            discovered=result["discovered"],
+            ingested=result["ingested"],
+            skipped=result["skipped"],
+            errors=len(result["errors"]),
+        )
+
+    except Exception as e:
+        error_msg = f"Failed to discover external media: {e}"
         logger.error(error_msg, business_asset_id=business_asset_id)
         result["errors"].append(error_msg)
 

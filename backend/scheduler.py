@@ -252,6 +252,38 @@ def run_ungrounded_generation():
 # INSIGHTS FETCHING JOBS
 # ============================================================================
 
+def get_metrics_only_business_assets() -> list[str]:
+    """
+    Get business asset IDs that are in METRICS_BUSINESS_ASSETS but NOT in BUSINESS_ASSETS.
+
+    These are human-managed accounts that need external media discovery
+    since their posts are not created through the content pipeline.
+    """
+    metrics_assets = set(get_metrics_business_assets())
+    content_assets = set(get_content_business_assets())
+    return list(metrics_assets - content_assets)
+
+
+def run_external_media_discovery():
+    """Discover and ingest externally-posted media for metrics-only accounts.
+
+    For accounts managed by humans (in METRICS_BUSINESS_ASSETS but not in
+    BUSINESS_ASSETS), fetches recent Instagram media and creates completed_post
+    entries so the metrics pipeline can track them.
+    """
+    assets = get_metrics_only_business_assets()
+    if not assets:
+        logger.info("No metrics-only business assets to discover media for")
+        return
+
+    logger.info(f"Running external media discovery for: {assets}")
+    for asset_id in assets:
+        run_command(
+            ["insights", "discover-media", "--business-asset-id", asset_id],
+            f"External Media Discovery - {asset_id}"
+        )
+
+
 def run_insights_fetch():
     """Fetch and cache insights metrics from Facebook and Instagram for all metrics business assets.
 
@@ -506,6 +538,19 @@ def create_scheduler():
     # ========================================================================
     # INSIGHTS FETCHING
     # ========================================================================
+
+    # External media discovery - discover human-posted content for metrics-only accounts
+    # Runs daily to pick up new posts from accounts not managed by the content pipeline
+    scheduler.add_job(
+        run_external_media_discovery,
+        'interval',
+        hours=24,
+        id='external_media_discovery',
+        name='External Media Discovery (Human-Managed Accounts)',
+        max_instances=1,
+        coalesce=True,
+        next_run_time=datetime.now()  # Run immediately on startup
+    )
 
     # Insights fetching - fetch and cache metrics from Facebook and Instagram
     if SCHEDULING_CONFIG.INSIGHTS_ENABLED:
